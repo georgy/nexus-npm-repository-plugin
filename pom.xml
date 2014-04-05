@@ -51,37 +51,6 @@
                 </configuration>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <executions>
-                  <execution>
-                    <id>enforce-environment</id>
-                    <goals>
-                      <goal>enforce</goal>
-                    </goals>
-                    <configuration>
-                      <fail>true</fail>
-                      <rules>
-                        <!--
-                        Require Maven 3.0.4+, but not Maven 3.1+
-                        -->
-                        <requireMavenVersion>
-                          <version>[3.0.4,3.1.1]</version>
-                        </requireMavenVersion>
-
-                        <!--
-                        Require Java 7+
-                        -->
-                        <requireJavaVersion>
-                          <version>[1.7,)</version>
-                        </requireJavaVersion>
-                      </rules>
-                    </configuration>
-                  </execution>
-                </executions>
-            </plugin>
-
         </plugins>
     </build>
 
