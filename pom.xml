@@ -19,6 +19,7 @@
     <properties>
         <pluginName>Nexus npm repository plugin</pluginName>
         <pluginDescription>Adds npm (https://www.npmjs.org/) capabilities to Nexus OSS</pluginDescription>
+        <pluginSiteUrl>http://nexus.bolyuba.com</pluginSiteUrl>
 
     </properties>
 
