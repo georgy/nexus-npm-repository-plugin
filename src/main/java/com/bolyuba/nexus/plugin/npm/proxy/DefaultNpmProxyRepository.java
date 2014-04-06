@@ -21,12 +21,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
 @Named(DefaultNpmProxyRepository.ROLE_HINT)
-@Description("NPM")
+@Description("Nodejs npmjs.org repository")
 public class DefaultNpmProxyRepository
         extends AbstractProxyRepository
         implements NpmProxyRepository, ProxyRepository {
 
-    public static final String ROLE_HINT = "npm-proxy";
+    public static final String ROLE_HINT = "npm";
 
     private final ContentClass contentClass;
 
@@ -68,4 +68,5 @@ public class DefaultNpmProxyRepository
     public ContentClass getRepositoryContentClass() {
         return contentClass;
     }
+
 }
