@@ -63,6 +63,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!--<dependency>-->
+            <!--<groupId>org.sonatype.nexus.plugins</groupId>-->
+            <!--<artifactId>nexus-siesta-plugin</artifactId>-->
+            <!--<type>${nexus-plugin.type}</type>-->
+            <!--<scope>provided</scope>-->
+        <!--</dependency>-->
+
         <dependency>
             <groupId>org.sonatype.nexus.plugins</groupId>
             <artifactId>nexus-ui-extjs3-plugin</artifactId>
@@ -75,6 +82,7 @@
             <artifactId>nexus-plugin-testsupport</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
 </project>
