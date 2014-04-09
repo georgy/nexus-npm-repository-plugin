@@ -2,14 +2,19 @@ package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
+import org.sonatype.nexus.proxy.IllegalOperationException;
+import org.sonatype.nexus.proxy.ItemNotFoundException;
+import org.sonatype.nexus.proxy.ResourceStoreRequest;
+import org.sonatype.nexus.proxy.StorageException;
+import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractProxyRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
-import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 
 import javax.inject.Inject;
@@ -24,7 +29,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Description("Nodejs npmjs.org repository")
 public class DefaultNpmProxyRepository
         extends AbstractProxyRepository
-        implements NpmProxyRepository, ProxyRepository {
+        implements NpmProxyRepository {
 
     public static final String ROLE_HINT = "npm";
 
@@ -69,4 +74,14 @@ public class DefaultNpmProxyRepository
         return contentClass;
     }
 
+    @Override
+    protected StorageItem doRetrieveItem(ResourceStoreRequest request) throws IllegalOperationException, ItemNotFoundException, StorageException {
+        this.log.info("NPM: " + request.getRequestPath());
+        return super.doRetrieveItem(request);
+    }
+
+    @Override
+    protected boolean isRemoteStorageReachable(ResourceStoreRequest request) throws StorageException {
+        return super.isRemoteStorageReachable(request);
+    }
 }

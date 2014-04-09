@@ -2,13 +2,18 @@ package com.bolyuba.nexus.plugin.npm.templates;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
+import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepositoryConfiguration;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.model.*;
+import org.sonatype.nexus.proxy.maven.MavenRepository;
 import org.sonatype.nexus.proxy.maven.RepositoryPolicy;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.repository.RepositoryWritePolicy;
 import org.sonatype.nexus.templates.repository.maven.AbstractMavenRepositoryTemplate;
+
+import java.io.IOException;
 
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
@@ -27,7 +32,7 @@ public class NpmProxyRepositoryTemplate
         repo.setId("test");
         repo.setName("test");
 
-        repo.setProviderRole(Repository.class.getName());
+        repo.setProviderRole(NpmProxyRepository.class.getName());
         repo.setProviderHint(DefaultNpmProxyRepository.ROLE_HINT);
 
         repo.setRemoteStorage(new CRemoteStorage());
@@ -56,5 +61,10 @@ public class NpmProxyRepositoryTemplate
                         });
 
         return result;
+    }
+
+    @Override
+    public MavenRepository create() throws ConfigurationException, IOException {
+        return super.create();
     }
 }
