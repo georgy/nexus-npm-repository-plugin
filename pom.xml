@@ -37,6 +37,15 @@
                 <groupId>org.sonatype.nexus</groupId>
                 <artifactId>nexus-plugin-bundle-maven-plugin</artifactId>
                 <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <id>create-plugin-bundle</id>
+                        <goals>
+                            <goal>create-bundle</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -58,17 +67,16 @@
     <dependencies>
 
         <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.2.4</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.sonatype.nexus</groupId>
             <artifactId>nexus-plugin-api</artifactId>
             <scope>provided</scope>
         </dependency>
-
-        <!--<dependency>-->
-            <!--<groupId>org.sonatype.nexus.plugins</groupId>-->
-            <!--<artifactId>nexus-siesta-plugin</artifactId>-->
-            <!--<type>${nexus-plugin.type}</type>-->
-            <!--<scope>provided</scope>-->
-        <!--</dependency>-->
 
         <dependency>
             <groupId>org.sonatype.nexus.plugins</groupId>
