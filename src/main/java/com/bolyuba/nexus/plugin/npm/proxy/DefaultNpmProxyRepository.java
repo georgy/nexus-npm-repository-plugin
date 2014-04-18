@@ -15,6 +15,8 @@ import org.sonatype.nexus.proxy.repository.AbstractProxyRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
+import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
+import org.sonatype.nexus.proxy.storage.remote.RemoteRepositoryStorage;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -40,8 +42,6 @@ public class DefaultNpmProxyRepository
 
     private final RepositoryKind repositoryKind;
 
-    private final Pattern NPM_INDEX_PATTERN;
-
     @Inject
     public DefaultNpmProxyRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
                                      final NpmProxyRepositoryConfigurator configurator) {
@@ -49,8 +49,6 @@ public class DefaultNpmProxyRepository
         this.contentClass = checkNotNull(contentClass);
         this.configurator = checkNotNull(configurator);
         this.repositoryKind = new DefaultRepositoryKind(NpmProxyRepository.class, null);
-
-        NPM_INDEX_PATTERN = Pattern.compile("/-/all", Pattern.CASE_INSENSITIVE);
     }
 
     @Override
@@ -80,36 +78,23 @@ public class DefaultNpmProxyRepository
     }
 
     @Override
-    protected StorageItem doRetrieveItem(ResourceStoreRequest request) throws IllegalOperationException, ItemNotFoundException, StorageException {
-        StorageItem storageItem = super.doRetrieveItem(request);
-        return storageItem;
+    public void setLocalStorage(LocalRepositoryStorage localStorage) {
+        LocalRepositoryStorage wrapper = new NpmLocalStorageWrapper(localStorage);
+        super.setLocalStorage(wrapper);
     }
 
     @Override
-    public AbstractStorageItem doCacheItem(AbstractStorageItem item) throws LocalStorageException {
-        return super.doCacheItem(item);
+    public void setRemoteStorage(RemoteRepositoryStorage remoteStorage) {
+        RemoteRepositoryStorage wrapper = new NpmRemoteStorageWrapper(remoteStorage);
+        super.setRemoteStorage(wrapper);
     }
 
     @Override
-    protected boolean isRemoteStorageReachable(ResourceStoreRequest request) throws StorageException {
-        return super.isRemoteStorageReachable(request);
-    }
-
-    boolean isNpmIndex(RepositoryItemUid uid) {
-        if (!isNpmRepo(uid.getRepository())) {
-            return false;
+    public StorageItem retrieveItem(ResourceStoreRequest request) throws IllegalOperationException, ItemNotFoundException, StorageException, AccessDeniedException {
+        // TODO: This does not work yet, always returns full "all"
+        if ("/-/all/since".equals(request.getRequestPath())) {
+            request.setRequestRemoteOnly(true);
         }
-
-        String path = uid.getPath();
-
-        if (path == null) {
-            return false;
-        }
-
-        return NPM_INDEX_PATTERN.matcher(path).matches();
-    }
-
-    boolean isNpmRepo(Repository repository) {
-        return repository.getRepositoryKind().isFacetAvailable(NpmProxyRepository.class);
+        return super.retrieveItem(request);
     }
 }
