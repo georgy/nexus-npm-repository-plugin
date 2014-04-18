@@ -1,5 +1,6 @@
-package com.bolyuba.nexus.plugin.npm.proxy;
+package com.bolyuba.nexus.plugin.npm.proxy.storage;
 
+import com.bolyuba.nexus.plugin.npm.proxy.PathUtility;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreIteratorRequest;

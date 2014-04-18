@@ -1,6 +1,8 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
+import com.bolyuba.nexus.plugin.npm.proxy.storage.NpmLocalStorageWrapper;
+import com.bolyuba.nexus.plugin.npm.proxy.storage.NpmRemoteStorageWrapper;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;

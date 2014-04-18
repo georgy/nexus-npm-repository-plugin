@@ -1,5 +1,7 @@
-package com.bolyuba.nexus.plugin.npm.proxy;
+package com.bolyuba.nexus.plugin.npm.proxy.storage;
 
+import com.bolyuba.nexus.plugin.npm.proxy.PathUtility;
+import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.RemoteAccessException;
 import org.sonatype.nexus.proxy.RemoteStorageException;
@@ -72,7 +74,10 @@ public class NpmRemoteStorageWrapper
 
         // fix request again
         request.setRequestPath(fixedPath);
-        DefaultStorageFileItem fixedItem = new DefaultStorageFileItem(repository, request, item.isReadable(), item.isWritable(), item.getContentLocator());
+
+        NpmFilteringContentLocator filteringContentLocator = new NpmFilteringContentLocator(item.getContentLocator());
+
+        DefaultStorageFileItem fixedItem = new DefaultStorageFileItem(repository, request, item.isReadable(), item.isWritable(), filteringContentLocator);
         return fixedItem;
     }
 
