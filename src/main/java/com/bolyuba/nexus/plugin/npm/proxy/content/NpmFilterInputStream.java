@@ -1,14 +1,15 @@
 package com.bolyuba.nexus.plugin.npm.proxy.content;
 
-import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
-import java.io.*;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 
-import static com.google.gson.stream.JsonToken.END_DOCUMENT;
-import static com.google.gson.stream.JsonToken.NAME;
+import static com.google.gson.stream.JsonToken.*;
 
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
@@ -19,12 +20,13 @@ public class NpmFilterInputStream extends FilterInputStream {
 
     private final JsonReader reader;
 
-    private final Gson gson =  new Gson();
-
     private ByteBuffer buffer;
 
-    public NpmFilterInputStream(InputStream in) throws IOException {
+    private final MappingFilter filter;
+
+    public NpmFilterInputStream(InputStream in, Mapping mapping) throws IOException {
         super(in);
+        filter = new MappingFilter("tarball", mapping);
         reader = new JsonReader(new InputStreamReader(in, CHARSET_NAME));
         fillBuffer("");
     }
@@ -81,7 +83,7 @@ public class NpmFilterInputStream extends FilterInputStream {
 
     @Override
     public long skip(long n) throws IOException {
-        throw new IOException("skip not supported");
+        throw new IOException("skip is not supported");
     }
 
     @Override
@@ -104,11 +106,11 @@ public class NpmFilterInputStream extends FilterInputStream {
         switch (token) {
             case BEGIN_ARRAY:
                 reader.beginArray();
-                fillBuffer("[");
+                fillBuffer(filter.beginArray());
                 break;
             case END_ARRAY:
                 reader.endArray();
-                String json = "]";
+                String json = filter.endArray();
                 if (needComma(reader)) {
                     json = json + ",";
                 }
@@ -116,22 +118,23 @@ public class NpmFilterInputStream extends FilterInputStream {
                 break;
             case BEGIN_OBJECT:
                 reader.beginObject();
-                fillBuffer("{");
+                fillBuffer(filter.beginObject());
                 break;
             case END_OBJECT:
                 reader.endObject();
-                json = "}";
+                json = filter.endObject();
                 if (needComma(reader)) {
                     json = json + ",";
                 }
-                fillBuffer(json);                break;
+                fillBuffer(json);
+                break;
             case NAME:
                 String name = reader.nextName();
-                fillBuffer(gson.toJson(name) + ":");
+                fillBuffer(filter.aName(name));
                 break;
             case STRING:
                 String s = reader.nextString();
-                json = gson.toJson(s);
+                json = filter.aString(s);
                 if (needComma(reader)) {
                     json = json + ",";
                 }
@@ -139,15 +142,15 @@ public class NpmFilterInputStream extends FilterInputStream {
                 break;
             case NUMBER:
                 String n = reader.nextString();
-                json = gson.toJson(n);
+                json = filter.aNumber(n);
                 if (needComma(reader)) {
                     json = json + ",";
                 }
                 fillBuffer(json);
                 break;
             case BOOLEAN:
-                String b = reader.nextString();
-                json = gson.toJson(b);
+                boolean b = reader.nextBoolean();
+                json = filter.aBoolean(b);
                 if (needComma(reader)) {
                     json = json + ",";
                 }
@@ -155,12 +158,18 @@ public class NpmFilterInputStream extends FilterInputStream {
                 break;
             case NULL:
                 reader.nextNull();
+                json = filter.aNull();
+                if (needComma(reader)) {
+                    json = json + ",";
+                }
+                fillBuffer(json);
                 break;
         }
     }
 
     private boolean needComma(JsonReader reader) throws IOException {
-        return reader.peek() == NAME;
+        JsonToken peek = reader.peek();
+        return ((peek != END_ARRAY) && (peek != END_OBJECT) && (peek != END_DOCUMENT) && (peek != NULL));
     }
 
     private void fillBuffer(String value) throws IOException {
@@ -169,14 +178,13 @@ public class NpmFilterInputStream extends FilterInputStream {
     }
 
     // mark/reset - do nothing
-
     @Override
     public synchronized void mark(int readlimit) {
     }
 
     @Override
     public synchronized void reset() throws IOException {
-        throw new IOException("mark/reset not supported");
+        throw new IOException("mark/reset is not supported");
     }
 
     @Override

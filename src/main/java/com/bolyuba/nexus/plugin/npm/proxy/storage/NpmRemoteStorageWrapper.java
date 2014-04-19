@@ -1,7 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.proxy.storage;
 
-import com.bolyuba.nexus.plugin.npm.proxy.PathUtility;
-import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
+import com.bolyuba.nexus.plugin.npm.proxy.NpmUtility;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.RemoteAccessException;
 import org.sonatype.nexus.proxy.RemoteStorageException;
@@ -22,12 +21,13 @@ import java.net.URL;
 public class NpmRemoteStorageWrapper
         implements RemoteRepositoryStorage {
 
-    private final PathUtility pathUtility = new PathUtility();
-
     private RemoteRepositoryStorage realStorage;
 
-    public NpmRemoteStorageWrapper(@Nonnull RemoteRepositoryStorage realStorage) {
+    private NpmUtility utility;
+
+    public NpmRemoteStorageWrapper(@Nonnull RemoteRepositoryStorage realStorage, @Nonnull NpmUtility utility) {
         this.realStorage = realStorage;
+        this.utility = utility;
     }
 
     @Override
@@ -67,18 +67,11 @@ public class NpmRemoteStorageWrapper
 
     @Override
     public AbstractStorageItem retrieveItem(ProxyRepository repository, ResourceStoreRequest request, String baseUrl) throws ItemNotFoundException, RemoteAccessException, RemoteStorageException {
-        // get request to original form and get iteam
-        String fixedPath = request.getRequestPath();
-        request.setRequestPath(pathUtility.unfixRemotePath(fixedPath));
         DefaultStorageFileItem item = (DefaultStorageFileItem) realStorage.retrieveItem(repository, request, baseUrl);
-
-        // fix request again
-        request.setRequestPath(fixedPath);
-
-        NpmFilteringContentLocator filteringContentLocator = new NpmFilteringContentLocator(item.getContentLocator());
-
-        DefaultStorageFileItem fixedItem = new DefaultStorageFileItem(repository, request, item.isReadable(), item.isWritable(), filteringContentLocator);
-        return fixedItem;
+        if (utility.isJson(item)) {
+            return utility.decorateNpmJsonItem(repository, request, item);
+        }
+        return item;
     }
 
     @Override

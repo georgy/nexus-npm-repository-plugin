@@ -1,6 +1,7 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
+import com.bolyuba.nexus.plugin.npm.proxy.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.proxy.storage.NpmLocalStorageWrapper;
 import com.bolyuba.nexus.plugin.npm.proxy.storage.NpmRemoteStorageWrapper;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -8,6 +9,8 @@ import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
+import org.sonatype.nexus.mime.MimeRulesSource;
+import org.sonatype.nexus.mime.MimeSupport;
 import org.sonatype.nexus.proxy.*;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
@@ -44,12 +47,19 @@ public class DefaultNpmProxyRepository
 
     private final RepositoryKind repositoryKind;
 
+    private final NpmMimeRulesSource mimeRulesSource;
+
+    private final NpmUtility utility;
+
     @Inject
     public DefaultNpmProxyRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
-                                     final NpmProxyRepositoryConfigurator configurator) {
+                                     final NpmProxyRepositoryConfigurator configurator,
+                                     final NpmMimeRulesSource mimeRulesSource, NpmUtility utility) {
 
         this.contentClass = checkNotNull(contentClass);
         this.configurator = checkNotNull(configurator);
+        this.mimeRulesSource = checkNotNull(mimeRulesSource);
+        this.utility = checkNotNull(utility);
         this.repositoryKind = new DefaultRepositoryKind(NpmProxyRepository.class, null);
     }
 
@@ -81,21 +91,28 @@ public class DefaultNpmProxyRepository
 
     @Override
     public void setLocalStorage(LocalRepositoryStorage localStorage) {
-        LocalRepositoryStorage wrapper = new NpmLocalStorageWrapper(localStorage);
+        LocalRepositoryStorage wrapper = new NpmLocalStorageWrapper(localStorage, utility);
         super.setLocalStorage(wrapper);
     }
 
     @Override
     public void setRemoteStorage(RemoteRepositoryStorage remoteStorage) {
-        RemoteRepositoryStorage wrapper = new NpmRemoteStorageWrapper(remoteStorage);
+        RemoteRepositoryStorage wrapper = new NpmRemoteStorageWrapper(remoteStorage, utility);
         super.setRemoteStorage(wrapper);
     }
 
     @Override
+    public MimeRulesSource getMimeRulesSource() {
+        return mimeRulesSource;
+    }
+
+    @Override
     public StorageItem retrieveItem(ResourceStoreRequest request) throws IllegalOperationException, ItemNotFoundException, StorageException, AccessDeniedException {
-        // TODO: This does not work yet, always returns full "all"
-        if ("/-/all/since".equals(request.getRequestPath())) {
+        if (utility.shouldNotCache(request)) {
             request.setRequestRemoteOnly(true);
+        }
+        if (utility.shouldNotGotRemote(request)) {
+            request.setRequestLocalOnly(true);
         }
         return super.retrieveItem(request);
     }
