@@ -12,7 +12,7 @@
 
     <groupId>com.bolyuba.nexus.plugin</groupId>
     <artifactId>nexus-npm-repository-plugin</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <packaging>nexus-plugin</packaging>
 
