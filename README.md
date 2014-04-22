@@ -8,4 +8,5 @@ Usage:
  * Restart Nexus
  * Login as admin
  * Check Plugin console
+ [![plugin console](https://github.com/georgy/nexus-npm-repository-plugin/tree/master/src/site/plugin-console.png)]
  * Go to list of repos and add proxy
