@@ -8,7 +8,7 @@ import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
 import org.sonatype.nexus.proxy.registry.ContentClass;
-import org.sonatype.nexus.proxy.repository.AbstractProxyRepository;
+import org.sonatype.nexus.proxy.repository.AbstractRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 
@@ -21,7 +21,7 @@ import javax.inject.Named;
 @Named(NpmPlugin.ROLE_HINT)
 @Description("Npm registry hosted repo")
 public class DefaultNpmHostedRepository
-        extends AbstractProxyRepository
+        extends AbstractRepository
                 implements NpmHostedRepository {
 
     private final ContentClass contentClass;
