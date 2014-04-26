@@ -17,11 +17,16 @@ public class NpmRepositoryTemplateProvider extends AbstractRepositoryTemplatePro
 
     private static final String NPM_PROXY = "npm_proxy";
 
+    private static final String NPM_HOSTED = "npm_hosted";
+
+    public static final String NPM_PROVIDER = "Npm plugin";
+
     @Override
     public TemplateSet getTemplates() {
         final TemplateSet templates = new TemplateSet(null);
 
-        templates.add(new NpmProxyRepositoryTemplate(this, NPM_PROXY, "Npm registry"));
+        templates.add(new NpmProxyRepositoryTemplate(this, NPM_PROXY, NPM_PROVIDER));
+        templates.add(new NpmHostedRepositoryTemplate(this, NPM_HOSTED, NPM_PROVIDER));
 
         return templates;
     }

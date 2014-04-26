@@ -2,9 +2,9 @@ package com.bolyuba.nexus.plugin.npm.templates;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmPlugin;
-import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
-import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
-import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepositoryConfiguration;
+import com.bolyuba.nexus.plugin.npm.hosted.DefaultNpmHostedRepository;
+import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
+import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepositoryConfiguration;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.model.CRemoteStorage;
@@ -22,12 +22,12 @@ import java.io.IOException;
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
-public class NpmProxyRepositoryTemplate
+public class NpmHostedRepositoryTemplate
         extends AbstractMavenRepositoryTemplate {
 
-    public NpmProxyRepositoryTemplate(final NpmRepositoryTemplateProvider provider, final String id,
-                                      final String description) {
-        super(provider, id, description, new NpmContentClass(), DefaultNpmProxyRepository.class, RepositoryPolicy.RELEASE);
+    public NpmHostedRepositoryTemplate(final NpmRepositoryTemplateProvider provider, final String id,
+                                       final String description) {
+        super(provider, id, description, new NpmContentClass(), DefaultNpmHostedRepository.class, RepositoryPolicy.RELEASE);
     }
 
     @Override
@@ -36,28 +36,34 @@ public class NpmProxyRepositoryTemplate
         repo.setId("test");
         repo.setName("test");
 
-        repo.setProviderRole(NpmProxyRepository.class.getName());
+        repo.setProviderRole(NpmHostedRepository.class.getName());
         repo.setProviderHint(NpmPlugin.ROLE_HINT);
 
         repo.setRemoteStorage(new CRemoteStorage());
         repo.getRemoteStorage().setProvider(getTemplateProvider().getRemoteProviderHintFactory().getDefaultHttpRoleHint());
         repo.getRemoteStorage().setUrl("http://some-remote-repository/repo-root/obr.xml");
-//        repo.getRemoteStorage().setUrl("https://registry.npmjs.org");
 
         final Xpp3Dom ex = new Xpp3Dom(DefaultCRepository.EXTERNAL_CONFIGURATION_NODE_NAME);
         repo.setExternalConfiguration(ex);
 
-        repo.externalConfigurationImple = new NpmProxyRepositoryConfiguration(ex);
+        final NpmHostedRepositoryConfiguration exConf = new NpmHostedRepositoryConfiguration(ex);
 
-        repo.setWritePolicy(RepositoryWritePolicy.READ_ONLY.name());
-        repo.setNotFoundCacheActive(true);
+        if (getRepositoryPolicy() != null) {
+          exConf.setRepositoryPolicy(getRepositoryPolicy());
+        }
+
+        repo.externalConfigurationImple = exConf;
+
+        repo.setWritePolicy(RepositoryWritePolicy.ALLOW_WRITE_ONCE.name());
         repo.setNotFoundCacheTTL(1440);
+        repo.setIndexable(true);
+        repo.setSearchable(true);
 
         return new CRepositoryCoreConfiguration(getTemplateProvider().getApplicationConfiguration(), repo,
-                new CRepositoryExternalConfigurationHolderFactory<NpmProxyRepositoryConfiguration>() {
+                new CRepositoryExternalConfigurationHolderFactory<NpmHostedRepositoryConfiguration>() {
                     @Override
-                    public NpmProxyRepositoryConfiguration createExternalConfigurationHolder(final CRepository config) {
-                        return new NpmProxyRepositoryConfiguration((Xpp3Dom) config.getExternalConfiguration());
+                    public NpmHostedRepositoryConfiguration createExternalConfigurationHolder(final CRepository config) {
+                        return new NpmHostedRepositoryConfiguration((Xpp3Dom) config.getExternalConfiguration());
                     }
                 });
     }
