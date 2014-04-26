@@ -21,7 +21,7 @@ public class NpmRepositoryTemplateProvider extends AbstractRepositoryTemplatePro
     public TemplateSet getTemplates() {
         final TemplateSet templates = new TemplateSet(null);
 
-        templates.add(new NpmProxyRepositoryTemplate(this, NPM_PROXY, "npm-registry full proxy"));
+        templates.add(new NpmProxyRepositoryTemplate(this, NPM_PROXY, "Npm registry"));
 
         return templates;
     }

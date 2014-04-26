@@ -15,7 +15,7 @@ Usage:
  ![plugin console](https://github.com/georgy/nexus-npm-repository-plugin/raw/master/src/site/plugin-console.png)(#)
  * Go to list of repositories and add new proxy repository
  * Set remote location to [https://registry.npmjs.org](https://registry.npmjs.org)
- * Set Provider to "npm-registry full proxy"
+ * Set Provider to "Npm registry"
  ![proxy config](https://github.com/georgy/nexus-npm-repository-plugin/raw/master/src/site/proxy-config.png)(#)
  * Configure your npm:
 

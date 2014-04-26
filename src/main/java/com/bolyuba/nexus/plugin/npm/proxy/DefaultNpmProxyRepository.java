@@ -34,7 +34,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
 @Named(DefaultNpmProxyRepository.ROLE_HINT)
-@Description("Nodejs npmjs.org repository")
+@Description("Npm registry proxy")
 public class DefaultNpmProxyRepository
         extends AbstractProxyRepository
         implements NpmProxyRepository {

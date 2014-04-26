@@ -4,7 +4,7 @@ import org.sonatype.nexus.plugins.RepositoryType;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
 
 /**
- * A full proxy of npm-registry (for example, https://registry.npmjs.org/).
+ * A full proxy of Npm registry (for example, https://registry.npmjs.org/).
  *
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */

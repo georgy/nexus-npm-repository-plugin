@@ -6,6 +6,9 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 /**
+ * This plugin adds Npm support to Sonatype Nexus. Implementation is based on
+ * http://wiki.commonjs.org/wiki/Packages/Registry spec and behaviour of https://registry.npmjs.org
+ *
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
 @Named
