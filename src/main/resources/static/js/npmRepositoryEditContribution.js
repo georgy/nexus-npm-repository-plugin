@@ -1,10 +1,10 @@
 (function () {
-
-    Sonatype.repoServer.ProxyRepositoryEditor.prototype.contributions.add(
+/*
+    Sonatype.repoServer.AbstractRepositoryEditor.prototype.contributions.add(
             { provider: 'npm'},
             function (data, form) {
                 form.doAction('sonatypeLoad', {
-                    url: Sonatype.config.repos.urls.repoTemplate[this.payload.data.repoType],
+                    url: Sonatype.config.repos.urls.repoTemplate[form.findField("repoType")],
                     method: 'GET',
                     fpanel: this,
                     scope: this
@@ -33,5 +33,5 @@
             submitHandler.apply(this, arguments);
         }
     });
-
+*/
 }());
