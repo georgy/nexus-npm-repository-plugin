@@ -15,6 +15,8 @@ import javax.inject.Singleton;
 @Singleton
 public class NpmPlugin extends PluginIdentity {
 
+    public static final String ROLE_HINT = "npm";
+
     public static final String ARTIFACT_ID = "nexus-npm-repository-plugin";
 
     public static final String GROUP_ID = "com.bolyuba.nexus.plugin";
