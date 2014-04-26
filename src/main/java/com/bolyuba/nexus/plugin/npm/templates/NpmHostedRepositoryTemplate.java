@@ -2,8 +2,8 @@ package com.bolyuba.nexus.plugin.npm.templates;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmPlugin;
+import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.DefaultNpmHostedRepository;
-import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepositoryConfiguration;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.configuration.ConfigurationException;
@@ -36,7 +36,7 @@ public class NpmHostedRepositoryTemplate
         repo.setId("test");
         repo.setName("test");
 
-        repo.setProviderRole(NpmHostedRepository.class.getName());
+        repo.setProviderRole(NpmRepository.class.getName());
         repo.setProviderHint(NpmPlugin.ROLE_HINT);
 
         repo.setRemoteStorage(new CRemoteStorage());

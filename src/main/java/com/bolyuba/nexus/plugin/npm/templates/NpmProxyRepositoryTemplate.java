@@ -2,8 +2,8 @@ package com.bolyuba.nexus.plugin.npm.templates;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmPlugin;
+import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
-import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepositoryConfiguration;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.configuration.ConfigurationException;
@@ -36,7 +36,7 @@ public class NpmProxyRepositoryTemplate
         repo.setId("test");
         repo.setName("test");
 
-        repo.setProviderRole(NpmProxyRepository.class.getName());
+        repo.setProviderRole(NpmRepository.class.getName());
         repo.setProviderHint(NpmPlugin.ROLE_HINT);
 
         repo.setRemoteStorage(new CRemoteStorage());

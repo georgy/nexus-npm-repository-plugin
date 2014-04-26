@@ -1,6 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
-import org.sonatype.nexus.plugins.RepositoryType;
+import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
 
 /**
@@ -8,7 +8,6 @@ import org.sonatype.nexus.proxy.repository.ProxyRepository;
  *
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
-@RepositoryType(pathPrefix = "npm")
 public interface NpmProxyRepository
-        extends ProxyRepository {
+        extends NpmRepository, ProxyRepository {
 }

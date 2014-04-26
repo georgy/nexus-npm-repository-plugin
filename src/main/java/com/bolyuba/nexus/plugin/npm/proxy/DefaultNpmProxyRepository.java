@@ -2,6 +2,7 @@ package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmPlugin;
+import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.proxy.storage.NpmLocalStorageWrapper;
 import com.bolyuba.nexus.plugin.npm.proxy.storage.NpmRemoteStorageWrapper;
@@ -36,7 +37,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Description("Npm registry proxy repo")
 public class DefaultNpmProxyRepository
         extends AbstractProxyRepository
-        implements NpmProxyRepository {
+        implements NpmProxyRepository, NpmRepository {
 
     private final ContentClass contentClass;
 
