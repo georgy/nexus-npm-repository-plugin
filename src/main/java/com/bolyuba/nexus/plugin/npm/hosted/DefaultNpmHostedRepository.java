@@ -1,7 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.hosted;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
-import com.bolyuba.nexus.plugin.npm.NpmPlugin;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
@@ -28,11 +27,13 @@ import java.util.Map;
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
-@Named(NpmPlugin.ROLE_HINT)
+@Named(DefaultNpmHostedRepository.ROLE_HINT)
 @Description("Npm registry hosted repo")
 public class DefaultNpmHostedRepository
         extends AbstractRepository
         implements NpmHostedRepository, NpmRepository {
+
+    public static final String ROLE_HINT = "npm-hosted";
 
     private final ContentClass contentClass;
 

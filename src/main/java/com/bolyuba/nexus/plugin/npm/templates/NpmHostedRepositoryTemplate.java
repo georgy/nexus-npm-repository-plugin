@@ -1,7 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.templates;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
-import com.bolyuba.nexus.plugin.npm.NpmPlugin;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.DefaultNpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepositoryConfiguration;
@@ -37,7 +36,7 @@ public class NpmHostedRepositoryTemplate
         repo.setName("test");
 
         repo.setProviderRole(NpmRepository.class.getName());
-        repo.setProviderHint(NpmPlugin.ROLE_HINT);
+        repo.setProviderHint(DefaultNpmHostedRepository.ROLE_HINT);
 
         repo.setRemoteStorage(new CRemoteStorage());
         repo.getRemoteStorage().setProvider(getTemplateProvider().getRemoteProviderHintFactory().getDefaultHttpRoleHint());
