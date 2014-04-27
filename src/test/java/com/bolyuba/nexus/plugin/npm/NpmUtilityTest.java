@@ -1,12 +1,19 @@
 package com.bolyuba.nexus.plugin.npm;
 
+import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonatype.nexus.proxy.RequestContext;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
+import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
+import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
+import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -19,6 +26,15 @@ public class NpmUtilityTest {
 
     @Mock
     ResourceStoreRequest mockRequest;
+
+    @Mock
+    NpmHostedRepository mockRepository;
+
+    @Mock
+    DefaultStorageFileItem mockStorageFileItem;
+
+    @Mock
+    LocalRepositoryStorage mockLocalStorage;
 
     RequestContext mockContext;
 
@@ -68,5 +84,18 @@ public class NpmUtilityTest {
         assertEquals(mockContext.get(NpmUtility.NPM_VERSION), "0.0.42");
 
         assertEquals(mockContext.size(), 2, "Expected exactly 2 items");
+    }
+
+    @Test
+    public void test_processStoreRequest() throws IOException, UnsupportedStorageOperationException {
+        when(mockStorageFileItem.getPath()).thenReturn(NpmUtility.HIDDEN_CACHE_PREFIX + "/foo-app");
+
+        ByteArrayInputStream is = new ByteArrayInputStream("{\"name\": \"foo-app\", \"versions\": { \"0.0.1\": { \"name\": \"z-my-test-app\", \"description\": \"App I use to test npm registry plugin for Nexus\", \"author\": { \"name\": \"Georgy Bolyuba\", \"email\": \"georgy@bolyuba.com\"}}}}".getBytes());
+        when(mockStorageFileItem.getInputStream()).thenReturn(is);
+
+        when(mockRepository.getLocalStorage()).thenReturn(mockLocalStorage);
+        when(mockRepository.getId()).thenReturn("mock-repo");
+
+        sut.processStoreRequest(mockStorageFileItem, mockRepository);
     }
 }

@@ -3,6 +3,7 @@ package com.bolyuba.nexus.plugin.npm.hosted;
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
+import com.bolyuba.nexus.plugin.npm.storage.NpmLocalStorageWrapper;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
@@ -13,12 +14,14 @@ import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.StorageException;
+import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
+import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -81,12 +84,30 @@ public class DefaultNpmHostedRepository
         };
     }
 
-
+    @Override
+    public void setLocalStorage(LocalRepositoryStorage localStorage) {
+        LocalRepositoryStorage wrapper = new NpmLocalStorageWrapper(localStorage, utility);
+        super.setLocalStorage(wrapper);
+    }
 
     @SuppressWarnings("deprecation")
     @Override
-    public void storeItem(ResourceStoreRequest request, InputStream is, Map<String, String> userAttributes) throws UnsupportedStorageOperationException, IllegalOperationException, StorageException, AccessDeniedException {
-        super.storeItem(request, is, userAttributes);
+    public void storeItem(ResourceStoreRequest request, InputStream is, Map<String, String> userAttributes)
+            throws UnsupportedStorageOperationException, IllegalOperationException, StorageException, AccessDeniedException {
+
+        utility.addNpmMeta(request);
+
+        ResourceStoreRequest hiddenRequest = utility.hideInCache(request);
+        try {
+            // this needs to be synchronized in case someone else will try to deploy same version before
+            // content.json is ready
+            super.storeItem(hiddenRequest, is, userAttributes);
+            DefaultStorageFileItem hiddenItem = (DefaultStorageFileItem) super.retrieveItem(request);
+
+            utility.processStoreRequest(hiddenItem, this);
+        } catch (ItemNotFoundException e) {
+            throw new StorageException(e);
+        }
     }
 
     @SuppressWarnings("deprecation")

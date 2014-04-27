@@ -1,4 +1,4 @@
-package com.bolyuba.nexus.plugin.npm.proxy.storage;
+package com.bolyuba.nexus.plugin.npm.storage;
 
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
@@ -6,6 +6,7 @@ import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreIteratorRequest;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
+import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.repository.Repository;
@@ -51,11 +52,11 @@ public class NpmLocalStorageWrapper
     public AbstractStorageItem retrieveItem(Repository repository, ResourceStoreRequest request) throws ItemNotFoundException, LocalStorageException {
         AbstractStorageItem item = realStorage.retrieveItem(repository, request);
 
-        // if request is from npm serve json content instead of collection
+        // if request is from npm, then serve json content instead of collection
         if (StorageCollectionItem.class.isInstance(item) && utility.isNmpRequest(request)) {
             String path = item.getPath();
-            if (!path.endsWith("/")) {
-                path = path + "/";
+            if (!path.endsWith(RepositoryItemUid.PATH_SEPARATOR)) {
+                path = path + RepositoryItemUid.PATH_SEPARATOR;
             }
             ResourceStoreRequest contentRequest = new ResourceStoreRequest(path + "content.json");
             return realStorage.retrieveItem(repository, contentRequest);
@@ -63,7 +64,6 @@ public class NpmLocalStorageWrapper
 
         return item;
     }
-
 
     @Override
     public boolean containsItem(Repository repository, ResourceStoreRequest request) throws LocalStorageException {
@@ -79,8 +79,8 @@ public class NpmLocalStorageWrapper
             // if request is from npm check if we have content and not just folder
             if (StorageCollectionItem.class.isInstance(item) && utility.isNmpRequest(request)) {
                 String path = item.getPath();
-                if (!path.endsWith("/")) {
-                    path = path + "/";
+                if (!path.endsWith(RepositoryItemUid.PATH_SEPARATOR)) {
+                    path = path + RepositoryItemUid.PATH_SEPARATOR;
                 }
                 ResourceStoreRequest contentRequest = new ResourceStoreRequest(path + "content.json");
                 return realStorage.containsItem(repository, contentRequest);

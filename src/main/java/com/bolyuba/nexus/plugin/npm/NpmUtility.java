@@ -1,15 +1,24 @@
 package com.bolyuba.nexus.plugin.npm;
 
+import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
+import com.bolyuba.nexus.plugin.npm.hosted.content.NpmJsonContentLocator;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
+import com.google.gson.Gson;
+import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.RequestContext;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
+import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
+import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 
 import javax.annotation.Nonnull;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
 
 /**
  * Utility class that implements most of the commonjs/npm related plumbing.
@@ -20,11 +29,13 @@ import javax.inject.Singleton;
 @Singleton
 public class NpmUtility {
 
-    private static final String NPM_DECORATED_FLAG = "npm.decorated";
+    static final String NPM_DECORATED_FLAG = "npm.decorated";
 
-    private static final String JSON_CONTENT_FILE_NAME = "content.json";
+    static final String JSON_CONTENT_FILE_NAME = "content.json";
 
-    private static final String JSON_MIME_TYPE = "application/json";
+    static final String JSON_MIME_TYPE = "application/json";
+
+    static final String HIDDEN_CACHE_PREFIX = RepositoryItemUid.PATH_SEPARATOR + ".cache";
 
     /**
      * Trying to decide if request is coming form npm utility.
@@ -140,4 +151,55 @@ public class NpmUtility {
             context.put(NPM_VERSION, explodedPath[1]);
         }
     }
+
+    public ResourceStoreRequest hideInCache(ResourceStoreRequest request) {
+        request.setRequestPath(HIDDEN_CACHE_PREFIX + request.getRequestPath());
+        return request;
+    }
+
+    public void processStoreRequest(@Nonnull DefaultStorageFileItem hiddenItem, @Nonnull NpmHostedRepository repository) throws LocalStorageException, UnsupportedStorageOperationException {
+        String path = hiddenItem.getPath();
+
+        if ((path == null) || (!path.startsWith(HIDDEN_CACHE_PREFIX))) {
+            throw new LocalStorageException("Something went wrong. Publish request was not saved in " + HIDDEN_CACHE_PREFIX);
+        }
+
+        // get to real package root
+        String packageRoot = path.substring(HIDDEN_CACHE_PREFIX.length(), path.length());
+
+        Gson gson = new Gson();
+        try {
+            Versions box = gson.fromJson(new InputStreamReader(hiddenItem.getInputStream()), Versions.class);
+
+            if ((box == null) || (box.versions == null) || (box.versions.isEmpty())) {
+                throw new LocalStorageException("Unable to extract versions from cached publish request");
+            }
+            for (String version : box.versions.keySet()) {
+                Object o = box.versions.get(version);
+                processVersion(packageRoot, version, gson.toJson(o), repository);
+            }
+        } catch (IOException e) {
+            throw new LocalStorageException(e);
+        }
+
+    }
+
+    private void processVersion(String packageRoot, String version, String json, NpmHostedRepository repository) throws UnsupportedStorageOperationException, LocalStorageException {
+        LocalRepositoryStorage localStorage = repository.getLocalStorage();
+
+        ResourceStoreRequest resourceStoreRequest = new ResourceStoreRequest(packageRoot + RepositoryItemUid.PATH_SEPARATOR + version, true, false);
+        ResourceStoreRequest decoratedRequest = decorateRequest(resourceStoreRequest);
+
+        DefaultStorageFileItem item = new DefaultStorageFileItem(repository,
+                decoratedRequest,
+                true,
+                true,
+                new NpmJsonContentLocator(json));
+
+        localStorage.storeItem(repository, item);
+    }
+}
+
+class Versions {
+    HashMap<String, Object> versions = new HashMap<>();
 }

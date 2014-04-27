@@ -4,7 +4,7 @@ import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmMimeRulesSource;
-import com.bolyuba.nexus.plugin.npm.proxy.storage.NpmLocalStorageWrapper;
+import com.bolyuba.nexus.plugin.npm.storage.NpmLocalStorageWrapper;
 import com.bolyuba.nexus.plugin.npm.proxy.storage.NpmRemoteStorageWrapper;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
