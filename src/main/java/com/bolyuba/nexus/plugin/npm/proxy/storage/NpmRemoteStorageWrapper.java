@@ -1,8 +1,7 @@
 package com.bolyuba.nexus.plugin.npm.proxy.storage;
 
-import com.bolyuba.nexus.plugin.npm.proxy.NpmUtility;
+import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
-import org.sonatype.nexus.proxy.RemoteAccessException;
 import org.sonatype.nexus.proxy.RemoteStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
@@ -41,7 +40,7 @@ public class NpmRemoteStorageWrapper
     }
 
     @Override
-    public boolean isReachable(ProxyRepository repository, ResourceStoreRequest request) throws RemoteAccessException, RemoteStorageException {
+    public boolean isReachable(ProxyRepository repository, ResourceStoreRequest request) throws RemoteStorageException {
         return realStorage.isReachable(repository, request);
     }
 
@@ -56,31 +55,31 @@ public class NpmRemoteStorageWrapper
     }
 
     @Override
-    public boolean containsItem(ProxyRepository repository, ResourceStoreRequest request) throws RemoteAccessException, RemoteStorageException {
+    public boolean containsItem(ProxyRepository repository, ResourceStoreRequest request) throws RemoteStorageException {
         return realStorage.containsItem(repository, request);
     }
 
     @Override
-    public boolean containsItem(long newerThen, ProxyRepository repository, ResourceStoreRequest request) throws RemoteAccessException, RemoteStorageException {
+    public boolean containsItem(long newerThen, ProxyRepository repository, ResourceStoreRequest request) throws RemoteStorageException {
         return realStorage.containsItem(newerThen, repository, request);
     }
 
     @Override
-    public AbstractStorageItem retrieveItem(ProxyRepository repository, ResourceStoreRequest request, String baseUrl) throws ItemNotFoundException, RemoteAccessException, RemoteStorageException {
+    public AbstractStorageItem retrieveItem(ProxyRepository repository, ResourceStoreRequest request, String baseUrl) throws ItemNotFoundException, RemoteStorageException {
         DefaultStorageFileItem item = (DefaultStorageFileItem) realStorage.retrieveItem(repository, request, baseUrl);
         if (utility.isJson(item)) {
-            return utility.decorateNpmJsonItem(repository, request, item);
+            return utility.wrapJsonItem(repository, request, item);
         }
         return item;
     }
 
     @Override
-    public void storeItem(ProxyRepository repository, StorageItem item) throws UnsupportedStorageOperationException, RemoteAccessException, RemoteStorageException {
+    public void storeItem(ProxyRepository repository, StorageItem item) throws UnsupportedStorageOperationException, RemoteStorageException {
         realStorage.storeItem(repository, item);
     }
 
     @Override
-    public void deleteItem(ProxyRepository repository, ResourceStoreRequest request) throws ItemNotFoundException, UnsupportedStorageOperationException, RemoteAccessException, RemoteStorageException {
+    public void deleteItem(ProxyRepository repository, ResourceStoreRequest request) throws ItemNotFoundException, UnsupportedStorageOperationException, RemoteStorageException {
         realStorage.deleteItem(repository, request);
     }
 }

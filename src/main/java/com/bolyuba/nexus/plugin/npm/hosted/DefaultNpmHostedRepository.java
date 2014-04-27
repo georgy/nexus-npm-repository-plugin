@@ -2,6 +2,7 @@ package com.bolyuba.nexus.plugin.npm.hosted;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
@@ -24,6 +25,8 @@ import javax.inject.Named;
 import java.io.InputStream;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
@@ -41,11 +44,15 @@ public class DefaultNpmHostedRepository
 
     private final RepositoryKind repositoryKind;
 
+    private final NpmUtility utility;
+
     @Inject
     public DefaultNpmHostedRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
-                                      NpmHostedRepositoryConfigurator configurator) {
-        this.contentClass = contentClass;
-        this.configurator = configurator;
+                                      final NpmHostedRepositoryConfigurator configurator,
+                                      final NpmUtility utility) {
+        this.contentClass = checkNotNull(contentClass);
+        this.configurator = checkNotNull(configurator);
+        this.utility = checkNotNull(utility);
         this.repositoryKind = new DefaultRepositoryKind(NpmHostedRepository.class, null);
     }
 
@@ -74,6 +81,8 @@ public class DefaultNpmHostedRepository
         };
     }
 
+
+
     @SuppressWarnings("deprecation")
     @Override
     public void storeItem(ResourceStoreRequest request, InputStream is, Map<String, String> userAttributes) throws UnsupportedStorageOperationException, IllegalOperationException, StorageException, AccessDeniedException {
@@ -83,6 +92,7 @@ public class DefaultNpmHostedRepository
     @SuppressWarnings("deprecation")
     @Override
     public StorageItem retrieveItem(ResourceStoreRequest request) throws IllegalOperationException, ItemNotFoundException, StorageException, AccessDeniedException {
+        utility.addNpmMeta(request);
         return super.retrieveItem(request);
     }
 }

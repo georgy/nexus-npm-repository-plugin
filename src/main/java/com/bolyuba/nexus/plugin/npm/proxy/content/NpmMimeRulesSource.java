@@ -1,6 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.proxy.content;
 
-import com.bolyuba.nexus.plugin.npm.proxy.NpmUtility;
+import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import org.sonatype.nexus.mime.MimeRulesSource;
 
 import javax.inject.Inject;
@@ -27,6 +27,6 @@ public class NpmMimeRulesSource
         if (path == null) {
             return null;
         }
-        return utility.suggetMimeType(path);
+        return utility.suggestMimeType(path);
     }
 }

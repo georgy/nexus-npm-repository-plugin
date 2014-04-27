@@ -2,6 +2,7 @@ package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.proxy.storage.NpmLocalStorageWrapper;
 import com.bolyuba.nexus.plugin.npm.proxy.storage.NpmRemoteStorageWrapper;
@@ -54,7 +55,7 @@ public class DefaultNpmProxyRepository
     public DefaultNpmProxyRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
                                      final NpmProxyRepositoryConfigurator configurator,
                                      final NpmMimeRulesSource mimeRulesSource,
-                                     NpmUtility utility) {
+                                     final NpmUtility utility) {
 
         this.contentClass = checkNotNull(contentClass);
         this.configurator = checkNotNull(configurator);
@@ -108,6 +109,8 @@ public class DefaultNpmProxyRepository
     @SuppressWarnings("deprecation")
     @Override
     public StorageItem retrieveItem(ResourceStoreRequest request) throws IllegalOperationException, ItemNotFoundException, StorageException, AccessDeniedException {
+        utility.addNpmMeta(request);
+
         if (utility.shouldNotCache(request)) {
             request.setRequestRemoteOnly(true);
         }

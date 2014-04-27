@@ -1,6 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.proxy.storage;
 
-import com.bolyuba.nexus.plugin.npm.proxy.NpmUtility;
+import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreIteratorRequest;
@@ -84,9 +84,9 @@ public class NpmLocalStorageWrapper
                 }
                 ResourceStoreRequest contentRequest = new ResourceStoreRequest(path + "content.json");
                 return realStorage.containsItem(repository, contentRequest);
+            } else {
+                return true;
             }
-
-            return containsItem;
         } catch (ItemNotFoundException ignore) {
             // was deleted between two checks?
             return false;
@@ -118,11 +118,13 @@ public class NpmLocalStorageWrapper
         return realStorage.listItems(repository, request);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public Iterator<StorageItem> iterateItems(Repository repository, ResourceStoreIteratorRequest request) throws ItemNotFoundException, LocalStorageException {
         return realStorage.iterateItems(repository, request);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public URL getAbsoluteUrlFromBase(Repository repository, ResourceStoreRequest request) throws LocalStorageException {
         return realStorage.getAbsoluteUrlFromBase(repository, request);
