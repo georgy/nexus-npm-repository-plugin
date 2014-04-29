@@ -3,12 +3,14 @@ package com.bolyuba.nexus.plugin.npm.hosted;
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
+import com.bolyuba.nexus.plugin.npm.proxy.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.storage.NpmLocalStorageWrapper;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
+import org.sonatype.nexus.mime.MimeRulesSource;
 import org.sonatype.nexus.proxy.AccessDeniedException;
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
@@ -47,12 +49,17 @@ public class DefaultNpmHostedRepository
 
     private final RepositoryKind repositoryKind;
 
+    private final NpmMimeRulesSource mimeRulesSource;
+
     private final NpmUtility utility;
 
     @Inject
     public DefaultNpmHostedRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
                                       final NpmHostedRepositoryConfigurator configurator,
-                                      final NpmUtility utility) {
+                                      final NpmUtility utility,
+                                      NpmMimeRulesSource mimeRulesSource) {
+
+        this.mimeRulesSource = checkNotNull(mimeRulesSource);
         this.contentClass = checkNotNull(contentClass);
         this.configurator = checkNotNull(configurator);
         this.utility = checkNotNull(utility);
@@ -73,6 +80,11 @@ public class DefaultNpmHostedRepository
     public ContentClass getRepositoryContentClass() {
         return this.contentClass;
     }
+
+    @Override
+        public MimeRulesSource getMimeRulesSource() {
+            return mimeRulesSource;
+        }
 
     @Override
     protected CRepositoryExternalConfigurationHolderFactory<?> getExternalConfigurationHolderFactory() {
