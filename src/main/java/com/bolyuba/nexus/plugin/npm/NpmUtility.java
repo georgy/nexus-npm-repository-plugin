@@ -4,6 +4,7 @@ import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.content.NpmJsonContentLocator;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import com.google.gson.Gson;
+import com.google.inject.Provider;
 import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.RequestContext;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
@@ -14,8 +15,10 @@ import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
@@ -37,6 +40,14 @@ public class NpmUtility {
 
     static final String HIDDEN_CACHE_PREFIX = RepositoryItemUid.PATH_SEPARATOR + ".cache";
 
+    final Provider<HttpServletRequest> httpServletRequestProvider;
+
+    @Inject
+    public NpmUtility(
+            @SuppressWarnings("CdiInjectionPointsInspection") final Provider<HttpServletRequest> httpServletRequestProvider) {
+        this.httpServletRequestProvider = httpServletRequestProvider;
+    }
+
     /**
      * Trying to decide if request is coming form npm utility.
      * <p/>
@@ -49,19 +60,16 @@ public class NpmUtility {
      * @return {@code true} if we think request is coming form npm utility, {@code false} otherwise (for example,
      * if someone is browsing content of the repo in Nexus UI).
      */
-    public final boolean isNmpRequest(ResourceStoreRequest request) {
-        RequestContext context = request.getRequestContext();
-        if (context == null) {
+    public final boolean isNmpRequest(@SuppressWarnings("UnusedParameters") ResourceStoreRequest request) {
+
+        HttpServletRequest httpServletRequest = httpServletRequestProvider.get();
+        if (httpServletRequest == null) {
             return false;
         }
 
-        Object o = context.get("request.agent");
-        if (o == null) {
-            return false;
-        }
+        String accept = httpServletRequest.getHeader("accept");
 
-        // not strictly an npm, but node. Best we can do atm
-        return o.toString().toLowerCase().startsWith("node");
+        return accept != null && accept.toLowerCase().equals(JSON_MIME_TYPE);
     }
 
     public final String suggestMimeType(@Nonnull String path) {

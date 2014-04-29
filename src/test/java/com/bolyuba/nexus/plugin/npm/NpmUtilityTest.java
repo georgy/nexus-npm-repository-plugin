@@ -1,6 +1,7 @@
 package com.bolyuba.nexus.plugin.npm;
 
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
+import com.google.inject.Provider;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonatype.nexus.proxy.RequestContext;
@@ -12,11 +13,13 @@ import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 /**
@@ -36,6 +39,12 @@ public class NpmUtilityTest {
     @Mock
     LocalRepositoryStorage mockLocalStorage;
 
+    @Mock
+    Provider<HttpServletRequest> mockRequestProvider;
+
+    @Mock
+    HttpServletRequest mockHttpServletRequest;
+
     RequestContext mockContext;
 
 
@@ -45,8 +54,24 @@ public class NpmUtilityTest {
     void setup () {
         MockitoAnnotations.initMocks(this);
         mockContext = new RequestContext();
-        sut = new NpmUtility();
+
+        when(mockRequestProvider.get()).thenReturn(mockHttpServletRequest);
+        sut = new NpmUtility(mockRequestProvider);
     }
+
+    @Test
+    public void test_isNmpRequest_json() {
+        when(mockHttpServletRequest.getHeader("accept")).thenReturn("application/json");
+        assertTrue(sut.isNmpRequest(mockRequest));
+    }
+
+    @Test
+    public void test_isNmpRequest_all() {
+        when(mockHttpServletRequest.getHeader("accept")).thenReturn("*/*");
+        assertFalse(sut.isNmpRequest(mockRequest));
+    }
+
+
 
     @Test
     public void test_addNpmMeta_ROOT() {
