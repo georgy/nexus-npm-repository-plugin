@@ -3,7 +3,6 @@ package com.bolyuba.nexus.plugin.npm;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.content.NpmJsonContentLocator;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
-import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -17,7 +16,6 @@ import org.sonatype.nexus.proxy.RequestContext;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
-import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 
@@ -41,8 +39,6 @@ import java.util.Map;
 @Named
 @Singleton
 public class NpmUtility {
-
-    static final String NPM_DECORATED_FLAG = "npm.decorated";
 
     static final String JSON_CONTENT_FILE_NAME = "content.json";
 
@@ -93,26 +89,6 @@ public class NpmUtility {
             return JSON_MIME_TYPE;
         }
         return null;
-    }
-
-    public DefaultStorageFileItem wrapJsonItem(ProxyRepository repository, DefaultStorageFileItem item) {
-        ResourceStoreRequest request = item.getResourceStoreRequest();
-        NpmFilteringContentLocator decoratedContentLocator = decorateContentLocator(item, request, repository.getRemoteUrl());
-        ResourceStoreRequest decoratedRequest = decorateRequest(request);
-
-        DefaultStorageFileItem storageFileItem = new DefaultStorageFileItem(
-                repository,
-                decoratedRequest,
-                item.isReadable(),
-                item.isWritable(),
-                decoratedContentLocator);
-
-        storageFileItem.getItemContext().put(NPM_DECORATED_FLAG, true);
-        return storageFileItem;
-    }
-
-    private NpmFilteringContentLocator decorateContentLocator(DefaultStorageFileItem item, ResourceStoreRequest request, @Nonnull String remoteUrl) {
-        return new NpmFilteringContentLocator(item.getContentLocator(), request, remoteUrl);
     }
 
     private ResourceStoreRequest decorateRequest(ResourceStoreRequest request) {

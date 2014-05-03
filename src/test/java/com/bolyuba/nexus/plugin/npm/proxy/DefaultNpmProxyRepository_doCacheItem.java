@@ -9,12 +9,10 @@ import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
-import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.notNull;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
@@ -65,10 +63,10 @@ public class DefaultNpmProxyRepository_doCacheItem {
                         mockNpmUtility)
         );
 
-        // mock out super.doCacheItem() call
+        // mock real call to doCacheItem
         doReturn(mockStorageFileItem).when(sut).delegateDoCacheItem(mockWrappedDefaultStorageFileItem);
-        // mock out call to utility. simply return a "wrapped" instance
-        when(mockNpmUtility.wrapJsonItem(notNull(ProxyRepository.class), same(mockStorageFileItem))).thenReturn(mockWrappedDefaultStorageFileItem);
+        // mock wrapping for now
+        doReturn(mockWrappedDefaultStorageFileItem).when(sut).wrapItem(same(mockStorageFileItem));
 
         when(mockStorageFileItem.getResourceStoreRequest()).thenReturn(mockStoreRequest);
         when(mockStoreRequest.getRequestPath()).thenReturn("/gonogo/1.0.42");
@@ -90,10 +88,10 @@ public class DefaultNpmProxyRepository_doCacheItem {
                         mockNpmUtility)
         );
 
-        // mock out super.doCacheItem() call
+        // mock real call to doCacheItem
         doReturn(mockStorageFileItem).when(sut).delegateDoCacheItem(mockWrappedDefaultStorageFileItem);
-        // mock out call to utility. simply return a "wrapped" instance
-        when(mockNpmUtility.wrapJsonItem(notNull(ProxyRepository.class), same(mockStorageFileItem))).thenReturn(mockWrappedDefaultStorageFileItem);
+        // mock wrapping for now
+        doReturn(mockWrappedDefaultStorageFileItem).when(sut).wrapItem(same(mockStorageFileItem));
 
         when(mockStorageFileItem.getResourceStoreRequest()).thenReturn(mockStoreRequest);
         when(mockStoreRequest.getRequestPath()).thenReturn("/gonogo");
@@ -114,9 +112,6 @@ public class DefaultNpmProxyRepository_doCacheItem {
                         mockMimeRulesSource,
                         mockNpmUtility)
         );
-
-        // mock out call to utility. simply return a "wrapped" instance
-        when(mockNpmUtility.wrapJsonItem(notNull(ProxyRepository.class), same(mockStorageFileItem))).thenReturn(mockWrappedDefaultStorageFileItem);
 
         when(mockStorageFileItem.getResourceStoreRequest()).thenReturn(mockStoreRequest);
         when(mockStoreRequest.getRequestPath()).thenReturn("/");
@@ -140,8 +135,6 @@ public class DefaultNpmProxyRepository_doCacheItem {
 
         // caching original item mockStorageFileItem
         doReturn(mockStorageFileItem).when(sut).delegateDoCacheItem(mockStorageFileItem);
-        // mock out call to utility. simply return a "wrapped" instance
-        when(mockNpmUtility.wrapJsonItem(notNull(ProxyRepository.class), same(mockStorageFileItem))).thenReturn(mockWrappedDefaultStorageFileItem);
 
         when(mockStorageFileItem.getResourceStoreRequest()).thenReturn(mockStoreRequest);
         when(mockStoreRequest.getRequestPath()).thenReturn("/gonogo/-/gonogo-1.42.0.tgz");

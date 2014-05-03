@@ -8,4 +8,7 @@ import org.sonatype.nexus.plugins.RepositoryType;
 @SuppressWarnings("deprecation")
 @RepositoryType(pathPrefix = "npm")
 public interface NpmRepository {
+
+    String JSON_CONTENT_FILE_NAME = "content.json";
+
 }
