@@ -47,6 +47,16 @@ class PackageCoordinates {
         return type;
     }
 
+    @Override
+    public String toString() {
+        return "PackageCoordinates{" +
+                "type=" + type +
+                ", packageName='" + packageName + '\'' +
+                ", packageVersion='" + packageVersion + '\'' +
+                ", path='" + path + '\'' +
+                '}';
+    }
+
     public static PackageCoordinates coordinatesFromUrl(@Nonnull String requestPath) throws InvalidPackageRequestException {
         PackageCoordinates coordinates = new PackageCoordinates();
         coordinates.path = requestPath;

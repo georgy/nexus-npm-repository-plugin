@@ -117,7 +117,7 @@ public class DefaultNpmProxyRepository
 
             if (packageRequest.isPackage()) {
                 DefaultStorageFileItem wrappedItem = utility.wrapJsonItem(this, (DefaultStorageFileItem) item);
-                return super.doCacheItem(wrappedItem);
+                return delegateDoCacheItem(wrappedItem);
             } else {
                 return item;
             }
@@ -125,6 +125,11 @@ public class DefaultNpmProxyRepository
             // not something we are interested in
         }
 
+        return delegateDoCacheItem(item);
+    }
+
+    // let test mock this method
+    AbstractStorageItem delegateDoCacheItem(AbstractStorageItem item) throws LocalStorageException {
         return super.doCacheItem(item);
     }
 }

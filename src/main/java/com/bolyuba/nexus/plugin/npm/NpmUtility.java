@@ -95,7 +95,7 @@ public class NpmUtility {
         return null;
     }
 
-    public final DefaultStorageFileItem wrapJsonItem(ProxyRepository repository, DefaultStorageFileItem item) {
+    public DefaultStorageFileItem wrapJsonItem(ProxyRepository repository, DefaultStorageFileItem item) {
         ResourceStoreRequest request = item.getResourceStoreRequest();
         NpmFilteringContentLocator decoratedContentLocator = decorateContentLocator(item, request, repository.getRemoteUrl());
         ResourceStoreRequest decoratedRequest = decorateRequest(request);

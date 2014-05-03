@@ -47,4 +47,12 @@ public class PackageRequest {
     public String getPath() {
         return coordinates.getPath();
     }
+
+    @Override
+    public String toString() {
+        return "PackageRequest{" +
+                "storeRequest=" + storeRequest +
+                ", coordinates=" + coordinates +
+                '}';
+    }
 }
