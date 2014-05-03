@@ -127,7 +127,7 @@ public class NpmUtility {
     static final String NPM_VERSION = "npm.version";
 
     /**
-     * Adds npm metadata to the request context, mostly to classify URL as per http://wiki.commonjs.org/wiki/Packages/Registry#URLs
+     * Adds npm metadata to the request context
      *
      * @param request request we want to decorate
      */
@@ -158,6 +158,38 @@ public class NpmUtility {
         if (explodedPath.length >= 2) {
             context.put(NPM_VERSION, explodedPath[1]);
         }
+    }
+
+    /**
+     *  Returns coordinates for given request based on request path
+     *
+     * @param request a request with valid commonjs url as request path
+     * @return coordinates for request
+     */
+    public PackageCoordinates getCoordinates(@Nonnull ResourceStoreRequest request) {
+        String requestPath = request.getRequestPath();
+        if (requestPath == null) {
+           throw new IllegalArgumentException("Request path is null, impossible to determine coordinates");
+        }
+
+        if (RepositoryItemUid.PATH_SEPARATOR.equals(requestPath)) {
+            return new PackageCoordinates();
+        }
+
+        String correctedPath =
+                requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR) ? requestPath.substring(
+                        1, requestPath.length())
+                        : requestPath;
+        String[] explodedPath = correctedPath.split(RepositoryItemUid.PATH_SEPARATOR);
+
+        if (explodedPath.length == 2) {
+            return new PackageCoordinates(explodedPath[0], explodedPath[1]);
+        }
+        if (explodedPath.length == 1) {
+            return new PackageCoordinates(explodedPath[0]);
+        }
+
+        throw new IllegalArgumentException("Path " + correctedPath + " cannot be turned into PackageCoordinates");
     }
 
     public ResourceStoreRequest hideInCache(ResourceStoreRequest request) {
