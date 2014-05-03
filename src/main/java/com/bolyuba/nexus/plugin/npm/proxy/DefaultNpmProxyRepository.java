@@ -113,7 +113,7 @@ public class DefaultNpmProxyRepository
     public AbstractStorageItem doCacheItem(AbstractStorageItem item) throws LocalStorageException {
         try {
             ResourceStoreRequest storeRequest = item.getResourceStoreRequest();
-            PackageRequest packageRequest = utility.getPackageRequest(storeRequest);
+            PackageRequest packageRequest = new PackageRequest(storeRequest);
 
             if (packageRequest.isPackage()) {
                 DefaultStorageFileItem wrappedItem = utility.wrapJsonItem(this, (DefaultStorageFileItem) item);

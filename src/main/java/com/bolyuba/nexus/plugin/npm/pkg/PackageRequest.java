@@ -8,7 +8,7 @@ import static com.bolyuba.nexus.plugin.npm.pkg.PackageCoordinates.Type.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- *  Commonjs package request with coordinates
+ * Commonjs package request. Represents domain of valid requests including registry "special" like {@code /-/all}
  *
  * @author <a href="mailto:georgy@bolyuba.com">Georgy Bolyuba</a>
  */
@@ -16,13 +16,12 @@ public class PackageRequest {
 
     private final ResourceStoreRequest storeRequest;
 
-    private final PackageCoordinates coordinates;
+    private PackageCoordinates coordinates;
 
-    public PackageRequest(@Nonnull ResourceStoreRequest storeRequest,
-                          @Nonnull PackageCoordinates coordinates) {
+    public PackageRequest(@Nonnull ResourceStoreRequest storeRequest) throws InvalidPackageRequestException {
 
         this.storeRequest = checkNotNull(storeRequest);
-        this.coordinates = checkNotNull(coordinates);
+        this.coordinates = PackageCoordinates.coordinatesFromUrl(storeRequest.getRequestPath());
     }
 
     public ResourceStoreRequest getStoreRequest() {
@@ -37,7 +36,15 @@ public class PackageRequest {
         return PACKAGE_VERSION == coordinates.getType();
     }
 
+    public boolean isRegistrySpecial() {
+        return REGISTRY_SPECIAL == coordinates.getType();
+    }
+
     public boolean isPackage() {
         return isPackageRoot() || isPackageVersion();
+    }
+
+    public String getPath() {
+        return coordinates.getPath();
     }
 }

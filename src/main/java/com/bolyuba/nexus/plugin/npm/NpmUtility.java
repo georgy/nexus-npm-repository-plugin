@@ -2,8 +2,6 @@ package com.bolyuba.nexus.plugin.npm;
 
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.content.NpmJsonContentLocator;
-import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
-import com.bolyuba.nexus.plugin.npm.pkg.PackageCoordinates;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import com.google.gson.Gson;
@@ -297,19 +295,6 @@ public class NpmUtility {
     }
 
     /**
-     * Created PackageRequest with commonjs package specific info attached or dies trying.
-     *
-     * @param request storage request that we suspect to be a package request
-     * @return  package request with coordinates and other meta info created
-     * @throws
-     *          InvalidPackageRequestException if request is not a valid package request as per commonjs spec
-     */
-    public PackageRequest getPackageRequest(@Nonnull ResourceStoreRequest request)
-            throws InvalidPackageRequestException {
-        return new PackageRequest(request, this.getCoordinates(request));
-    }
-
-    /**
      * For given package request's content get real storage request. We are mapping json REST-like API onto
      * filesystem.
      *
@@ -325,33 +310,6 @@ public class NpmUtility {
         }
 
         return new ResourceStoreRequest(path + JSON_CONTENT_FILE_NAME);
-    }
-
-    PackageCoordinates getCoordinates(@Nonnull ResourceStoreRequest request)
-            throws InvalidPackageRequestException {
-        String requestPath = request.getRequestPath();
-        if (requestPath == null) {
-            throw new InvalidPackageRequestException("PackageRequest path is null, impossible to determine coordinates");
-        }
-
-        if (RepositoryItemUid.PATH_SEPARATOR.equals(requestPath)) {
-            return new PackageCoordinates();
-        }
-
-        String correctedPath =
-                requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR) ?
-                        requestPath.substring(1, requestPath.length()) :
-                        requestPath;
-        String[] explodedPath = correctedPath.split(RepositoryItemUid.PATH_SEPARATOR);
-
-        if (explodedPath.length == 2) {
-            return new PackageCoordinates(explodedPath[0], explodedPath[1]);
-        }
-        if (explodedPath.length == 1) {
-            return new PackageCoordinates(explodedPath[0]);
-        }
-
-        throw new InvalidPackageRequestException("Path " + correctedPath + " cannot be turned into PackageCoordinates");
     }
 }
 
