@@ -1,5 +1,8 @@
 package com.bolyuba.nexus.plugin.npm;
 
+import com.bolyuba.nexus.plugin.npm.NpmUtility;
+import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
+import com.bolyuba.nexus.plugin.npm.pkg.PackageCoordinates;
 import com.google.inject.Provider;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -40,9 +43,9 @@ public class NpmUtility_getCoordinates {
         sut = new NpmUtility(mockRequestProvider);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp = "Request path is null, impossible to determine coordinates")
-    public void getCoordinates_NullPath_ShouldThrow() {
+    @Test(expectedExceptions = InvalidPackageRequestException.class,
+            expectedExceptionsMessageRegExp = "PackageRequest path is null, impossible to determine coordinates")
+    public void getCoordinates_NullPath_ShouldThrow() throws InvalidPackageRequestException {
         when(mockRequest.getRequestPath()).thenReturn(null);
 
         sut.getCoordinates(mockRequest);
@@ -51,7 +54,7 @@ public class NpmUtility_getCoordinates {
     }
 
     @Test
-    public void getCoordinates_RegistryRoot() {
+    public void getCoordinates_RegistryRoot() throws InvalidPackageRequestException {
         when(mockRequest.getRequestPath()).thenReturn("/");
 
         PackageCoordinates coordinates = sut.getCoordinates(mockRequest);
@@ -62,7 +65,7 @@ public class NpmUtility_getCoordinates {
     }
 
     @Test
-    public void getCoordinates_PackageRoot() {
+    public void getCoordinates_PackageRoot() throws InvalidPackageRequestException {
         when(mockRequest.getRequestPath()).thenReturn("/gonogo");
 
         PackageCoordinates coordinates = sut.getCoordinates(mockRequest);
@@ -73,7 +76,7 @@ public class NpmUtility_getCoordinates {
     }
 
     @Test
-    public void getCoordinates_PackageVersion() {
+    public void getCoordinates_PackageVersion() throws InvalidPackageRequestException {
         when(mockRequest.getRequestPath()).thenReturn("/gonogo/1.42.0");
 
         PackageCoordinates coordinates = sut.getCoordinates(mockRequest);
@@ -84,9 +87,9 @@ public class NpmUtility_getCoordinates {
 
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
+    @Test(expectedExceptions = InvalidPackageRequestException.class,
             expectedExceptionsMessageRegExp = "Path .* cannot be turned into PackageCoordinates")
-    public void getCoordinates_UnrecognizedCrapAtTheEnd_ShouldThrow() {
+    public void getCoordinates_UnrecognizedCrapAtTheEnd_ShouldThrow() throws InvalidPackageRequestException {
         when(mockRequest.getRequestPath()).thenReturn("/gonogo/1.42.0/gimmefive");
 
         sut.getCoordinates(mockRequest);

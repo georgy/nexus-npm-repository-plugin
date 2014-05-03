@@ -1,4 +1,4 @@
-package com.bolyuba.nexus.plugin.npm;
+package com.bolyuba.nexus.plugin.npm.pkg;
 
 import javax.annotation.Nonnull;
 
@@ -50,4 +50,5 @@ public class PackageCoordinates {
     public Type getType() {
         return type;
     }
+
 }

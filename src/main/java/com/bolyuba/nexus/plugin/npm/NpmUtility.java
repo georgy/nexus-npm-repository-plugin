@@ -2,6 +2,9 @@ package com.bolyuba.nexus.plugin.npm;
 
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.content.NpmJsonContentLocator;
+import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
+import com.bolyuba.nexus.plugin.npm.pkg.PackageCoordinates;
+import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import com.google.gson.Gson;
 import com.google.inject.Provider;
@@ -145,9 +148,9 @@ public class NpmUtility {
         RequestContext context = request.getRequestContext();
 
         String correctedPath =
-                requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR) ? requestPath.substring(
-                        1, requestPath.length())
-                        : requestPath;
+                requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR) ?
+                        requestPath.substring(1, requestPath.length()) :
+                        requestPath;
 
         String[] explodedPath = correctedPath.split(RepositoryItemUid.PATH_SEPARATOR);
 
@@ -160,37 +163,7 @@ public class NpmUtility {
         }
     }
 
-    /**
-     *  Returns coordinates for given request based on request path
-     *
-     * @param request a request with valid commonjs url as request path
-     * @return coordinates for request
-     */
-    public PackageCoordinates getCoordinates(@Nonnull ResourceStoreRequest request) {
-        String requestPath = request.getRequestPath();
-        if (requestPath == null) {
-           throw new IllegalArgumentException("Request path is null, impossible to determine coordinates");
-        }
 
-        if (RepositoryItemUid.PATH_SEPARATOR.equals(requestPath)) {
-            return new PackageCoordinates();
-        }
-
-        String correctedPath =
-                requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR) ? requestPath.substring(
-                        1, requestPath.length())
-                        : requestPath;
-        String[] explodedPath = correctedPath.split(RepositoryItemUid.PATH_SEPARATOR);
-
-        if (explodedPath.length == 2) {
-            return new PackageCoordinates(explodedPath[0], explodedPath[1]);
-        }
-        if (explodedPath.length == 1) {
-            return new PackageCoordinates(explodedPath[0]);
-        }
-
-        throw new IllegalArgumentException("Path " + correctedPath + " cannot be turned into PackageCoordinates");
-    }
 
     public ResourceStoreRequest hideInCache(ResourceStoreRequest request) {
         request.setRequestPath(HIDDEN_CACHE_PREFIX + request.getRequestPath());
@@ -237,6 +210,64 @@ public class NpmUtility {
                 new NpmJsonContentLocator(json));
 
         localStorage.storeItem(repository, item);
+    }
+
+    /**
+     *  Created PackageRequest with commonjs package specific info attached or dies trying.
+     *
+     * @param request storage request that we suspect to be a package request
+     * @return  package request with coordinates and other meta info created
+     * @throws
+     *          InvalidPackageRequestException if request is not a valid package request as per commonjs spec
+     */
+    public PackageRequest getPackageRequest(@Nonnull ResourceStoreRequest request)
+            throws InvalidPackageRequestException {
+        return new PackageRequest(request, this.getCoordinates(request));
+    }
+
+    /**
+     *  For given package request's content get real storage request. We are mapping json REST-like API onto
+     *  filesystem.
+     *
+     * @param packageRequest request in question
+     * @return storage request for content of package request
+     */
+    public ResourceStoreRequest getContentStorageRequest(@Nonnull PackageRequest packageRequest) {
+        ResourceStoreRequest storeRequest = packageRequest.getStoreRequest();
+
+        String path = storeRequest.getRequestPath();
+        if (!path.endsWith(RepositoryItemUid.PATH_SEPARATOR)) {
+            path = path + RepositoryItemUid.PATH_SEPARATOR;
+        }
+
+        return new ResourceStoreRequest(path + JSON_CONTENT_FILE_NAME);
+    }
+
+    PackageCoordinates getCoordinates(@Nonnull ResourceStoreRequest request)
+            throws InvalidPackageRequestException {
+        String requestPath = request.getRequestPath();
+        if (requestPath == null) {
+            throw new InvalidPackageRequestException("PackageRequest path is null, impossible to determine coordinates");
+        }
+
+        if (RepositoryItemUid.PATH_SEPARATOR.equals(requestPath)) {
+            return new PackageCoordinates();
+        }
+
+        String correctedPath =
+                requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR) ?
+                        requestPath.substring(1, requestPath.length()) :
+                        requestPath;
+        String[] explodedPath = correctedPath.split(RepositoryItemUid.PATH_SEPARATOR);
+
+        if (explodedPath.length == 2) {
+            return new PackageCoordinates(explodedPath[0], explodedPath[1]);
+        }
+        if (explodedPath.length == 1) {
+            return new PackageCoordinates(explodedPath[0]);
+        }
+
+        throw new InvalidPackageRequestException("Path " + correctedPath + " cannot be turned into PackageCoordinates");
     }
 }
 
