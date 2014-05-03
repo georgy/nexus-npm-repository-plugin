@@ -7,30 +7,31 @@ import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.storage.NpmLocalStorageWrapper;
-import com.bolyuba.nexus.plugin.npm.proxy.storage.NpmRemoteStorageWrapper;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
 import org.sonatype.nexus.mime.MimeRulesSource;
-import org.sonatype.nexus.proxy.*;
+import org.sonatype.nexus.proxy.AccessDeniedException;
+import org.sonatype.nexus.proxy.IllegalOperationException;
+import org.sonatype.nexus.proxy.ItemNotFoundException;
+import org.sonatype.nexus.proxy.LocalStorageException;
+import org.sonatype.nexus.proxy.ResourceStoreRequest;
+import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
+import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractProxyRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
-import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
-import org.sonatype.nexus.proxy.storage.remote.RemoteRepositoryStorage;
-import org.sonatype.sisu.goodies.common.SimpleFormat;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sonatype.nexus.proxy.ItemNotFoundException.ItemNotFoundInRepositoryReason;
 
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
@@ -115,22 +116,11 @@ public class DefaultNpmProxyRepository
             PackageRequest packageRequest = utility.getPackageRequest(storeRequest);
 
             if (packageRequest.isPackage()) {
-                try {
-
-                    this.moveItem(false, storeRequest, utility.getContentStorageRequest(packageRequest));
-
-                } catch (UnsupportedStorageOperationException e) {
-                    throw new LocalStorageException(e);
-                } catch (IllegalOperationException e) {
-                    throw new LocalStorageException(e);
-                } catch (ItemNotFoundException e) {
-                    throw new LocalStorageException(e);
-                } catch (StorageException e) {
-                    throw new LocalStorageException(e);
-                }
+                DefaultStorageFileItem wrappedItem = utility.wrapJsonItem(this, (DefaultStorageFileItem) item);
+                return super.doCacheItem(wrappedItem);
+            } else {
+                return item;
             }
-
-            return super.doCacheItem(item);
         } catch (InvalidPackageRequestException ignore) {
             // not something we are interested in
         }

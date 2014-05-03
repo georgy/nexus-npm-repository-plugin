@@ -7,7 +7,13 @@ import com.bolyuba.nexus.plugin.npm.pkg.PackageCoordinates;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
 import com.google.inject.Provider;
+import org.apache.commons.codec.binary.Base64InputStream;
+import org.sonatype.nexus.proxy.AccessDeniedException;
+import org.sonatype.nexus.proxy.IllegalOperationException;
+import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.RequestContext;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
@@ -22,9 +28,12 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Utility class that implements most of the commonjs/npm related plumbing.
@@ -75,6 +84,10 @@ public class NpmUtility {
         return accept != null && accept.toLowerCase().equals(JSON_MIME_TYPE);
     }
 
+    public final boolean isTarballRequest(@SuppressWarnings("UnusedParameters") ResourceStoreRequest request) {
+        return request.getRequestPath().toLowerCase().endsWith(".tgz");
+    }
+
     public final String suggestMimeType(@Nonnull String path) {
         // this should take into account if request in from npm or not
         // right now we only know that content.json is json
@@ -84,11 +97,8 @@ public class NpmUtility {
         return null;
     }
 
-    public final boolean isJson(DefaultStorageFileItem item) {
-        return JSON_MIME_TYPE.equals(item.getMimeType());
-    }
-
-    public final DefaultStorageFileItem wrapJsonItem(ProxyRepository repository, ResourceStoreRequest request, DefaultStorageFileItem item) {
+    public final DefaultStorageFileItem wrapJsonItem(ProxyRepository repository, DefaultStorageFileItem item) {
+        ResourceStoreRequest request = item.getResourceStoreRequest();
         NpmFilteringContentLocator decoratedContentLocator = decorateContentLocator(item, request, repository.getRemoteUrl());
         ResourceStoreRequest decoratedRequest = decorateRequest(request);
 
@@ -114,15 +124,6 @@ public class NpmUtility {
         }
         request.setRequestPath(path + JSON_CONTENT_FILE_NAME);
         return request;
-    }
-
-    public final boolean shouldNotGotRemote(ResourceStoreRequest request) {
-        return request.getRequestPath().toLowerCase().endsWith(JSON_CONTENT_FILE_NAME);
-    }
-
-    public final boolean shouldNotCache(ResourceStoreRequest request) {
-        // TODO: This does not work yet, always returns full "all"
-        return "/-/all/since".equals(request.getRequestPath());
     }
 
     static final String NPM_PACKAGE = "npm.package";
@@ -170,7 +171,8 @@ public class NpmUtility {
         return request;
     }
 
-    public void processStoreRequest(@Nonnull DefaultStorageFileItem hiddenItem, @Nonnull NpmHostedRepository repository) throws LocalStorageException, UnsupportedStorageOperationException {
+    public void processStoreRequest(@Nonnull DefaultStorageFileItem hiddenItem, @Nonnull NpmHostedRepository repository) throws LocalStorageException, UnsupportedStorageOperationException,
+            IllegalOperationException, AccessDeniedException, ItemNotFoundException {
         String path = hiddenItem.getPath();
 
         if ((path == null) || (!path.startsWith(HIDDEN_CACHE_PREFIX))) {
@@ -188,14 +190,96 @@ public class NpmUtility {
                 throw new LocalStorageException("Unable to extract versions from cached publish request");
             }
             for (String version : box.versions.keySet()) {
-                Object o = box.versions.get(version);
-                processVersion(packageRoot, version, gson.toJson(o), repository);
+                Object obj = box.versions.get(version);
+                processVersion(packageRoot, version, gson.toJson(obj), repository);
+                String tarball = isPublishingTarball(obj);
+
+                if (tarball != null) {
+                    ResourceStoreRequest request = new ResourceStoreRequest("/.cache/z-my-test-app-0.0.5.tgz");
+                    InputStream inputStream = getInputStream(hiddenItem, "z-my-test-app-0.0.5.tgz");
+                    if (inputStream == null) {
+                        throw new LocalStorageException("Was not able to get InputStream for tarball from cached publish request");
+                    }
+                    repository.storeItem(request, inputStream, null);
+                }
             }
         } catch (IOException e) {
             throw new LocalStorageException(e);
         }
 
     }
+
+    private String isPublishingTarball(Object version) {
+        if (!Map.class.isInstance(version)) {
+            return null;
+        }
+
+        Map map = (Map) version;
+        if (!map.containsKey("dist")) {
+            return null;
+        }
+
+        if (!Map.class.isInstance(map.get("dist"))) {
+            return null;
+        }
+
+        Map dist = (Map) map.get("dist");
+
+        if (dist.containsKey("tarball")) {
+            return (String) dist.get("tarball");
+        }
+
+        return null;
+    }
+
+    private InputStream getInputStream(DefaultStorageFileItem item, String tarballName) throws IOException {
+        JsonReader jsonReader = new JsonReader(new InputStreamReader(item.getInputStream()));
+
+        if (!skipToName(jsonReader, "_attachments")) {
+            return null;
+        }
+
+        if (!skipToName(jsonReader, tarballName)) {
+            return null;
+        }
+
+        if (!skipToName(jsonReader, "data")) {
+            return null;
+        }
+        Base64InputStream result = new Base64InputStream(new ByteArrayInputStream(jsonReader.nextString().getBytes()));
+        jsonReader.close();
+        return result;
+    }
+
+    private boolean skipToName(JsonReader jsonReader, String targetName) throws IOException {
+
+        do {
+            JsonToken peek = jsonReader.peek();
+
+            if (peek == JsonToken.BEGIN_OBJECT) {
+                jsonReader.beginObject();
+                continue;
+            }
+
+            if (peek == JsonToken.END_DOCUMENT) {
+                return false;
+            }
+
+            if (peek != JsonToken.NAME) {
+                jsonReader.skipValue();
+                continue;
+            }
+
+            String name = jsonReader.nextName();
+
+            if (targetName.equals(name.toLowerCase())) {
+                return true;
+            } else {
+                jsonReader.skipValue();
+            }
+        } while (true);
+    }
+
 
     private void processVersion(String packageRoot, String version, String json, NpmHostedRepository repository) throws UnsupportedStorageOperationException, LocalStorageException {
         LocalRepositoryStorage localStorage = repository.getLocalStorage();
@@ -213,7 +297,7 @@ public class NpmUtility {
     }
 
     /**
-     *  Created PackageRequest with commonjs package specific info attached or dies trying.
+     * Created PackageRequest with commonjs package specific info attached or dies trying.
      *
      * @param request storage request that we suspect to be a package request
      * @return  package request with coordinates and other meta info created
@@ -226,8 +310,8 @@ public class NpmUtility {
     }
 
     /**
-     *  For given package request's content get real storage request. We are mapping json REST-like API onto
-     *  filesystem.
+     * For given package request's content get real storage request. We are mapping json REST-like API onto
+     * filesystem.
      *
      * @param packageRequest request in question
      * @return storage request for content of package request

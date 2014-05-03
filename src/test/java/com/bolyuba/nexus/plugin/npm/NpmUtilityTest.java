@@ -4,6 +4,9 @@ import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.google.inject.Provider;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.sonatype.nexus.proxy.AccessDeniedException;
+import org.sonatype.nexus.proxy.IllegalOperationException;
+import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.RequestContext;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
@@ -112,7 +115,7 @@ public class NpmUtilityTest {
     }
 
     @Test
-    public void test_processStoreRequest() throws IOException, UnsupportedStorageOperationException {
+    public void test_processStoreRequest() throws IOException, UnsupportedStorageOperationException, ItemNotFoundException, AccessDeniedException, IllegalOperationException {
         when(mockStorageFileItem.getPath()).thenReturn(NpmUtility.HIDDEN_CACHE_PREFIX + "/foo-app");
 
         ByteArrayInputStream is = new ByteArrayInputStream("{\"name\": \"foo-app\", \"versions\": { \"0.0.1\": { \"name\": \"z-my-test-app\", \"description\": \"App I use to test npm registry plugin for Nexus\", \"author\": { \"name\": \"Georgy Bolyuba\", \"email\": \"georgy@bolyuba.com\"}}}}".getBytes());
