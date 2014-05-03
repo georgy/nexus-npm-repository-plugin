@@ -11,7 +11,7 @@ import javax.annotation.Nonnull;
  */
 class PackageCoordinates {
 
-    private static final String NPM_REGISTRY_SPECIAL = "/-";
+    private static final String NPM_REGISTRY_SPECIAL = "-";
 
     public static enum Type {
 
@@ -56,7 +56,7 @@ class PackageCoordinates {
             return coordinates;
         }
 
-        if (requestPath.startsWith(NPM_REGISTRY_SPECIAL)) {
+        if (requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR + NPM_REGISTRY_SPECIAL + RepositoryItemUid.PATH_SEPARATOR)) {
             coordinates.type = Type.REGISTRY_SPECIAL;
             return coordinates;
         }
@@ -69,16 +69,32 @@ class PackageCoordinates {
 
         if (explodedPath.length == 2) {
             coordinates.type = Type.PACKAGE_VERSION;
-            coordinates.packageName = explodedPath[0];
-            coordinates.packageVersion = explodedPath[1];
+            coordinates.packageName = validate(explodedPath[0], "Invalid package name: ");
+            coordinates.packageVersion = validate(explodedPath[1], "Invalid package version: ");
             return coordinates;
         }
         if (explodedPath.length == 1) {
             coordinates.type = Type.PACKAGE_ROOT;
-            coordinates.packageName = explodedPath[0];
+            coordinates.packageName = validate(explodedPath[0], "Invalid package name: ");
             return coordinates;
         }
 
         throw new InvalidPackageRequestException("Path " + correctedPath + " cannot be turned into PackageCoordinates");
+    }
+
+    /**
+     * See http://wiki.commonjs.org/wiki/Packages/Registry#Changes_to_Packages_Spec
+     */
+    private static String validate(@Nonnull String nameOrVersion, String errorPrefix) throws InvalidPackageRequestException {
+        if (nameOrVersion.startsWith(NPM_REGISTRY_SPECIAL)) {
+            throw new InvalidPackageRequestException(errorPrefix + nameOrVersion);
+        }
+        if (nameOrVersion.equals(".")) {
+            throw new InvalidPackageRequestException(errorPrefix + nameOrVersion);
+        }
+        if (nameOrVersion.equals("..")) {
+            throw new InvalidPackageRequestException(errorPrefix + nameOrVersion);
+        }
+        return nameOrVersion;
     }
 }

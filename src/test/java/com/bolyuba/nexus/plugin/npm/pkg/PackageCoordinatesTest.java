@@ -51,6 +51,57 @@ public class PackageCoordinatesTest {
     public void coordinatesFromUrl_UnrecognizedCrapAtTheEnd_ShouldThrow() throws InvalidPackageRequestException {
         PackageCoordinates.coordinatesFromUrl("/gonogo/1.42.0/gimmefive");
 
-        fail("Expected getCoordinates to throw IllegalArgumentException");
+        fail("Expected coordinatesFromUrl to throw IllegalArgumentException");
+    }
+
+    @Test
+    public void coordinatesFromUrl_PackageNameDash_ShouldThrow() throws InvalidPackageRequestException {
+        PackageCoordinates coordinates = PackageCoordinates.coordinatesFromUrl("/-/all/");
+
+        assertEquals(coordinates.getType(), PackageCoordinates.Type.REGISTRY_SPECIAL, "Expected registry special coordinates type");
+        assertNull(coordinates.getPackageVersion());
+        assertNull(coordinates.getPackageName());
+    }
+
+    @Test(expectedExceptions = InvalidPackageRequestException.class,
+            expectedExceptionsMessageRegExp = "Invalid package name: -gonogo")
+    public void coordinatesFromUrl_PackageNameStartWithDash_ShouldThrow() throws InvalidPackageRequestException {
+        PackageCoordinates.coordinatesFromUrl("/-gonogo/1.42.0/");
+        fail("Expected coordinatesFromUrl to throw IllegalArgumentException");
+    }
+
+    @Test(expectedExceptions = InvalidPackageRequestException.class,
+            expectedExceptionsMessageRegExp = "Invalid package name: .")
+    public void coordinatesFromUrl_PackageNameDot_ShouldThrow() throws InvalidPackageRequestException {
+        PackageCoordinates.coordinatesFromUrl("/./1.42.0/");
+        fail("Expected coordinatesFromUrl to throw IllegalArgumentException");
+    }
+
+    @Test(expectedExceptions = InvalidPackageRequestException.class,
+            expectedExceptionsMessageRegExp = "Invalid package name: ..")
+    public void coordinatesFromUrl_PackageNameTwoDots_ShouldThrow() throws InvalidPackageRequestException {
+        PackageCoordinates.coordinatesFromUrl("/../1.42.0/");
+        fail("Expected coordinatesFromUrl to throw IllegalArgumentException");
+    }
+
+    @Test(expectedExceptions = InvalidPackageRequestException.class,
+            expectedExceptionsMessageRegExp = "Invalid package version: -1.42.0")
+    public void coordinatesFromUrl_PackageVersionStartWithDash_ShouldThrow() throws InvalidPackageRequestException {
+        PackageCoordinates.coordinatesFromUrl("/gonogo/-1.42.0/");
+        fail("Expected coordinatesFromUrl to throw IllegalArgumentException");
+    }
+
+    @Test(expectedExceptions = InvalidPackageRequestException.class,
+            expectedExceptionsMessageRegExp = "Invalid package version: .")
+    public void coordinatesFromUrl_PackageVersionDot_ShouldThrow() throws InvalidPackageRequestException {
+        PackageCoordinates.coordinatesFromUrl("/gonogo/./");
+        fail("Expected coordinatesFromUrl to throw IllegalArgumentException");
+    }
+
+    @Test(expectedExceptions = InvalidPackageRequestException.class,
+            expectedExceptionsMessageRegExp = "Invalid package version: ..")
+    public void coordinatesFromUrl_PackageVersionTwoDots_ShouldThrow() throws InvalidPackageRequestException {
+        PackageCoordinates.coordinatesFromUrl("/gonogo/../");
+        fail("Expected coordinatesFromUrl to throw IllegalArgumentException");
     }
 }
