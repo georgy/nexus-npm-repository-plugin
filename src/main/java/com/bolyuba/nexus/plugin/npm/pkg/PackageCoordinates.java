@@ -1,5 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.pkg;
 
+import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 
 import javax.annotation.Nonnull;
@@ -10,8 +11,6 @@ import javax.annotation.Nonnull;
  * @author <a href="mailto:georgy@bolyuba.com">Georgy Bolyuba</a>
  */
 class PackageCoordinates {
-
-    private static final String NPM_REGISTRY_SPECIAL = "-";
 
     public static enum Type {
 
@@ -67,7 +66,7 @@ class PackageCoordinates {
             return coordinates;
         }
 
-        if (normalizedPath.startsWith(RepositoryItemUid.PATH_SEPARATOR + NPM_REGISTRY_SPECIAL + RepositoryItemUid.PATH_SEPARATOR)) {
+        if (normalizedPath.startsWith(RepositoryItemUid.PATH_SEPARATOR + NpmRepository.NPM_REGISTRY_SPECIAL + RepositoryItemUid.PATH_SEPARATOR)) {
             coordinates.type = Type.REGISTRY_SPECIAL;
             return coordinates;
         }
@@ -97,7 +96,7 @@ class PackageCoordinates {
      * See http://wiki.commonjs.org/wiki/Packages/Registry#Changes_to_Packages_Spec
      */
     private static String validate(@Nonnull String nameOrVersion, String errorPrefix) throws InvalidPackageRequestException {
-        if (nameOrVersion.startsWith(NPM_REGISTRY_SPECIAL)) {
+        if (nameOrVersion.startsWith(NpmRepository.NPM_REGISTRY_SPECIAL)) {
             throw new InvalidPackageRequestException(errorPrefix + nameOrVersion);
         }
         if (nameOrVersion.equals(".")) {

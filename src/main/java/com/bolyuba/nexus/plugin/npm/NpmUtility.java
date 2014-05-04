@@ -60,45 +60,6 @@ public class NpmUtility {
         return request;
     }
 
-    static final String NPM_PACKAGE = "npm.package";
-
-    static final String NPM_VERSION = "npm.version";
-
-    /**
-     * Adds npm metadata to the request context
-     *
-     * @param request request we want to decorate
-     */
-    public void addNpmMeta(@Nonnull ResourceStoreRequest request) {
-        String requestPath = request.getRequestPath();
-        if (requestPath == null) {
-            // wtf?
-            return;
-        }
-
-        if (RepositoryItemUid.PATH_SEPARATOR.equals(requestPath)) {
-            return;
-        }
-
-        RequestContext context = request.getRequestContext();
-
-        String correctedPath =
-                requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR) ?
-                        requestPath.substring(1, requestPath.length()) :
-                        requestPath;
-
-        String[] explodedPath = correctedPath.split(RepositoryItemUid.PATH_SEPARATOR);
-
-        if (explodedPath.length >= 1) {
-            context.put(NPM_PACKAGE, explodedPath[0]);
-        }
-
-        if (explodedPath.length >= 2) {
-            context.put(NPM_VERSION, explodedPath[1]);
-        }
-    }
-
-
     public void processStoreRequest(@Nonnull DefaultStorageFileItem hiddenItem, @Nonnull NpmHostedRepository repository) throws LocalStorageException, UnsupportedStorageOperationException,
             IllegalOperationException, AccessDeniedException, ItemNotFoundException {
         String path = hiddenItem.getPath();

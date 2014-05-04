@@ -2,11 +2,14 @@ package com.bolyuba.nexus.plugin.npm.hosted;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.content.NpmJsonReader;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.hosted.content.NpmJsonContentLocator;
 import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.google.gson.Gson;
+import com.google.gson.stream.JsonToken;
+import org.apache.commons.codec.binary.Base64InputStream;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
@@ -22,6 +25,7 @@ import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
+import org.sonatype.nexus.proxy.item.PreparedContentLocator;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
@@ -35,6 +39,7 @@ import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -125,38 +130,47 @@ public class DefaultNpmHostedRepository
                 //store item in cache for parsing
                 final ResourceStoreRequest publishCacheRequest = getPublishCacheRequest(request);
                 super.storeItem(publishCacheRequest, is, userAttributes);
+
                 try {
                     final AbstractStorageItem abstractStorageItem = this.doRetrieveLocalItem(publishCacheRequest);
-
                     if (!StorageFileItem.class.isInstance(abstractStorageItem)) {
                         throw new LocalStorageException("Publish request was not stored as a file");
                     }
                     StorageFileItem publishRequest = (StorageFileItem) abstractStorageItem;
 
+                    // got publish request on disk, slice it and dice it as we see fit!
                     try {
                         Gson gson = new Gson();
                         try {
-                            try(final InputStream inputStream = publishRequest.getInputStream()) {
+                            try (InputStream inputStream = publishRequest.getInputStream()) {
                                 PublishVersionObject pvo = gson.fromJson(new InputStreamReader(inputStream), PublishVersionObject.class);
                                 final String versionKey = getVersionKey(pvo.versions);
                                 validateVersion(packageRequest, pvo.versions, versionKey);
                                 this.storeItem(false, getStorageItemForVersion(packageRequest, versionKey, gson.toJson(pvo.versions.get(versionKey))));
+                            }
+
+                            try (InputStream in = publishRequest.getInputStream()) {
+                                NpmJsonReader attachmentsReader = getAttachments(in);
+                                if (attachmentsReader != null) {
+                                    final String attachmentName = attachmentsReader.nextName();
+                                    InputStream attachmentStream = getAttachmentStream(attachmentsReader, attachmentName);
+                                    this.storeItem(false, getStorageItemForAttachment(packageRequest, attachmentName, attachmentStream));
+                                }
                             }
                         } catch (IOException e) {
                             throw new LocalStorageException("Error reading publish request form the file", e);
                         }
                     } finally {
                         // regardless of passing results try to clean publish request
-                        //noinspection TryWithIdenticalCatches
                         try {
                             // we exclusively lock uploaded publish request
                             this.getLocalStorage().deleteItem(this, publishCacheRequest);
                         } catch (UnsupportedStorageOperationException | ItemNotFoundException | StorageException ignore) {
-                            // we gave it a best shot, not going to clean my room, sorry mom
+                            // we gave it best shot! not going to clean my room (sorry mom)
                         }
                     }
                 } catch (ItemNotFoundException e) {
-                    throw new LocalStorageException("Cannot find item we just stored", e);
+                    throw new LocalStorageException("Cannot find publish request we just stored!", e);
                 }
             } finally {
                 publisherLock.unlock();
@@ -168,11 +182,6 @@ public class DefaultNpmHostedRepository
         }
     }
 
-    @SuppressWarnings("deprecation")
-    @Override
-    public StorageItem retrieveItem(ResourceStoreRequest request) throws IllegalOperationException, ItemNotFoundException, StorageException, AccessDeniedException {
-        return super.retrieveItem(request);
-    }
 
     ResourceStoreRequest getPublishCacheRequest(ResourceStoreRequest originalRequest) {
         return new ResourceStoreRequest(PUBLISH_CACHE_PREFIX + originalRequest.getRequestPath());
@@ -232,6 +241,18 @@ public class DefaultNpmHostedRepository
                 new NpmJsonContentLocator(json));
     }
 
+    StorageItem getStorageItemForAttachment(@Nonnull PackageRequest packageRequest, @Nonnull String attachmentName, @Nonnull InputStream inputStream) {
+        final String requestContentCachePath = packageRequest.getPath() + RepositoryItemUid.PATH_SEPARATOR + NPM_REGISTRY_SPECIAL +
+                RepositoryItemUid.PATH_SEPARATOR + attachmentName;
+        ResourceStoreRequest resourceStoreRequest = new ResourceStoreRequest(requestContentCachePath);
+
+        return new DefaultStorageFileItem(this,
+                resourceStoreRequest,
+                true,
+                true,
+                new PreparedContentLocator(inputStream, this.TARBALL_MIME_TYPE, 0));
+    }
+
     String getRequestContentCachePath(@Nonnull String path) {
         if (!path.endsWith(RepositoryItemUid.PATH_SEPARATOR)) {
             path = path + RepositoryItemUid.PATH_SEPARATOR;
@@ -239,4 +260,39 @@ public class DefaultNpmHostedRepository
         return path + JSON_CONTENT_FILE_NAME;
     }
 
+    NpmJsonReader getAttachments(InputStream in) {
+        NpmJsonReader jsonReader = new NpmJsonReader(in);
+        try {
+            if (!jsonReader.skipToName("_attachments")) {
+                jsonReader.close();
+                return null;
+            } else {
+                JsonToken peek = jsonReader.peek();
+                if (peek != JsonToken.BEGIN_OBJECT) {
+                    jsonReader.close();
+                    return null;
+                }
+                jsonReader.beginObject();
+
+                // check if there is a name and not obj end, etc
+                peek = jsonReader.peek();
+                if (peek == JsonToken.NAME) {
+                    return jsonReader;
+                } else {
+                    jsonReader.close();
+                    return null;
+                }
+            }
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    InputStream getAttachmentStream(NpmJsonReader jsonReader, String attachmentName) throws IOException {
+        if (!jsonReader.skipToName("data")) {
+            return null;
+        }
+        Base64InputStream result = new Base64InputStream(new ByteArrayInputStream(jsonReader.nextString().getBytes()));
+        return result;
+    }
 }
