@@ -59,22 +59,23 @@ class PackageCoordinates {
 
     public static PackageCoordinates coordinatesFromUrl(@Nonnull String requestPath) throws InvalidPackageRequestException {
         PackageCoordinates coordinates = new PackageCoordinates();
-        coordinates.path = requestPath;
+        final String normalizedPath = requestPath.toLowerCase();
+        coordinates.path = normalizedPath;
 
-        if (RepositoryItemUid.PATH_SEPARATOR.equals(requestPath)) {
+        if (RepositoryItemUid.PATH_SEPARATOR.equals(normalizedPath)) {
             coordinates.type = Type.REGISTRY_ROOT;
             return coordinates;
         }
 
-        if (requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR + NPM_REGISTRY_SPECIAL + RepositoryItemUid.PATH_SEPARATOR)) {
+        if (normalizedPath.startsWith(RepositoryItemUid.PATH_SEPARATOR + NPM_REGISTRY_SPECIAL + RepositoryItemUid.PATH_SEPARATOR)) {
             coordinates.type = Type.REGISTRY_SPECIAL;
             return coordinates;
         }
 
         String correctedPath =
-                requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR) ?
-                        requestPath.substring(1, requestPath.length()) :
-                        requestPath;
+                normalizedPath.startsWith(RepositoryItemUid.PATH_SEPARATOR) ?
+                        normalizedPath.substring(1, normalizedPath.length()) :
+                        normalizedPath;
         String[] explodedPath = correctedPath.split(RepositoryItemUid.PATH_SEPARATOR);
 
         if (explodedPath.length == 2) {

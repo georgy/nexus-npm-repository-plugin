@@ -25,11 +25,7 @@ public class MappingFilter {
     }
 
     public String aName(String name) {
-        if (key.equals(name)) {
-            valueIdExpected = true;
-        } else {
-            valueIdExpected = false;
-        }
+        valueIdExpected = key.equals(name);
         return "\"" + name + "\":";
     }
 
@@ -84,9 +80,19 @@ class Mapping {
 
     private URL to;
 
-    Mapping(@Nonnull String from, @Nonnull String to) {
+    Mapping(@Nonnull String from) {
         try {
             this.from = new URL(from);
+        } catch (MalformedURLException e) {
+            // this should never happen, all strings are well formed URLs
+            throw new RuntimeException(e);
+        }
+    }
+
+    Mapping(@Nonnull String from, @Nonnull String to) {
+        this(from);
+
+        try {
             this.to = new URL(to);
         } catch (MalformedURLException e) {
             // this should never happen, all strings are well formed URLs
@@ -100,7 +106,11 @@ class Mapping {
             if (!from.getHost().equals(url.getHost())) {
                 return s;
             }
-            return new URL(to.getProtocol(), to.getHost(), to.getPort(), to.getFile() + url.getFile()).toString();
+            if (to == null) {
+                return url.getFile();
+            } else {
+                return new URL(to.getProtocol(), to.getHost(), to.getPort(), to.getFile() + url.getFile()).toString();
+            }
         } catch (MalformedURLException e) {
             return s;
         }
