@@ -1,7 +1,7 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
-import com.bolyuba.nexus.plugin.npm.proxy.content.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
 import com.google.inject.Provider;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;

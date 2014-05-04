@@ -5,7 +5,7 @@ import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
-import com.bolyuba.nexus.plugin.npm.proxy.content.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
 import com.google.inject.Provider;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
