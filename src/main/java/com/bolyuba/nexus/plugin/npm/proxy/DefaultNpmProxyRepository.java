@@ -7,28 +7,22 @@ import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmMimeRulesSource;
-import com.bolyuba.nexus.plugin.npm.storage.NpmLocalStorageWrapper;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
 import org.sonatype.nexus.mime.MimeRulesSource;
-import org.sonatype.nexus.proxy.AccessDeniedException;
-import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
-import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
-import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractProxyRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
-import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -95,20 +89,28 @@ public class DefaultNpmProxyRepository
     }
 
     @Override
-    public void setLocalStorage(LocalRepositoryStorage localStorage) {
-        LocalRepositoryStorage wrapper = new NpmLocalStorageWrapper(localStorage, utility);
-        super.setLocalStorage(wrapper);
-    }
-
-    @Override
     public MimeRulesSource getMimeRulesSource() {
         return mimeRulesSource;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    public StorageItem retrieveItem(ResourceStoreRequest storeRequest) throws IllegalOperationException, ItemNotFoundException, StorageException, AccessDeniedException {
-        return super.retrieveItem(storeRequest);
+    protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest) throws ItemNotFoundException, LocalStorageException {
+        // only care about request if it is coming from npm client
+        if (utility.isNmpRequest(storeRequest)) {
+            try {
+                PackageRequest packageRequest = new PackageRequest(storeRequest);
+                if (packageRequest.isPackage()) {
+                    return delegateDoRetrieveLocalItem(replaceRequest(storeRequest));
+                } else {
+                    // huh?
+                    return delegateDoRetrieveLocalItem(storeRequest);
+                }
+            } catch (InvalidPackageRequestException ignore) {
+                return delegateDoRetrieveLocalItem(storeRequest);
+            }
+        } else {
+            return delegateDoRetrieveLocalItem(storeRequest);
+        }
     }
 
     @Override
@@ -121,18 +123,13 @@ public class DefaultNpmProxyRepository
                 DefaultStorageFileItem wrappedItem = wrapItem((DefaultStorageFileItem) item);
                 return delegateDoCacheItem(wrappedItem);
             } else {
+                // co cache 4 u
                 return item;
             }
         } catch (InvalidPackageRequestException ignore) {
-            // not something we are interested in
+            // do it old style
+            return delegateDoCacheItem(item);
         }
-
-        return delegateDoCacheItem(item);
-    }
-
-    // let test mock this method
-    AbstractStorageItem delegateDoCacheItem(AbstractStorageItem item) throws LocalStorageException {
-        return super.doCacheItem(item);
     }
 
     DefaultStorageFileItem wrapItem(DefaultStorageFileItem item) {
@@ -141,22 +138,45 @@ public class DefaultNpmProxyRepository
         NpmFilteringContentLocator decoratedContentLocator =
                 new NpmFilteringContentLocator(item.getContentLocator(), request, this.getRemoteUrl());
 
-        String path = request.getRequestPath();
-        if (!path.endsWith(RepositoryItemUid.PATH_SEPARATOR)) {
-            path = path + RepositoryItemUid.PATH_SEPARATOR;
-        }
-        request.setRequestPath(path + JSON_CONTENT_FILE_NAME);
+        wrapRequest(request);
 
         return getWrappedStorageFileItem(item, decoratedContentLocator, request);
     }
 
-    // let test mock this method
+    ResourceStoreRequest wrapRequest(ResourceStoreRequest request) {
+        String path = getCorrectedRequestPath(request);
+        request.setRequestPath(path);
+        return request;
+    }
+
+    ResourceStoreRequest replaceRequest(ResourceStoreRequest request) {
+        String path = getCorrectedRequestPath(request);
+        return new ResourceStoreRequest(path);
+    }
+
+    String getCorrectedRequestPath(ResourceStoreRequest request) {
+        String path = request.getRequestPath();
+        if (!path.endsWith(RepositoryItemUid.PATH_SEPARATOR)) {
+            path = path + RepositoryItemUid.PATH_SEPARATOR;
+        }
+        return path + JSON_CONTENT_FILE_NAME;
+    }
+
+    // tests to mock these methods
     DefaultStorageFileItem getWrappedStorageFileItem(DefaultStorageFileItem item, NpmFilteringContentLocator decoratedContentLocator, ResourceStoreRequest decoratedRequest) {
         return new DefaultStorageFileItem(
                 this,
-                    decoratedRequest,
-                    item.isReadable(),
-                    item.isWritable(),
-                    decoratedContentLocator);
+                decoratedRequest,
+                item.isReadable(),
+                item.isWritable(),
+                decoratedContentLocator);
+    }
+
+    AbstractStorageItem delegateDoCacheItem(AbstractStorageItem item) throws LocalStorageException {
+        return super.doCacheItem(item);
+    }
+
+    AbstractStorageItem delegateDoRetrieveLocalItem(ResourceStoreRequest storeRequest) throws LocalStorageException, ItemNotFoundException {
+        return super.doRetrieveLocalItem(storeRequest);
     }
 }

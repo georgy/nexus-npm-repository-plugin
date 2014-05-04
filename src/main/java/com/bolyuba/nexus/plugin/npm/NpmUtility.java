@@ -2,7 +2,6 @@ package com.bolyuba.nexus.plugin.npm;
 
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.content.NpmJsonContentLocator;
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -40,7 +39,7 @@ import java.util.Map;
 @Singleton
 public class NpmUtility {
 
-    static final String JSON_CONTENT_FILE_NAME = "content.json";
+    static final String JSON_CONTENT_FILE_NAME = "-content.json";
 
     static final String JSON_MIME_TYPE = "application/json";
 
@@ -254,7 +253,6 @@ public class NpmUtility {
         } while (true);
     }
 
-
     private void processVersion(String packageRoot, String version, String json, NpmHostedRepository repository) throws UnsupportedStorageOperationException, LocalStorageException {
         LocalRepositoryStorage localStorage = repository.getLocalStorage();
 
@@ -268,24 +266,6 @@ public class NpmUtility {
                 new NpmJsonContentLocator(json));
 
         localStorage.storeItem(repository, item);
-    }
-
-    /**
-     * For given package request's content get real storage request. We are mapping json REST-like API onto
-     * filesystem.
-     *
-     * @param packageRequest request in question
-     * @return storage request for content of package request
-     */
-    public ResourceStoreRequest getContentStorageRequest(@Nonnull PackageRequest packageRequest) {
-        ResourceStoreRequest storeRequest = packageRequest.getStoreRequest();
-
-        String path = storeRequest.getRequestPath();
-        if (!path.endsWith(RepositoryItemUid.PATH_SEPARATOR)) {
-            path = path + RepositoryItemUid.PATH_SEPARATOR;
-        }
-
-        return new ResourceStoreRequest(path + JSON_CONTENT_FILE_NAME);
     }
 }
 

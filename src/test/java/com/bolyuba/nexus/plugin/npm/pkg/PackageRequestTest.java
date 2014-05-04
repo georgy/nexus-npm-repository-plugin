@@ -1,5 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.pkg;
 
+import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -11,6 +12,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
@@ -83,5 +85,23 @@ public class PackageRequestTest {
         assertFalse(packageRequest.isPackageRoot());
         assertFalse(packageRequest.isPackageVersion());
         assertTrue(packageRequest.isRegistrySpecial());
+    }
+
+
+    // Check that content cache escapes registry namespace
+    @Test(expectedExceptions = InvalidPackageRequestException.class,
+            expectedExceptionsMessageRegExp = "Invalid package version: -content.json")
+    public void packageRootContentCache_InvalidPackageRequest() throws InvalidPackageRequestException {
+        Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem/" + NpmRepository.JSON_CONTENT_FILE_NAME);
+        new PackageRequest(mockRequest);
+        fail("Expected InvalidPackageRequestException");
+    }
+
+    @Test(expectedExceptions = InvalidPackageRequestException.class,
+            expectedExceptionsMessageRegExp = "Path /golem/1.42.0/-content.json cannot be turned into PackageCoordinates")
+    public void packageVersionContentCache_InvalidPackageRequest() throws InvalidPackageRequestException {
+        Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem/1.42.0/" + NpmRepository.JSON_CONTENT_FILE_NAME);
+        new PackageRequest(mockRequest);
+        fail("Expected InvalidPackageRequestException");
     }
 }

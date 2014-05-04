@@ -9,6 +9,11 @@ import org.sonatype.nexus.plugins.RepositoryType;
 @RepositoryType(pathPrefix = "npm")
 public interface NpmRepository {
 
-    String JSON_CONTENT_FILE_NAME = "content.json";
+    /**
+     * The name of the file starts with - to avoid collisions with commonjs package
+     * names and version. For better or worse, "content.json" is a valid version in
+     * common.js. Go figure!
+     */
+    String JSON_CONTENT_FILE_NAME = "-content.json";
 
 }

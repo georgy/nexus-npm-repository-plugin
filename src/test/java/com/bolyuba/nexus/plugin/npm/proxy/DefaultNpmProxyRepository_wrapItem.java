@@ -78,7 +78,7 @@ public class DefaultNpmProxyRepository_wrapItem {
         AbstractStorageItem abstractStorageItem = sut.wrapItem(mockStorageFileItem);
 
         assertNotSame(abstractStorageItem, mockStorageFileItem);
-        verify(mockStoreRequest, times(1)).setRequestPath("/gonogo/1.42.0/content.json");
+        verify(mockStoreRequest, times(1)).setRequestPath("/gonogo/1.42.0/-content.json");
     }
 
     @Test
@@ -103,7 +103,7 @@ public class DefaultNpmProxyRepository_wrapItem {
         AbstractStorageItem abstractStorageItem = sut.wrapItem(mockStorageFileItem);
 
         assertNotSame(abstractStorageItem, mockStorageFileItem);
-        verify(mockStoreRequest, times(1)).setRequestPath("/gonogo/content.json");
+        verify(mockStoreRequest, times(1)).setRequestPath("/gonogo/-content.json");
     }
 
     private void mockOutCreationOfWrappedItem() {

@@ -89,7 +89,7 @@ class PackageCoordinates {
             return coordinates;
         }
 
-        throw new InvalidPackageRequestException("Path " + correctedPath + " cannot be turned into PackageCoordinates");
+        throw new InvalidPackageRequestException("Path " + requestPath + " cannot be turned into PackageCoordinates");
     }
 
     /**
