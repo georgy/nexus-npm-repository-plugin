@@ -2,11 +2,11 @@ package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.NpmUtility;
+import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
-import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
-import com.google.inject.Provider;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
@@ -18,16 +18,13 @@ import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
-import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractProxyRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 
-import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.servlet.http.HttpServletRequest;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -50,14 +47,14 @@ public class DefaultNpmProxyRepository
 
     private final NpmMimeRulesSource mimeRulesSource;
 
-    private final Provider<HttpServletRequest> httpServletRequestProvider;
+    private final NpmUtility utility;
 
     @Inject
     public DefaultNpmProxyRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
                                      final NpmProxyRepositoryConfigurator configurator,
-                                     @SuppressWarnings("CdiInjectionPointsInspection") final Provider<HttpServletRequest> httpServletRequestProvider) {
+                                     final NpmUtility npmUtility) {
 
-        this.httpServletRequestProvider = checkNotNull(httpServletRequestProvider);
+        this.utility = checkNotNull(npmUtility);
         this.contentClass = checkNotNull(contentClass);
         this.configurator = checkNotNull(configurator);
 
@@ -98,11 +95,11 @@ public class DefaultNpmProxyRepository
     @Override
     protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest) throws ItemNotFoundException, LocalStorageException {
         // only care about request if it is coming from npm client
-        if (isNmpRequest(storeRequest)) {
+        if (utility.isNmpRequest(storeRequest)) {
             try {
                 PackageRequest packageRequest = new PackageRequest(storeRequest);
                 if (packageRequest.isPackage()) {
-                    return delegateDoRetrieveLocalItem(replaceRequest(storeRequest));
+                    return delegateDoRetrieveLocalItem(utility.replaceRequest(storeRequest));
                 } else {
                     // huh?
                     return delegateDoRetrieveLocalItem(storeRequest);
@@ -134,58 +131,15 @@ public class DefaultNpmProxyRepository
         }
     }
 
-    /**
-     * Trying to decide if request is coming form npm utility.
-     * <p/>
-     * Following http://wiki.commonjs.org/wiki/Packages/Registry#HTTP_Request_Method_and_Headers
-     * checking Accept for "application/json" would be a good idea. Right now it is not possible as
-     * {@link org.sonatype.nexus.web.content.NexusContentServlet#getResourceStoreRequest(javax.servlet.http.HttpServletRequest)}
-     * does not map Accept header into anything.
-     *
-     * @param request request we are about to process
-     * @return {@code true} if we think request is coming form npm utility, {@code false} otherwise (for example,
-     * if someone is browsing content of the repo in Nexus UI).
-     */
-    boolean isNmpRequest(@SuppressWarnings("UnusedParameters") ResourceStoreRequest request) {
-
-        HttpServletRequest httpServletRequest = httpServletRequestProvider.get();
-        if (httpServletRequest == null) {
-            return false;
-        }
-
-        String accept = httpServletRequest.getHeader("accept");
-
-        return accept != null && accept.toLowerCase().equals(JSON_MIME_TYPE);
-    }
-
-
     DefaultStorageFileItem wrapItem(DefaultStorageFileItem item) {
         ResourceStoreRequest request = item.getResourceStoreRequest();
 
         NpmFilteringContentLocator decoratedContentLocator =
                 new NpmFilteringContentLocator(item.getContentLocator(), request, this.getRemoteUrl());
 
-        wrapRequest(request);
+        utility.wrapRequest(request);
 
         return getWrappedStorageFileItem(item, decoratedContentLocator, request);
-    }
-
-    ResourceStoreRequest wrapRequest(ResourceStoreRequest request) {
-        String path = getRequestContentCachePath(request.getRequestPath());
-        request.setRequestPath(path);
-        return request;
-    }
-
-    ResourceStoreRequest replaceRequest(ResourceStoreRequest request) {
-        String path = getRequestContentCachePath(request.getRequestPath());
-        return new ResourceStoreRequest(path);
-    }
-
-    String getRequestContentCachePath(@Nonnull String path) {
-        if (!path.endsWith(RepositoryItemUid.PATH_SEPARATOR)) {
-            path = path + RepositoryItemUid.PATH_SEPARATOR;
-        }
-        return path + JSON_CONTENT_FILE_NAME;
     }
 
     // tests to mock these methods

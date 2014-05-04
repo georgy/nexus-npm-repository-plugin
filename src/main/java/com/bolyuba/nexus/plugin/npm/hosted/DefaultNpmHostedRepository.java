@@ -2,6 +2,7 @@ package com.bolyuba.nexus.plugin.npm.hosted;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import com.bolyuba.nexus.plugin.npm.content.NpmJsonReader;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.hosted.content.NpmJsonContentLocator;
@@ -71,10 +72,14 @@ public class DefaultNpmHostedRepository
 
     private final NpmMimeRulesSource mimeRulesSource;
 
+    private final NpmUtility utility;
+
     @Inject
     public DefaultNpmHostedRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
-                                      final NpmHostedRepositoryConfigurator configurator) {
+                                      final NpmHostedRepositoryConfigurator configurator,
+                                      final NpmUtility utility) {
 
+        this.utility = checkNotNull(utility);
         this.mimeRulesSource = new NpmMimeRulesSource();
         this.contentClass = checkNotNull(contentClass);
         this.configurator = checkNotNull(configurator);
@@ -111,6 +116,30 @@ public class DefaultNpmHostedRepository
         };
     }
 
+    @Override
+    protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest) throws ItemNotFoundException, LocalStorageException {
+        // only care about request if it is coming from npm client
+        if (utility.isNmpRequest(storeRequest)) {
+            try {
+                PackageRequest packageRequest = new PackageRequest(storeRequest);
+                if (packageRequest.isPackage()) {
+                    return delegateDoRetrieveLocalItem(utility.replaceRequest(storeRequest));
+                } else {
+                    // huh?
+                    return delegateDoRetrieveLocalItem(storeRequest);
+                }
+            } catch (InvalidPackageRequestException ignore) {
+                return delegateDoRetrieveLocalItem(storeRequest);
+            }
+        } else {
+            return delegateDoRetrieveLocalItem(storeRequest);
+        }
+    }
+
+    AbstractStorageItem delegateDoRetrieveLocalItem(ResourceStoreRequest storeRequest) throws LocalStorageException, ItemNotFoundException {
+        return super.doRetrieveLocalItem(storeRequest);
+    }
+
     @SuppressWarnings("deprecation")
     @Override
     public void storeItem(ResourceStoreRequest request, InputStream is, Map<String, String> userAttributes)
@@ -132,7 +161,7 @@ public class DefaultNpmHostedRepository
                 super.storeItem(publishCacheRequest, is, userAttributes);
 
                 try {
-                    final AbstractStorageItem abstractStorageItem = this.doRetrieveLocalItem(publishCacheRequest);
+                    final AbstractStorageItem abstractStorageItem = super.doRetrieveLocalItem(publishCacheRequest);
                     if (!StorageFileItem.class.isInstance(abstractStorageItem)) {
                         throw new LocalStorageException("Publish request was not stored as a file");
                     }
@@ -153,7 +182,7 @@ public class DefaultNpmHostedRepository
                                 NpmJsonReader attachmentsReader = getAttachments(in);
                                 if (attachmentsReader != null) {
                                     final String attachmentName = attachmentsReader.nextName();
-                                    InputStream attachmentStream = getAttachmentStream(attachmentsReader, attachmentName);
+                                    InputStream attachmentStream = getAttachmentStream(attachmentsReader);
                                     this.storeItem(false, getStorageItemForAttachment(packageRequest, attachmentName, attachmentStream));
                                 }
                             }
@@ -250,7 +279,7 @@ public class DefaultNpmHostedRepository
                 resourceStoreRequest,
                 true,
                 true,
-                new PreparedContentLocator(inputStream, this.TARBALL_MIME_TYPE, 0));
+                new PreparedContentLocator(inputStream, NpmRepository.TARBALL_MIME_TYPE, 0));
     }
 
     String getRequestContentCachePath(@Nonnull String path) {
@@ -288,11 +317,10 @@ public class DefaultNpmHostedRepository
         }
     }
 
-    InputStream getAttachmentStream(NpmJsonReader jsonReader, String attachmentName) throws IOException {
+    InputStream getAttachmentStream(NpmJsonReader jsonReader) throws IOException {
         if (!jsonReader.skipToName("data")) {
             return null;
         }
-        Base64InputStream result = new Base64InputStream(new ByteArrayInputStream(jsonReader.nextString().getBytes()));
-        return result;
+        return new Base64InputStream(new ByteArrayInputStream(jsonReader.nextString().getBytes()));
     }
 }

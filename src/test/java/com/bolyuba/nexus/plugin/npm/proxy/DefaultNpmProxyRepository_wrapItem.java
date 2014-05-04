@@ -1,9 +1,8 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
-import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
-import com.google.inject.Provider;
+import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonatype.nexus.proxy.LocalStorageException;
@@ -14,8 +13,6 @@ import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import javax.servlet.http.HttpServletRequest;
 
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Matchers.same;
@@ -31,29 +28,21 @@ import static org.testng.Assert.assertNotSame;
  */
 public class DefaultNpmProxyRepository_wrapItem {
 
-    @Mock
-    ContentClass mockContentClass;
+    @Mock ContentClass mockContentClass;
 
-    @Mock
-    NpmMimeRulesSource mockMimeRulesSource;
+    @Mock NpmMimeRulesSource mockMimeRulesSource;
 
-    @Mock
-    NpmUtility mockNpmUtility;
+    @Mock NpmUtility mockNpmUtility;
 
-    @Mock
-    DefaultStorageFileItem mockStorageFileItem;
+    @Mock DefaultStorageFileItem mockStorageFileItem;
 
-    @Mock
-    ResourceStoreRequest mockStoreRequest;
+    @Mock ResourceStoreRequest mockStoreRequest;
 
-    @Mock
-    DefaultStorageFileItem mockWrappedDefaultStorageFileItem;
+    @Mock DefaultStorageFileItem mockWrappedDefaultStorageFileItem;
 
-    @Mock
-    ContentLocator mockContentLocator;
+    @Mock ContentLocator mockContentLocator;
 
-    @Mock
-    Provider<HttpServletRequest> mockRequestProvider;
+    @Mock NpmUtility npmUtility;
 
     DefaultNpmProxyRepository sut;
 
@@ -69,7 +58,7 @@ public class DefaultNpmProxyRepository_wrapItem {
                 new DefaultNpmProxyRepository(
                         mockContentClass,
                         new NpmProxyRepositoryConfigurator(),
-                        mockRequestProvider)
+                        npmUtility)
         );
 
         prepareStorageItem();
@@ -83,7 +72,7 @@ public class DefaultNpmProxyRepository_wrapItem {
         AbstractStorageItem abstractStorageItem = sut.wrapItem(mockStorageFileItem);
 
         assertNotSame(abstractStorageItem, mockStorageFileItem);
-        verify(mockStoreRequest, times(1)).setRequestPath("/gonogo/1.42.0/-content.json");
+        verify(npmUtility, times(1)).wrapRequest(mockStoreRequest);
     }
 
     @Test
@@ -93,7 +82,7 @@ public class DefaultNpmProxyRepository_wrapItem {
                 new DefaultNpmProxyRepository(
                         mockContentClass,
                         new NpmProxyRepositoryConfigurator(),
-                        mockRequestProvider)
+                        npmUtility)
         );
 
         prepareStorageItem();
@@ -107,7 +96,7 @@ public class DefaultNpmProxyRepository_wrapItem {
         AbstractStorageItem abstractStorageItem = sut.wrapItem(mockStorageFileItem);
 
         assertNotSame(abstractStorageItem, mockStorageFileItem);
-        verify(mockStoreRequest, times(1)).setRequestPath("/gonogo/-content.json");
+        verify(npmUtility, times(1)).wrapRequest(mockStoreRequest);
     }
 
     private void mockOutCreationOfWrappedItem() {

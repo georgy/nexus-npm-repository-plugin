@@ -2,7 +2,6 @@ package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
-import com.google.inject.Provider;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonatype.nexus.proxy.LocalStorageException;
@@ -12,8 +11,6 @@ import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import javax.servlet.http.HttpServletRequest;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
@@ -30,26 +27,19 @@ import static org.testng.Assert.assertSame;
  */
 public class DefaultNpmProxyRepository_doCacheItem {
 
-    @Mock
-    ContentClass mockContentClass;
+    @Mock ContentClass mockContentClass;
 
-    @Mock
-    NpmMimeRulesSource mockMimeRulesSource;
+    @Mock NpmMimeRulesSource mockMimeRulesSource;
 
-    @Mock
-    NpmUtility mockNpmUtility;
+    @Mock NpmUtility mockNpmUtility;
 
-    @Mock
-    DefaultStorageFileItem mockStorageFileItem;
+    @Mock DefaultStorageFileItem mockStorageFileItem;
 
-    @Mock
-    ResourceStoreRequest mockStoreRequest;
+    @Mock ResourceStoreRequest mockStoreRequest;
 
-    @Mock
-    DefaultStorageFileItem mockWrappedDefaultStorageFileItem;
+    @Mock DefaultStorageFileItem mockWrappedDefaultStorageFileItem;
 
-    @Mock
-    Provider<HttpServletRequest> mockRequestProvider;
+    @Mock NpmUtility npmUtility;
 
     DefaultNpmProxyRepository sut;
 
@@ -65,7 +55,7 @@ public class DefaultNpmProxyRepository_doCacheItem {
                 new DefaultNpmProxyRepository(
                         mockContentClass,
                         new NpmProxyRepositoryConfigurator(),
-                        mockRequestProvider)
+                        npmUtility)
         );
 
         // mock real call to doCacheItem
@@ -89,7 +79,7 @@ public class DefaultNpmProxyRepository_doCacheItem {
                 new DefaultNpmProxyRepository(
                         mockContentClass,
                         new NpmProxyRepositoryConfigurator(),
-                        mockRequestProvider)
+                        npmUtility)
         );
 
         // mock real call to doCacheItem
@@ -113,7 +103,7 @@ public class DefaultNpmProxyRepository_doCacheItem {
                 new DefaultNpmProxyRepository(
                         mockContentClass,
                         new NpmProxyRepositoryConfigurator(),
-                        mockRequestProvider)
+                        npmUtility)
         );
 
         when(mockStorageFileItem.getResourceStoreRequest()).thenReturn(mockStoreRequest);
@@ -132,7 +122,7 @@ public class DefaultNpmProxyRepository_doCacheItem {
                 new DefaultNpmProxyRepository(
                         mockContentClass,
                         new NpmProxyRepositoryConfigurator(),
-                        mockRequestProvider)
+                        npmUtility)
         );
 
         // caching original item mockStorageFileItem
