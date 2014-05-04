@@ -6,6 +6,7 @@ import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import com.bolyuba.nexus.plugin.npm.content.NpmJsonContentLocator;
 import com.bolyuba.nexus.plugin.npm.content.NpmJsonReader;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.content.PackageRootContentLocator;
 import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.google.gson.Gson;
@@ -161,31 +162,19 @@ public class DefaultNpmHostedRepository
                 super.storeItem(publishCacheRequest, is, userAttributes);
 
                 try {
-                    final AbstractStorageItem abstractStorageItem = super.doRetrieveLocalItem(publishCacheRequest);
-                    if (!StorageFileItem.class.isInstance(abstractStorageItem)) {
+                    final AbstractStorageItem publishRequestItem = super.doRetrieveLocalItem(publishCacheRequest);
+                    if (!StorageFileItem.class.isInstance(publishRequestItem)) {
                         throw new LocalStorageException("Publish request was not stored as a file");
                     }
-                    StorageFileItem publishRequest = (StorageFileItem) abstractStorageItem;
+                    StorageFileItem publishRequest = (StorageFileItem) publishRequestItem;
 
                     // got publish request on disk, slice it and dice it as we see fit!
                     try {
                         Gson gson = new Gson();
                         try {
-                            try (InputStream inputStream = publishRequest.getInputStream()) {
-                                PublishVersionObject pvo = gson.fromJson(new InputStreamReader(inputStream), PublishVersionObject.class);
-                                final String versionKey = getVersionKey(pvo.versions);
-                                validateVersion(packageRequest, pvo.versions, versionKey);
-                                this.storeItem(false, getStorageItemForVersion(packageRequest, versionKey, gson.toJson(pvo.versions.get(versionKey))));
-                            }
-
-                            try (InputStream in = publishRequest.getInputStream()) {
-                                NpmJsonReader attachmentsReader = getAttachments(in);
-                                if (attachmentsReader != null) {
-                                    final String attachmentName = attachmentsReader.nextName();
-                                    InputStream attachmentStream = getAttachmentStream(attachmentsReader);
-                                    this.storeItem(false, getStorageItemForAttachment(packageRequest, attachmentName, attachmentStream));
-                                }
-                            }
+                            storeVersion(packageRequest, publishRequest, gson);
+                            storeAttachments(packageRequest, publishRequest);
+                            updatePackageContent(packageRequest, publishRequest);
                         } catch (IOException e) {
                             throw new LocalStorageException("Error reading publish request form the file", e);
                         }
@@ -211,6 +200,83 @@ public class DefaultNpmHostedRepository
         }
     }
 
+    void storeAttachments(PackageRequest packageRequest, StorageFileItem publishRequest) throws IOException, UnsupportedStorageOperationException, IllegalOperationException {
+        try (InputStream in = publishRequest.getInputStream()) {
+            NpmJsonReader attachmentsReader = getAttachments(in);
+            if (attachmentsReader != null) {
+                final String attachmentName = attachmentsReader.nextName();
+                InputStream attachmentStream = getAttachmentStream(attachmentsReader);
+                this.storeItem(false, getStorageItemForAttachment(packageRequest, attachmentName, attachmentStream));
+            }
+        }
+    }
+
+    void storeVersion(PackageRequest packageRequest, StorageFileItem publishRequest, Gson gson) throws IOException, UnsupportedStorageOperationException, IllegalOperationException {
+        try (InputStream inputStream = publishRequest.getInputStream()) {
+            PublishVersionObject pvo = gson.fromJson(new InputStreamReader(inputStream), PublishVersionObject.class);
+            final String versionKey = getVersionKey(pvo.versions);
+            validateVersion(packageRequest, pvo.versions, versionKey);
+            this.storeItem(false, getStorageItemForVersion(packageRequest, versionKey, gson.toJson(pvo.versions.get(versionKey))));
+        }
+    }
+
+    void updatePackageContent(@Nonnull PackageRequest packageRequest, @Nonnull StorageFileItem publishRequest) throws LocalStorageException {
+        final ResourceStoreRequest request = utility.createRequest(packageRequest);
+
+        // need to lock package content
+        final RepositoryItemUid packageUid = createUid(request.getRequestPath());
+        final RepositoryItemUidLock packageLock = packageUid.getLock();
+
+        // Only for read now, we do not know if it exists or not
+        packageLock.lock(Action.read);
+        try {
+            StorageFileItem packageContent = null;
+            try {
+                final AbstractStorageItem abstractStorageItem = super.doRetrieveLocalItem(request);
+                packageLock.lock(Action.update);
+
+                if (!StorageFileItem.class.isInstance(abstractStorageItem)) {
+                    throw new LocalStorageException("We expected to get StorageFileItem and did not get it");
+                }
+
+                packageContent = (StorageFileItem) abstractStorageItem;
+            } catch (ItemNotFoundException ignore) {
+                // first version of this package
+                packageLock.lock(Action.create);
+            }
+            // we have exclusive lock for package content, "we demand 1 billion dolaz for it!"
+
+            //noinspection deprecation
+            try {
+                // mix publish request into package root content
+                PackageRootContentLocator mixedContentLocator;
+
+                if (packageContent == null) {
+                    mixedContentLocator = new PackageRootContentLocator(
+                            publishRequest.getContentLocator());
+                } else {
+                    mixedContentLocator = new PackageRootContentLocator(
+                            publishRequest.getContentLocator(),
+                            packageContent.getContentLocator());
+                }
+
+                this.storeItem(false,
+                        new DefaultStorageFileItem(
+                                this,
+                                request,
+                                true,
+                                true,
+                                mixedContentLocator)
+                );
+            } catch (UnsupportedStorageOperationException | IllegalOperationException | StorageException e) {
+                throw new LocalStorageException(e);
+            } finally {
+                packageLock.unlock();
+            }
+        } finally {
+            packageLock.unlock();
+        }
+    }
 
     ResourceStoreRequest getPublishCacheRequest(ResourceStoreRequest originalRequest) {
         return new ResourceStoreRequest(PUBLISH_CACHE_PREFIX + originalRequest.getRequestPath());

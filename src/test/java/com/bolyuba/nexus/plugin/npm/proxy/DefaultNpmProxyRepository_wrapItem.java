@@ -1,8 +1,8 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
-import com.bolyuba.nexus.plugin.npm.content.NpmFilteringContentLocator;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.content.TarballUrlFilteringContentLocator;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonatype.nexus.proxy.LocalStorageException;
@@ -102,7 +102,7 @@ public class DefaultNpmProxyRepository_wrapItem {
     private void mockOutCreationOfWrappedItem() {
         doReturn(mockWrappedDefaultStorageFileItem).when(sut).getWrappedStorageFileItem(
                 same(mockStorageFileItem),
-                notNull(NpmFilteringContentLocator.class),
+                notNull(TarballUrlFilteringContentLocator.class),
                 same(mockStoreRequest));
     }
 

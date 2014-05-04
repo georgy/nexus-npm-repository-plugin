@@ -3,8 +3,8 @@ package com.bolyuba.nexus.plugin.npm.proxy;
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
-import com.bolyuba.nexus.plugin.npm.content.NpmFilteringContentLocator;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.content.TarballUrlFilteringContentLocator;
 import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -134,8 +134,8 @@ public class DefaultNpmProxyRepository
     DefaultStorageFileItem wrapItem(DefaultStorageFileItem item) {
         ResourceStoreRequest request = item.getResourceStoreRequest();
 
-        NpmFilteringContentLocator decoratedContentLocator =
-                new NpmFilteringContentLocator(item.getContentLocator(), request, this.getRemoteUrl());
+        TarballUrlFilteringContentLocator decoratedContentLocator =
+                new TarballUrlFilteringContentLocator(item.getContentLocator(), request, this.getRemoteUrl());
 
         utility.wrapRequest(request);
 
@@ -143,7 +143,7 @@ public class DefaultNpmProxyRepository
     }
 
     // tests to mock these methods
-    DefaultStorageFileItem getWrappedStorageFileItem(DefaultStorageFileItem item, NpmFilteringContentLocator decoratedContentLocator, ResourceStoreRequest decoratedRequest) {
+    DefaultStorageFileItem getWrappedStorageFileItem(DefaultStorageFileItem item, TarballUrlFilteringContentLocator decoratedContentLocator, ResourceStoreRequest decoratedRequest) {
         return new DefaultStorageFileItem(
                 this,
                 decoratedRequest,

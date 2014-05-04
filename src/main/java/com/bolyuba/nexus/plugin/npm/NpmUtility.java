@@ -1,5 +1,6 @@
 package com.bolyuba.nexus.plugin.npm;
 
+import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.google.inject.Provider;
 import org.sonatype.nexus.proxy.RequestContext;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
@@ -57,14 +58,19 @@ public class NpmUtility {
         return accept != null && accept.toLowerCase().equals(NpmRepository.JSON_MIME_TYPE);
     }
 
-    public ResourceStoreRequest wrapRequest(ResourceStoreRequest request) {
+    public ResourceStoreRequest wrapRequest(@Nonnull ResourceStoreRequest request) {
         String path = getRequestContentCachePath(request.getRequestPath());
         request.setRequestPath(path);
         return request;
     }
 
-    public ResourceStoreRequest replaceRequest(ResourceStoreRequest request) {
+    public ResourceStoreRequest replaceRequest(@Nonnull ResourceStoreRequest request) {
         String path = getRequestContentCachePath(request.getRequestPath());
+        return new ResourceStoreRequest(path);
+    }
+
+    public ResourceStoreRequest createRequest(@Nonnull PackageRequest packageRequest) {
+        String path = getRequestContentCachePath(packageRequest.getPath());
         return new ResourceStoreRequest(path);
     }
 
