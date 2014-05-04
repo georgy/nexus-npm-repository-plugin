@@ -16,4 +16,7 @@ public interface NpmRepository {
      */
     String JSON_CONTENT_FILE_NAME = "-content.json";
 
+
+    String JSON_MIME_TYPE = "application/json";
+
 }

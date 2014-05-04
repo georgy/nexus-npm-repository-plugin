@@ -2,11 +2,11 @@ package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmMimeRulesSource;
+import com.google.inject.Provider;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
@@ -26,6 +26,7 @@ import org.sonatype.nexus.proxy.repository.RepositoryKind;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.servlet.http.HttpServletRequest;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -48,19 +49,19 @@ public class DefaultNpmProxyRepository
 
     private final NpmMimeRulesSource mimeRulesSource;
 
-    private final NpmUtility utility;
+    private final Provider<HttpServletRequest> httpServletRequestProvider;
 
     @Inject
     public DefaultNpmProxyRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
                                      final NpmProxyRepositoryConfigurator configurator,
-                                     final NpmMimeRulesSource mimeRulesSource,
-                                     final NpmUtility utility) {
+                                     @SuppressWarnings("CdiInjectionPointsInspection") final Provider<HttpServletRequest> httpServletRequestProvider) {
 
+        this.httpServletRequestProvider = checkNotNull(httpServletRequestProvider);
         this.contentClass = checkNotNull(contentClass);
         this.configurator = checkNotNull(configurator);
-        this.mimeRulesSource = checkNotNull(mimeRulesSource);
-        this.utility = checkNotNull(utility);
+
         this.repositoryKind = new DefaultRepositoryKind(NpmProxyRepository.class, null);
+        this.mimeRulesSource = new NpmMimeRulesSource();
     }
 
     @Override
@@ -96,7 +97,7 @@ public class DefaultNpmProxyRepository
     @Override
     protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest) throws ItemNotFoundException, LocalStorageException {
         // only care about request if it is coming from npm client
-        if (utility.isNmpRequest(storeRequest)) {
+        if (isNmpRequest(storeRequest)) {
             try {
                 PackageRequest packageRequest = new PackageRequest(storeRequest);
                 if (packageRequest.isPackage()) {
@@ -123,7 +124,7 @@ public class DefaultNpmProxyRepository
                 DefaultStorageFileItem wrappedItem = wrapItem((DefaultStorageFileItem) item);
                 return delegateDoCacheItem(wrappedItem);
             } else {
-                // co cache 4 u
+                // no cache 4 u
                 return item;
             }
         } catch (InvalidPackageRequestException ignore) {
@@ -131,6 +132,31 @@ public class DefaultNpmProxyRepository
             return delegateDoCacheItem(item);
         }
     }
+
+    /**
+     * Trying to decide if request is coming form npm utility.
+     * <p/>
+     * Following http://wiki.commonjs.org/wiki/Packages/Registry#HTTP_Request_Method_and_Headers
+     * checking Accept for "application/json" would be a good idea. Right now it is not possible as
+     * {@link org.sonatype.nexus.web.content.NexusContentServlet#getResourceStoreRequest(javax.servlet.http.HttpServletRequest)}
+     * does not map Accept header into anything.
+     *
+     * @param request request we are about to process
+     * @return {@code true} if we think request is coming form npm utility, {@code false} otherwise (for example,
+     * if someone is browsing content of the repo in Nexus UI).
+     */
+    boolean isNmpRequest(@SuppressWarnings("UnusedParameters") ResourceStoreRequest request) {
+
+        HttpServletRequest httpServletRequest = httpServletRequestProvider.get();
+        if (httpServletRequest == null) {
+            return false;
+        }
+
+        String accept = httpServletRequest.getHeader("accept");
+
+        return accept != null && accept.toLowerCase().equals(JSON_MIME_TYPE);
+    }
+
 
     DefaultStorageFileItem wrapItem(DefaultStorageFileItem item) {
         ResourceStoreRequest request = item.getResourceStoreRequest();

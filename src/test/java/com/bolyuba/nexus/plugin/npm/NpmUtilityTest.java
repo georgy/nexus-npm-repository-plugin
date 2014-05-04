@@ -22,7 +22,6 @@ import java.io.IOException;
 
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 /**
@@ -61,20 +60,6 @@ public class NpmUtilityTest {
         when(mockRequestProvider.get()).thenReturn(mockHttpServletRequest);
         sut = new NpmUtility(mockRequestProvider);
     }
-
-    @Test
-    public void test_isNmpRequest_json() {
-        when(mockHttpServletRequest.getHeader("accept")).thenReturn("application/json");
-        assertTrue(sut.isNmpRequest(mockRequest));
-    }
-
-    @Test
-    public void test_isNmpRequest_all() {
-        when(mockHttpServletRequest.getHeader("accept")).thenReturn("*/*");
-        assertFalse(sut.isNmpRequest(mockRequest));
-    }
-
-
 
     @Test
     public void test_addNpmMeta_ROOT() {

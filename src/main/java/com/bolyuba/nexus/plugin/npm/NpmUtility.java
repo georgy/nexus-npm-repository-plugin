@@ -41,8 +41,6 @@ public class NpmUtility {
 
     static final String JSON_CONTENT_FILE_NAME = "-content.json";
 
-    static final String JSON_MIME_TYPE = "application/json";
-
     static final String HIDDEN_CACHE_PREFIX = RepositoryItemUid.PATH_SEPARATOR + ".cache";
 
     final Provider<HttpServletRequest> httpServletRequestProvider;
@@ -53,41 +51,8 @@ public class NpmUtility {
         this.httpServletRequestProvider = httpServletRequestProvider;
     }
 
-    /**
-     * Trying to decide if request is coming form npm utility.
-     * <p/>
-     * Following http://wiki.commonjs.org/wiki/Packages/Registry#HTTP_Request_Method_and_Headers
-     * checking Accept for "application/json" would be a good idea. Right now it is not possible as
-     * {@link org.sonatype.nexus.web.content.NexusContentServlet#getResourceStoreRequest(javax.servlet.http.HttpServletRequest)}
-     * does not map Accept header into anything.
-     *
-     * @param request request we are about to process
-     * @return {@code true} if we think request is coming form npm utility, {@code false} otherwise (for example,
-     * if someone is browsing content of the repo in Nexus UI).
-     */
-    public final boolean isNmpRequest(@SuppressWarnings("UnusedParameters") ResourceStoreRequest request) {
-
-        HttpServletRequest httpServletRequest = httpServletRequestProvider.get();
-        if (httpServletRequest == null) {
-            return false;
-        }
-
-        String accept = httpServletRequest.getHeader("accept");
-
-        return accept != null && accept.toLowerCase().equals(JSON_MIME_TYPE);
-    }
-
     public final boolean isTarballRequest(@SuppressWarnings("UnusedParameters") ResourceStoreRequest request) {
         return request.getRequestPath().toLowerCase().endsWith(".tgz");
-    }
-
-    public final String suggestMimeType(@Nonnull String path) {
-        // this should take into account if request in from npm or not
-        // right now we only know that content.json is json
-        if (path.toLowerCase().endsWith(JSON_CONTENT_FILE_NAME)) {
-            return JSON_MIME_TYPE;
-        }
-        return null;
     }
 
     private ResourceStoreRequest decorateRequest(ResourceStoreRequest request) {

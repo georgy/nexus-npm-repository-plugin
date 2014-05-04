@@ -3,6 +3,7 @@ package com.bolyuba.nexus.plugin.npm.proxy;
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import com.bolyuba.nexus.plugin.npm.proxy.content.NpmMimeRulesSource;
+import com.google.inject.Provider;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonatype.nexus.proxy.LocalStorageException;
@@ -13,6 +14,8 @@ import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import javax.servlet.http.HttpServletRequest;
 
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Matchers.same;
@@ -49,6 +52,9 @@ public class DefaultNpmProxyRepository_wrapItem {
     @Mock
     ContentLocator mockContentLocator;
 
+    @Mock
+    Provider<HttpServletRequest> mockRequestProvider;
+
     DefaultNpmProxyRepository sut;
 
     @BeforeMethod
@@ -63,8 +69,7 @@ public class DefaultNpmProxyRepository_wrapItem {
                 new DefaultNpmProxyRepository(
                         mockContentClass,
                         new NpmProxyRepositoryConfigurator(),
-                        mockMimeRulesSource,
-                        mockNpmUtility)
+                        mockRequestProvider)
         );
 
         prepareStorageItem();
@@ -88,8 +93,7 @@ public class DefaultNpmProxyRepository_wrapItem {
                 new DefaultNpmProxyRepository(
                         mockContentClass,
                         new NpmProxyRepositoryConfigurator(),
-                        mockMimeRulesSource,
-                        mockNpmUtility)
+                        mockRequestProvider)
         );
 
         prepareStorageItem();
