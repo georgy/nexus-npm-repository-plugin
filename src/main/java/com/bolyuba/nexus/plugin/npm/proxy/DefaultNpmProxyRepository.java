@@ -24,6 +24,7 @@ import org.sonatype.nexus.proxy.repository.AbstractProxyRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
@@ -170,18 +171,17 @@ public class DefaultNpmProxyRepository
     }
 
     ResourceStoreRequest wrapRequest(ResourceStoreRequest request) {
-        String path = getCorrectedRequestPath(request);
+        String path = getRequestContentCachePath(request.getRequestPath());
         request.setRequestPath(path);
         return request;
     }
 
     ResourceStoreRequest replaceRequest(ResourceStoreRequest request) {
-        String path = getCorrectedRequestPath(request);
+        String path = getRequestContentCachePath(request.getRequestPath());
         return new ResourceStoreRequest(path);
     }
 
-    String getCorrectedRequestPath(ResourceStoreRequest request) {
-        String path = request.getRequestPath();
+    String getRequestContentCachePath(@Nonnull String path) {
         if (!path.endsWith(RepositoryItemUid.PATH_SEPARATOR)) {
             path = path + RepositoryItemUid.PATH_SEPARATOR;
         }

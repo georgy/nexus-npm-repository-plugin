@@ -48,6 +48,14 @@ public class PackageRequest {
         return coordinates.getPath();
     }
 
+    public String getName() {
+        return coordinates.getPackageName();
+    }
+
+    public String getVersion() {
+        return coordinates.getPackageVersion();
+    }
+
     @Override
     public String toString() {
         return "PackageRequest{" +

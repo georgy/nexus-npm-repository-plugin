@@ -3,8 +3,10 @@ package com.bolyuba.nexus.plugin.npm.hosted;
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.hosted.content.NpmJsonContentLocator;
 import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
+import com.google.gson.Gson;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
@@ -14,11 +16,15 @@ import org.sonatype.nexus.mime.MimeRulesSource;
 import org.sonatype.nexus.proxy.AccessDeniedException;
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
+import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.access.Action;
+import org.sonatype.nexus.proxy.item.AbstractStorageItem;
+import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
+import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractRepository;
@@ -26,9 +32,12 @@ import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -43,6 +52,11 @@ public class DefaultNpmHostedRepository
         implements NpmHostedRepository, NpmRepository {
 
     public static final String ROLE_HINT = "npm-hosted";
+
+    /**
+     * Hidden path to store uploaded publish requests before they are processed
+     */
+    private static final String PUBLISH_CACHE_PREFIX = RepositoryItemUid.PATH_SEPARATOR + ".publish";
 
     private final ContentClass contentClass;
 
@@ -102,14 +116,48 @@ public class DefaultNpmHostedRepository
             if (!packageRequest.isPackageRoot()) {
                 throw new InvalidRegistryOperationException("Store operations are only valid for package roots");
             }
-
             // serialize all publish request for the same
             final RepositoryItemUid publisherUid = createUid(packageRequest.getPath() + ".publish()");
             RepositoryItemUidLock publisherLock = publisherUid.getLock();
-            
+
             publisherLock.lock(Action.create);
             try {
-                super.storeItem(request, is, userAttributes);
+                //store item in cache for parsing
+                final ResourceStoreRequest publishCacheRequest = getPublishCacheRequest(request);
+                super.storeItem(publishCacheRequest, is, userAttributes);
+                try {
+                    final AbstractStorageItem abstractStorageItem = this.doRetrieveLocalItem(publishCacheRequest);
+
+                    if (!StorageFileItem.class.isInstance(abstractStorageItem)) {
+                        throw new LocalStorageException("Publish request was not stored as a file");
+                    }
+                    StorageFileItem publishRequest = (StorageFileItem) abstractStorageItem;
+
+                    try {
+                        Gson gson = new Gson();
+                        try {
+                            try(final InputStream inputStream = publishRequest.getInputStream()) {
+                                PublishVersionObject pvo = gson.fromJson(new InputStreamReader(inputStream), PublishVersionObject.class);
+                                final String versionKey = getVersionKey(pvo.versions);
+                                validateVersion(packageRequest, pvo.versions, versionKey);
+                                this.storeItem(false, getStorageItemForVersion(packageRequest, versionKey, gson.toJson(pvo.versions.get(versionKey))));
+                            }
+                        } catch (IOException e) {
+                            throw new LocalStorageException("Error reading publish request form the file", e);
+                        }
+                    } finally {
+                        // regardless of passing results try to clean publish request
+                        //noinspection TryWithIdenticalCatches
+                        try {
+                            // we exclusively lock uploaded publish request
+                            this.getLocalStorage().deleteItem(this, publishCacheRequest);
+                        } catch (UnsupportedStorageOperationException | ItemNotFoundException | StorageException ignore) {
+                            // we gave it a best shot, not going to clean my room, sorry mom
+                        }
+                    }
+                } catch (ItemNotFoundException e) {
+                    throw new LocalStorageException("Cannot find item we just stored", e);
+                }
             } finally {
                 publisherLock.unlock();
             }
@@ -118,24 +166,6 @@ public class DefaultNpmHostedRepository
             // for now just store it
             super.storeItem(request, is, userAttributes);
         }
-
-//        if (utility.isTarballRequest(request)) {
-//            super.storeItem(request, is, userAttributes);
-//        } else {
-//            //json publish request
-//            utility.addNpmMeta(request);
-//            ResourceStoreRequest hiddenRequest = utility.hideInCache(request);
-//            try {
-//                // this needs to be synchronized in case someone else will try to deploy same version before
-//                // content.json is ready
-//                super.storeItem(hiddenRequest, is, userAttributes);
-//                DefaultStorageFileItem hiddenItem = (DefaultStorageFileItem) super.retrieveItem(request);
-//
-//                utility.processStoreRequest(hiddenItem, this);
-//            } catch (ItemNotFoundException e) {
-//                throw new StorageException(e);
-//            }
-//        }
     }
 
     @SuppressWarnings("deprecation")
@@ -143,4 +173,70 @@ public class DefaultNpmHostedRepository
     public StorageItem retrieveItem(ResourceStoreRequest request) throws IllegalOperationException, ItemNotFoundException, StorageException, AccessDeniedException {
         return super.retrieveItem(request);
     }
+
+    ResourceStoreRequest getPublishCacheRequest(ResourceStoreRequest originalRequest) {
+        return new ResourceStoreRequest(PUBLISH_CACHE_PREFIX + originalRequest.getRequestPath());
+    }
+
+    String getVersionKey(Map<String, Object> versions) throws LocalStorageException {
+        if (versions == null || versions.isEmpty()) {
+            throw new LocalStorageException("No versions were found in publish request");
+        }
+        if (versions.size() != 1) {
+            throw new LocalStorageException("Cannot handle publish request with multiple versions");
+        }
+        return versions.keySet().iterator().next();
+    }
+
+    void validateVersion(PackageRequest packageRequest, Map<String, Object> versions, String versionKey) throws LocalStorageException {
+
+        final Object o = versions.get(versionKey);
+
+        if (o == null || !Map.class.isInstance(o)) {
+            throw new LocalStorageException("Cannot handle publish request: version key " + versionKey + " content cannot be interpreted");
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> items = (Map) versions.get(versionKey);
+
+        final String packageName = extractStringValue(versionKey, items, "name");
+        if (!packageName.equals(packageRequest.getName())) {
+            throw new LocalStorageException("Cannot publish package (names do not match). Package [" + packageName + "], request: " + packageRequest);
+        }
+        final String packageVersion = extractStringValue(versionKey, items, "version");
+        if (!versionKey.equals(packageVersion)) {
+            throw new LocalStorageException("Cannot publish package (version does not match version key). Version key [" + versionKey + "], request: " + packageRequest);
+        }
+    }
+
+    String extractStringValue(String versionKey, Map<String, Object> items, String valueName) throws LocalStorageException {
+        if (!items.containsKey(valueName)) {
+            throw new LocalStorageException("Cannot handle publish request: version key " + versionKey + " does not have value [" + valueName + "]");
+        }
+        final Object obj = items.get(valueName);
+
+        if (obj == null || !String.class.isInstance(obj)) {
+            throw new LocalStorageException("Cannot handle publish request: version key " + versionKey + " value of [" + valueName + "] cannot be interpreted");
+        }
+        return (String) obj;
+    }
+
+    StorageItem getStorageItemForVersion(@Nonnull PackageRequest packageRequest, @Nonnull String version, @Nonnull String json) {
+        final String requestContentCachePath = getRequestContentCachePath(packageRequest.getPath() + RepositoryItemUid.PATH_SEPARATOR + version);
+        ResourceStoreRequest resourceStoreRequest = new ResourceStoreRequest(requestContentCachePath);
+
+        return new DefaultStorageFileItem(this,
+                resourceStoreRequest,
+                true,
+                true,
+                new NpmJsonContentLocator(json));
+    }
+
+    String getRequestContentCachePath(@Nonnull String path) {
+        if (!path.endsWith(RepositoryItemUid.PATH_SEPARATOR)) {
+            path = path + RepositoryItemUid.PATH_SEPARATOR;
+        }
+        return path + JSON_CONTENT_FILE_NAME;
+    }
+
 }

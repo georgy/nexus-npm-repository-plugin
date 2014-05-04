@@ -51,10 +51,6 @@ public class NpmUtility {
         this.httpServletRequestProvider = httpServletRequestProvider;
     }
 
-    public final boolean isTarballRequest(@SuppressWarnings("UnusedParameters") ResourceStoreRequest request) {
-        return request.getRequestPath().toLowerCase().endsWith(".tgz");
-    }
-
     private ResourceStoreRequest decorateRequest(ResourceStoreRequest request) {
         String path = request.getRequestPath();
         if (!path.endsWith(RepositoryItemUid.PATH_SEPARATOR)) {
@@ -102,12 +98,6 @@ public class NpmUtility {
         }
     }
 
-
-
-    public ResourceStoreRequest hideInCache(ResourceStoreRequest request) {
-        request.setRequestPath(HIDDEN_CACHE_PREFIX + request.getRequestPath());
-        return request;
-    }
 
     public void processStoreRequest(@Nonnull DefaultStorageFileItem hiddenItem, @Nonnull NpmHostedRepository repository) throws LocalStorageException, UnsupportedStorageOperationException,
             IllegalOperationException, AccessDeniedException, ItemNotFoundException {
