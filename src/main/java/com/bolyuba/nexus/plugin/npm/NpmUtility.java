@@ -49,7 +49,7 @@ public class NpmUtility {
 
         HttpServletRequest httpServletRequest = httpServletRequestProvider.get();
         if (httpServletRequest == null) {
-            return false;
+            throw new IllegalStateException("Container did not provide an instance of HttpServletRequest");
         }
 
         String accept = httpServletRequest.getHeader("accept");

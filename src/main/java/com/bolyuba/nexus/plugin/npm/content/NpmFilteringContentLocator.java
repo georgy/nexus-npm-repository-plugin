@@ -1,4 +1,4 @@
-package com.bolyuba.nexus.plugin.npm.proxy.content;
+package com.bolyuba.nexus.plugin.npm.content;
 
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.AbstractWrappingContentLocator;

@@ -1,4 +1,4 @@
-package com.bolyuba.nexus.plugin.npm.proxy.content;
+package com.bolyuba.nexus.plugin.npm.content;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -9,7 +9,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 
-import static com.google.gson.stream.JsonToken.*;
+import static com.google.gson.stream.JsonToken.END_ARRAY;
+import static com.google.gson.stream.JsonToken.END_DOCUMENT;
+import static com.google.gson.stream.JsonToken.END_OBJECT;
+import static com.google.gson.stream.JsonToken.NULL;
 
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
@@ -46,11 +49,13 @@ public class NpmFilterInputStream extends FilterInputStream {
         return buffer.get();
     }
 
+    @SuppressWarnings("NullableProblems")
     @Override
     public int read(byte[] b) throws IOException {
         return read(b, 0, b.length);
     }
 
+    @SuppressWarnings({"NullableProblems", "EmptyCatchBlock"})
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         if (b == null) {
@@ -65,18 +70,18 @@ public class NpmFilterInputStream extends FilterInputStream {
         if (c == -1) {
             return -1;
         }
-        b[off] = (byte)c;
+        b[off] = (byte) c;
 
         int i = 1;
         try {
-            for (; i < len ; i++) {
+            for (; i < len; i++) {
                 c = read();
                 if (c == -1) {
                     break;
                 }
-                b[off + i] = (byte)c;
+                b[off + i] = (byte) c;
             }
-        } catch (IOException ee) {
+        } catch (IOException e) {
         }
         return i;
     }
@@ -173,8 +178,7 @@ public class NpmFilterInputStream extends FilterInputStream {
     }
 
     private void fillBuffer(String value) throws IOException {
-        ByteBuffer newBuffer = ByteBuffer.wrap(value.getBytes(CHARSET_NAME));
-        this.buffer = newBuffer;
+        this.buffer = ByteBuffer.wrap(value.getBytes(CHARSET_NAME));
     }
 
     // mark/reset - do nothing

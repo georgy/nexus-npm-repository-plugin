@@ -1,8 +1,8 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
+import com.bolyuba.nexus.plugin.npm.content.NpmFilteringContentLocator;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
-import com.bolyuba.nexus.plugin.npm.proxy.content.NpmFilteringContentLocator;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonatype.nexus.proxy.LocalStorageException;

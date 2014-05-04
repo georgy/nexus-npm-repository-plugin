@@ -21,8 +21,8 @@ public class NpmJsonReader extends JsonReader {
      * Skips everything on the same level until finds name. If name is found reader is ready to read
      * next value (might be object, array, number, etc. but not name)
      *
-     * @param targetName
-     * @return
+     * @param targetName name we are looking for
+     * @return {@code true} if name is found, {@code false} otherwise
      * @throws IOException
      */
     public boolean skipToName(@Nonnull String targetName) throws IOException {
@@ -52,26 +52,5 @@ public class NpmJsonReader extends JsonReader {
                 skipValue();
             }
         } while (true);
-    }
-
-    /**
-     * Utility method to look inside nested objects. Skips to the name one by one. If name is found steps
-     * into the value (value must be an object) and repeats same steps for the next name.
-     *
-     * @param names
-     * @return
-     * @throws IOException
-     */
-    public boolean fastForwardNames(@Nonnull String... names) throws IOException {
-        if (names.length == 0) {
-            return false;
-        }
-
-        for (String name: names) {
-            if (!skipToName(name)) {
-                return false;
-            }
-        }
-        return true;
     }
 }
