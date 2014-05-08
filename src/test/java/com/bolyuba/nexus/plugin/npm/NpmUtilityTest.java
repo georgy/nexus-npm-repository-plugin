@@ -95,7 +95,7 @@ public class NpmUtilityTest {
 
         final ResourceStoreRequest request = sut.wrapRequest(mockRequest);
 
-        assertSame(request, mockRequest, "wrapRequest method must return same request object");
+        assertSame(request, mockRequest, "wrapRequest method must return same request beginObj");
     }
 
     @Test
@@ -122,7 +122,7 @@ public class NpmUtilityTest {
 
         final ResourceStoreRequest request = sut.replaceRequest(mockRequest);
 
-        assertNotSame(request, mockRequest, "wrapRequest method must return same request object");
+        assertNotSame(request, mockRequest, "wrapRequest method must return same request beginObj");
     }
 
     @Test

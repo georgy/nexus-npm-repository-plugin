@@ -32,7 +32,7 @@ public class PackageRequestTest {
         Mockito.when(mockRequest.getRequestPath()).thenReturn("/");
         PackageRequest packageRequest = new PackageRequest(mockRequest);
 
-        assertSame(packageRequest.getStoreRequest(), mockRequest, "Expected to get same store request object back");
+        assertSame(packageRequest.getStoreRequest(), mockRequest, "Expected to get same store request beginObj back");
     }
 
     @Test
