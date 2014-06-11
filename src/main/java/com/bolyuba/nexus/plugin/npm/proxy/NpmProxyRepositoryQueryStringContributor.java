@@ -13,6 +13,7 @@ import org.sonatype.sisu.goodies.common.ComponentSupport;
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import com.google.inject.Provider;
+import com.google.inject.ProvisionException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -44,9 +45,13 @@ public class NpmProxyRepositoryQueryStringContributor
   @Override
   public String getQueryString(final RemoteStorageContext ctx, final ProxyRepository repository) {
     if (NpmContentClass.ID.equals(repository.getRepositoryContentClass().getId())) {
-      final HttpServletRequest httpServletRequest = httpServletRequestProvider.get();
-      if (httpServletRequest != null && npmUtility.isNmpRequest(httpServletRequest)) {
-        return httpServletRequest.getQueryString();
+      try {
+        final HttpServletRequest httpServletRequest = httpServletRequestProvider.get();
+        if (httpServletRequest != null && npmUtility.isNmpRequest(httpServletRequest)) {
+          return httpServletRequest.getQueryString();
+        }
+      } catch (ProvisionException e) {
+        // no query to check for as the call happened outside of a HTTP request
       }
     }
     return null;

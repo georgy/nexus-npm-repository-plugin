@@ -2,6 +2,8 @@ package com.bolyuba.nexus.plugin.npm;
 
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.google.inject.Provider;
+import com.google.inject.ProvisionException;
+
 import org.sonatype.nexus.proxy.RequestContext;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
@@ -48,7 +50,13 @@ public class NpmUtility {
         return false;
       }
 
-      return isNmpRequest(httpServletRequestProvider.get());
+      try {
+        return isNmpRequest(httpServletRequestProvider.get());
+      }
+      catch (ProvisionException e) {
+        // this measn the call happened outside of a scope of HTTP request
+        return false;
+      }
     }
 
     /**
