@@ -1,10 +1,10 @@
 package com.bolyuba.nexus.plugin.npm.content;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import org.sonatype.nexus.proxy.item.PreparedContentLocator;
+import com.google.common.base.Charsets;
+import org.sonatype.nexus.proxy.item.ByteArrayContentLocator;
 
 import javax.annotation.Nonnull;
-import java.io.ByteArrayInputStream;
 
 /**
  * Content locator for in-memory json. Think before you use it
@@ -12,9 +12,10 @@ import java.io.ByteArrayInputStream;
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
 public class NpmJsonContentLocator
-        extends PreparedContentLocator {
+        extends ByteArrayContentLocator
+{
 
     public NpmJsonContentLocator(@Nonnull String json) {
-        super(new ByteArrayInputStream(json.getBytes()), NpmRepository.JSON_MIME_TYPE, json.getBytes().length);
+        super(json.getBytes(Charsets.UTF_8), NpmRepository.JSON_MIME_TYPE);
     }
 }
