@@ -43,12 +43,27 @@ public class NpmUtility {
      */
     public boolean isNmpRequest(@SuppressWarnings("UnusedParameters") ResourceStoreRequest request) {
 
-        if (request.getRequestContext().containsKey(RequestContext.CTX_AUTH_CHECK_ONLY)) {
-            // not a real request, authentication check. We are not interested
-            return false;
-        }
+      if (request.getRequestContext().containsKey(RequestContext.CTX_AUTH_CHECK_ONLY)) {
+        // not a real request, authentication check. We are not interested
+        return false;
+      }
 
-        HttpServletRequest httpServletRequest = httpServletRequestProvider.get();
+      return isNmpRequest(httpServletRequestProvider.get());
+    }
+
+    /**
+     * Trying to decide if request is coming form npm utility.
+     * <p/>
+     * Following http://wiki.commonjs.org/wiki/Packages/Registry#HTTP_Request_Method_and_Headers
+     * checking Accept for "application/json" would be a good idea. Right now it is not possible as
+     * {@link org.sonatype.nexus.web.content.NexusContentServlet#getResourceStoreRequest(javax.servlet.http.HttpServletRequest)}
+     * does not map Accept header into anything.
+     *
+     * @param httpServletRequest HTTP Servlet request we are about to process
+     * @return {@code true} if we think request is coming form npm utility, {@code false} otherwise (for example,
+     * if someone is browsing content of the repo in Nexus UI).
+     */
+    public boolean isNmpRequest(final HttpServletRequest httpServletRequest) {
         if (httpServletRequest == null) {
             throw new IllegalStateException("Container did not provide an instance of HttpServletRequest");
         }
