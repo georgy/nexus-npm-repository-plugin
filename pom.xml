@@ -11,17 +11,15 @@
     </parent>
 
     <groupId>com.bolyuba.nexus.plugin</groupId>
-    <artifactId>nexus-npm-repository-plugin</artifactId>
+    <artifactId>nexus-plugins-npm</artifactId>
     <version>0.0.2-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
-    <packaging>nexus-plugin</packaging>
+    <packaging>pom</packaging>
 
-    <properties>
-        <pluginName>Nexus npm repository plugin</pluginName>
-        <pluginDescription>Adds npm (https://www.npmjs.org/) capabilities to Nexus OSS</pluginDescription>
-        <pluginSiteUrl>http://nexus.bolyuba.com</pluginSiteUrl>
-
-    </properties>
+    <modules>
+        <module>nexus-npm-repository-plugin</module>
+        <module>nexus-npm-repository-testsuite</module>
+    </modules>
 
     <repositories>
         <repository>
@@ -30,74 +28,22 @@
         </repository>
     </repositories>
 
-    <build>
-        <plugins>
+    <dependencyManagement>
+        <dependencies>
 
-            <plugin>
-                <groupId>org.sonatype.nexus</groupId>
-                <artifactId>nexus-plugin-bundle-maven-plugin</artifactId>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <id>create-plugin-bundle</id>
-                        <goals>
-                            <goal>create-bundle</goal>
-                        </goals>
-                        <phase>package</phase>
-                    </execution>
-                </executions>
-            </plugin>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>2.2.4</version>
+            </dependency>
 
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>yuicompressor-maven-plugin</artifactId>
-            </plugin>
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>6.8.8</version>
+                <scope>test</scope>
+            </dependency>
 
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                </configuration>
-            </plugin>
-
-        </plugins>
-    </build>
-
-    <dependencies>
-
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.2.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.sonatype.nexus</groupId>
-            <artifactId>nexus-plugin-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.sonatype.nexus.plugins</groupId>
-            <artifactId>nexus-ui-extjs3-plugin</artifactId>
-            <type>${nexus-plugin.type}</type>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.sonatype.nexus</groupId>
-            <artifactId>nexus-plugin-testsupport</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>6.8.8</version>
-            <scope>test</scope>
-        </dependency>
-
-    </dependencies>
-
+        </dependencies>
+    </dependencyManagement>
 </project>
