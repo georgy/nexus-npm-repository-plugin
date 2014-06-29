@@ -36,7 +36,7 @@ import static org.sonatype.sisu.goodies.common.Varargs.$;
  * @since 2.9
  */
 @NexusStartAndStopStrategy(EACH_TEST)
-public class NpmITSupport
+public abstract class NpmITSupport
     extends NexusRunningParametrizedITSupport
 {
     @Parameterized.Parameters
