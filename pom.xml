@@ -30,6 +30,14 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- This plugin -->
+            <dependency>
+              <groupId>com.bolyuba.nexus.plugin</groupId>
+              <artifactId>nexus-npm-repository-plugin</artifactId>
+              <version>0.0.2-SNAPSHOT</version>
+              <classifier>bundle</classifier>
+              <type>nexus-plugin</type>
+            </dependency>
 
             <dependency>
                 <groupId>com.google.code.gson</groupId>
