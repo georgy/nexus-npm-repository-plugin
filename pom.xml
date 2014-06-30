@@ -17,6 +17,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>nexus-npm-repository-client</module>
         <module>nexus-npm-repository-plugin</module>
         <module>nexus-npm-repository-testsuite</module>
     </modules>
@@ -37,6 +38,13 @@
               <version>0.0.2-SNAPSHOT</version>
               <classifier>bundle</classifier>
               <type>nexus-plugin</type>
+            </dependency>
+
+            <!-- Client for this plugin -->
+            <dependency>
+              <groupId>com.bolyuba.nexus.plugin</groupId>
+              <artifactId>nexus-npm-repository-client</artifactId>
+              <version>0.0.2-SNAPSHOT</version>
             </dependency>
 
             <dependency>
