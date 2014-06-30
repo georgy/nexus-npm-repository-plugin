@@ -21,8 +21,6 @@ import static org.hamcrest.Matchers.*;
 public class SmokeNpmIT
     extends NpmITSupport
 {
-  private static String REPO_ID = "npmproxy";
-
   public SmokeNpmIT(String nexusBundleCoordinates) {
     super(nexusBundleCoordinates);
   }
@@ -30,17 +28,17 @@ public class SmokeNpmIT
   @Test
   public void smoke() throws Exception {
     // create a NPM Proxy repository that proxies mock NPM registry
-    createNpmProxyRepository(REPO_ID);
+    createNpmProxyRepository(testMethodName());
 
     // download package root of commonjs
     final File localDirectory = util.createTempDir();
     final File commonjsPackageRootFile = new File(localDirectory, "commonjs.json");
-    content().download(Location.repositoryLocation(REPO_ID, "commonjs"), commonjsPackageRootFile);
+    content().download(Location.repositoryLocation(testMethodName(), "commonjs"), commonjsPackageRootFile);
     final String commonjsPackageRoot = Files.toString(commonjsPackageRootFile, Charsets.UTF_8);
 
     // check are the URLs rewritten and point back to NX
     assertThat(commonjsPackageRoot, containsString(
-        nexus().getUrl() + "content/repositories/" + REPO_ID + "/commonjs/-/commonjs-0.0.1.tgz"));
+        nexus().getUrl() + "content/repositories/" + testMethodName() + "/commonjs/-/commonjs-0.0.1.tgz"));
 
     // check that there are not traces of proxied registry URL
     assertThat(commonjsPackageRoot, not(containsString(mockRegistryServerUrl())));

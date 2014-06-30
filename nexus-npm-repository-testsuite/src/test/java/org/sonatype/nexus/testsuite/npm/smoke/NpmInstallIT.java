@@ -24,8 +24,6 @@ import static org.hamcrest.Matchers.*;
 public class NpmInstallIT
     extends NpmITSupport
 {
-  private static String REPO_ID = "npmproxy";
-
   public NpmInstallIT(String nexusBundleCoordinates) {
     super(nexusBundleCoordinates);
   }
@@ -33,11 +31,11 @@ public class NpmInstallIT
   @Test
   public void npmCliInstall() throws Exception {
     // create a NPM Proxy repository that proxies mock NPM registry
-    createNpmProxyRepository(REPO_ID);
+    createNpmProxyRepository(testMethodName());
 
     final File localDirectory = util.createTempDir();
     final String cmd = String.format("npm install commonjs --registry %s --cache %s --userconfig not-exists",
-        nexus().getUrl().toExternalForm() + "content/repositories/" + REPO_ID,
+        nexus().getUrl().toExternalForm() + "content/repositories/" + testMethodName(),
         localDirectory.getAbsolutePath());
 
     log("CMD: {}", cmd);
@@ -56,13 +54,17 @@ public class NpmInstallIT
     log(stdOut);
 
     assertThat(stdErr, containsString(
-        "npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/commonjs/-/commonjs-0.0.1.tgz"));
-    assertThat(stdErr,
-        containsString("npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/system/-/system-0.1.0.tgz"));
-    assertThat(stdErr,
-        containsString("npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/test/-/test-0.6.0.tgz"));
+        "npm http 200 " + nexus().getUrl() + "content/repositories/" + testMethodName() +
+            "/commonjs/-/commonjs-0.0.1.tgz"));
     assertThat(stdErr, containsString(
-        "npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/ansi-font/-/ansi-font-0.0.2.tgz"));
+        "npm http 200 " + nexus().getUrl() + "content/repositories/" + testMethodName() +
+            "/system/-/system-0.1.0.tgz"));
+    assertThat(stdErr, containsString(
+        "npm http 200 " + nexus().getUrl() + "content/repositories/" + testMethodName() +
+            "/test/-/test-0.6.0.tgz"));
+    assertThat(stdErr, containsString(
+        "npm http 200 " + nexus().getUrl() + "content/repositories/" + testMethodName() +
+            "/ansi-font/-/ansi-font-0.0.2.tgz"));
 
     assertThat(stdOut, containsString("commonjs@0.0.1"));
     assertThat(stdOut, containsString("system@0.1.0"));
