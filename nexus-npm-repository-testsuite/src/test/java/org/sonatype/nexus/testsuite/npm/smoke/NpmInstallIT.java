@@ -16,7 +16,12 @@ import static org.hamcrest.Matchers.*;
 
 /**
  * NPM CLI IT for NPM plugin with simple "install" invocation. The test required the "npm" command to be present on
- * path.
+ * path. It performs an installation of "commonjs" package, with all of it dependencies. Assertion is made that
+ * all the needed versions are fetched (versions present in mock NPM repository) from NX, and that NPM command exited
+ * with success.
+ *
+ * This IT requires the "npm" command be present on path. Also, no clue how this IT would behave on Windows, as it's
+ * tested on OSX and would probably also work on Linux.
  */
 public class NpmInstallIT
     extends NpmITSupport
@@ -53,10 +58,14 @@ public class NpmInstallIT
     log("STDOUT:");
     log(stdOut);
 
-    assertThat(stdErr, containsString("npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/commonjs/-/commonjs-0.0.1.tgz"));
-    assertThat(stdErr, containsString("npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/system/-/system-0.1.0.tgz"));
-    assertThat(stdErr, containsString("npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/test/-/test-0.6.0.tgz"));
-    assertThat(stdErr, containsString("npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/ansi-font/-/ansi-font-0.0.2.tgz"));
+    assertThat(stdErr, containsString(
+        "npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/commonjs/-/commonjs-0.0.1.tgz"));
+    assertThat(stdErr,
+        containsString("npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/system/-/system-0.1.0.tgz"));
+    assertThat(stdErr,
+        containsString("npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/test/-/test-0.6.0.tgz"));
+    assertThat(stdErr, containsString(
+        "npm http 200 " + nexus().getUrl() + "content/repositories/npmproxy/ansi-font/-/ansi-font-0.0.2.tgz"));
 
     assertThat(stdOut, containsString("commonjs@0.0.1"));
     assertThat(stdOut, containsString("system@0.1.0"));

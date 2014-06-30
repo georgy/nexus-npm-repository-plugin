@@ -15,7 +15,9 @@ import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 
 /**
- * Smoke IT for NPM plugin.
+ * Smoke IT for NPM plugin. This IT just starts up NX with NPM plugin, creates a NPM proxy repo, and downloads
+ * one single metadata file from it, and validates that URLs are properly rewritten to point back to NX instance. If any
+ * of these fails, this IT will fail too.
  */
 public class SmokeNpmIT
     extends NpmITSupport
