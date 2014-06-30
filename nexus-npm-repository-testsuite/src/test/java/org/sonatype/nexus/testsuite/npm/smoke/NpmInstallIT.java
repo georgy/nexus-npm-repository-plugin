@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 
 import org.sonatype.nexus.testsuite.npm.NpmITSupport;
+import org.sonatype.nexus.testsuite.npm.NpmMockRegistryITSupport;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
@@ -22,7 +23,7 @@ import static org.hamcrest.Matchers.*;
  * tested on OSX and would probably also work on Linux.
  */
 public class NpmInstallIT
-    extends NpmITSupport
+    extends NpmMockRegistryITSupport
 {
   public NpmInstallIT(String nexusBundleCoordinates) {
     super(nexusBundleCoordinates);

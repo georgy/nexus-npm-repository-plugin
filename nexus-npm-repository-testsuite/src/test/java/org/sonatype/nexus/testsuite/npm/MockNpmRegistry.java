@@ -105,6 +105,7 @@ public class MockNpmRegistry
       this.root = root;
     }
 
+    @Override
     public boolean execute(final HttpServletRequest request, final HttpServletResponse response,
                            final Map<Object, Object> ctx)
         throws Exception

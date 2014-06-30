@@ -3,7 +3,7 @@ package org.sonatype.nexus.testsuite.npm.smoke;
 import java.io.File;
 
 import org.sonatype.nexus.client.core.subsystem.content.Location;
-import org.sonatype.nexus.testsuite.npm.NpmITSupport;
+import org.sonatype.nexus.testsuite.npm.NpmMockRegistryITSupport;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -19,7 +19,7 @@ import static org.hamcrest.Matchers.*;
  * of these fails, this IT will fail too.
  */
 public class SmokeNpmIT
-    extends NpmITSupport
+    extends NpmMockRegistryITSupport
 {
   public SmokeNpmIT(String nexusBundleCoordinates) {
     super(nexusBundleCoordinates);
