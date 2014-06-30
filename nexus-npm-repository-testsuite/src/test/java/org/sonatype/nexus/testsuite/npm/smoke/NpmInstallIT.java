@@ -3,10 +3,8 @@ package org.sonatype.nexus.testsuite.npm.smoke;
 import java.io.File;
 import java.io.InputStreamReader;
 
-import org.sonatype.nexus.client.core.subsystem.repository.Repositories;
 import org.sonatype.nexus.testsuite.npm.NpmITSupport;
 
-import com.bolyuba.nexus.plugin.npm.client.NpmProxyRepository;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import org.junit.Test;
@@ -35,8 +33,7 @@ public class NpmInstallIT
   @Test
   public void npmCliInstall() throws Exception {
     // create a NPM Proxy repository that proxies mock NPM registry
-    client().getSubsystem(Repositories.class).create(NpmProxyRepository.class, REPO_ID)
-        .asProxyOf(mockRegistryServerUrl()).withName("NPM Proxy").save();
+    createNpmProxyRepository(REPO_ID);
 
     final File localDirectory = util.createTempDir();
     final String cmd = String.format("npm install commonjs --registry %s --cache %s --userconfig not-exists",
