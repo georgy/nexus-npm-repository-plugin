@@ -20,7 +20,8 @@ public class JerseyNpmProxyRepositoryFactory
   public int canAdapt(final RepositoryBaseResource resource) {
     int score = super.canAdapt(resource);
     if (score > 0) {
-      if (JerseyNpmProxyRepository.PROVIDER.equals(resource.getProvider())) {
+      if (JerseyNpmProxyRepository.PROVIDER_ROLE.equals(resource.getProviderRole()) &&
+          JerseyNpmProxyRepository.PROVIDER.equals(resource.getProvider())) {
         score++;
       }
     }
