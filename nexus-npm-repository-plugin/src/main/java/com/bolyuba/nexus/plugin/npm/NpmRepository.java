@@ -1,13 +1,15 @@
 package com.bolyuba.nexus.plugin.npm;
 
 import org.sonatype.nexus.plugins.RepositoryType;
+import org.sonatype.nexus.proxy.repository.Repository;
 
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
 @SuppressWarnings("deprecation")
 @RepositoryType(pathPrefix = "npm")
-public interface NpmRepository {
+public interface NpmRepository extends Repository
+{
 
     /**
      * The name of the file starts with - to avoid collisions with commonjs package
