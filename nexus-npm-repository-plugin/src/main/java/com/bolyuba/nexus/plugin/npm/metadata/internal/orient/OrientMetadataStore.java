@@ -14,8 +14,8 @@ import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.sisu.goodies.lifecycle.LifecycleSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import com.bolyuba.nexus.plugin.npm.metadata.MetadataStore;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
+import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataStore;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -148,6 +148,27 @@ public class OrientMetadataStore
           return null;
         }
         return entityHandler.toEntity(doc);
+      }
+      finally {
+        db.commit();
+      }
+    }
+  }
+
+  @Override
+  public boolean deletePackageByName(final NpmRepository repository, final String packageName) {
+    checkNotNull(repository);
+    checkNotNull(packageName);
+    final EntityHandler<PackageRoot> entityHandler = getHandlerFor(PackageRoot.class);
+    try (ODatabaseDocumentTx db = db()) {
+      db.begin();
+      try {
+        final ODocument doc = doGetPackageByName(db, entityHandler, repository, packageName);
+        if (doc == null) {
+          return false;
+        }
+        db.delete(doc);
+        return true;
       }
       finally {
         db.commit();

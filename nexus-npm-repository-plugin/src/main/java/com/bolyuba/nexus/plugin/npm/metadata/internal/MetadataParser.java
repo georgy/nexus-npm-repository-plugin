@@ -1,5 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.metadata.internal;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
@@ -7,8 +8,6 @@ import java.util.Map;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import com.bolyuba.nexus.plugin.npm.metadata.MetadataConsumer;
-import com.bolyuba.nexus.plugin.npm.metadata.MetadataStore;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -20,39 +19,37 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Created by cstamas on 29/07/14.
+ * Parses "raw" (streamed or not) NPM metadata from external source (either NPM CLI performing deploy or
+ * proxying a NPM registry) and producing {@link PackageRoot} instances.
  */
-public class MetadataConsumerImpl
-    implements MetadataConsumer
+public class MetadataParser
 {
-  private final NpmRepository npmRepository;
+  public static interface PackageRootIterator
+      extends Iterator<PackageRoot>, Closeable
+  {
+  }
 
-  private final MetadataStore metadataStore;
+  private final NpmRepository npmRepository;
 
   private final ObjectMapper objectMapper;
 
-  public MetadataConsumerImpl(final NpmRepository npmRepository, final MetadataStore metadataStore) {
+  public MetadataParser(final NpmRepository npmRepository) {
     this.npmRepository = checkNotNull(npmRepository);
-    this.metadataStore = checkNotNull(metadataStore);
     this.objectMapper = new ObjectMapper(); // this parses registry JSON
   }
 
-  @Override
-  public int consumeRegistryRoot(final ContentLocator contentLocator) throws IOException {
+  public PackageRootIterator parseRegistryRoot(final ContentLocator contentLocator) throws IOException {
     checkArgument(NpmRepository.JSON_MIME_TYPE.equals(contentLocator.getMimeType()), "JSON is expected inout!");
-    try (final JsonParser parser = objectMapper.getFactory().createParser(contentLocator.getContent())) {
-      return metadataStore.updatePackages(npmRepository, new PackageRootIterator(parser));
-    }
+    return new PackageRootIteratorImpl(objectMapper.getFactory().createParser(contentLocator.getContent()));
   }
 
-  @Override
-  public PackageRoot consumePackageRoot(final ContentLocator contentLocator) throws IOException {
+  public PackageRoot parsePackageRoot(final ContentLocator contentLocator) throws IOException {
     checkArgument(NpmRepository.JSON_MIME_TYPE.equals(contentLocator.getMimeType()), "JSON is expected inout!");
     try (final JsonParser parser = objectMapper.getFactory().createParser(contentLocator.getContent())) {
       final PackageRoot packageRoot = parsePackageRoot(parser);
       checkArgument(!packageRoot.isIncomplete(),
           "Wrong API use, incomplete package roots should not be consumed this way!");
-      return metadataStore.updatePackage(npmRepository, packageRoot);
+      return packageRoot;
     }
   }
 
@@ -72,21 +69,35 @@ public class MetadataConsumerImpl
 
   // ==
 
-  private class PackageRootIterator
-      implements Iterator<PackageRoot>
+  private class PackageRootIteratorImpl
+      implements PackageRootIterator
   {
     private final JsonParser parser;
 
     private PackageRoot nextPackageRoot;
 
-    private PackageRootIterator(final JsonParser parser) {
+    private PackageRootIteratorImpl(final JsonParser parser) {
       this.parser = parser;
       nextPackageRoot = getNext();
     }
 
     @Override
+    public void close() throws IOException {
+      parser.close();
+    }
+
+    @Override
     public boolean hasNext() {
-      return nextPackageRoot != null;
+      final boolean hasNext = nextPackageRoot != null;
+      if (!hasNext) {
+        try {
+          close();
+        }
+        catch (IOException e) {
+          throw Throwables.propagate(e);
+        }
+      }
+      return hasNext;
     }
 
     @Override

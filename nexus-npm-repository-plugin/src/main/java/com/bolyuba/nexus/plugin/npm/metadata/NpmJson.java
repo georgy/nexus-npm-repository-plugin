@@ -6,10 +6,7 @@ import com.google.common.collect.Maps;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * Created by cstamas on 29/07/14.
- */
-public abstract class NpmJson
+abstract class NpmJson
 {
   private final String repositoryId;
 

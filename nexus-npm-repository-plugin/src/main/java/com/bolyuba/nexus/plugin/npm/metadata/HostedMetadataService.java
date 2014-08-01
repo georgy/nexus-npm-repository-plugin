@@ -7,11 +7,14 @@ import javax.annotation.Nullable;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 
 /**
- * Component producing "raw" (streamed) NPM metadata from {@link MetadataStore} to be sent downstream for consumption
- * by NPM CLI or alike.
+ * Metadata service for hosted repositories, it serves up what has been consumed by it (deployed to it).
  */
-public interface MetadataProducer
+public interface HostedMetadataService
 {
+  int consumeRegistryRoot(final ContentLocator contentLocator) throws IOException;
+
+  PackageRoot consumePackageRoot(final ContentLocator contentLocator) throws IOException;
+
   ContentLocator produceRegistryRoot() throws IOException;
 
   @Nullable
