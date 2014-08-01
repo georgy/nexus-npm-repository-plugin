@@ -77,14 +77,19 @@ public class PackageRoot
   public void overlay(final PackageRoot packageRoot) {
     checkArgument(getComponentId().equals(packageRoot.getComponentId()), "Cannot overlay different package roots!");
     overlay(getRaw(), packageRoot.getRaw()); // this changes underlying raw map directly
+    this.wrappedVersions = wrapVersions(getRaw());
   }
 
   public Map<String, Object> overlay(Map<String, Object> me, Map<String, Object> him) {
     for (String key : him.keySet()) {
+      // TODO: special case for version:latest from him not slap my versions!
       if (him.get(key) instanceof Map && me.get(key) instanceof Map) {
         Map myChild = (Map) me.get(key);
         Map hisChild = (Map) him.get(key);
         me.put(key, overlay(myChild, hisChild));
+      }
+      else if (him.get(key) instanceof String && me.get(key) instanceof Map) {
+        continue; // skip, this is usually versions : { "x.x.x" : "latest" } on incomplete documents
       }
       else {
         me.put(key, him.get(key));
@@ -127,7 +132,6 @@ public class PackageRoot
           dist.put("tarball", "unknown");
           latestVersion.put("dist", dist);
           wrappedVersions.put(versionsEntry.getKey(), new PackageVersion(getRepositoryId(), latestVersion));
-          break;
         }
       }
     }

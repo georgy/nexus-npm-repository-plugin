@@ -13,10 +13,13 @@ public abstract class NpmJson
 {
   private final String repositoryId;
 
+  private final Map<String, String> properties;
+
   private final Map<String, Object> raw;
 
   public NpmJson(final String repositoryId, final Map<String, Object> raw) {
     this.repositoryId = checkNotNull(repositoryId);
+    this.properties = Maps.newHashMap();
     this.raw = Maps.newHashMap();
     setRaw(raw);
   }
@@ -28,6 +31,8 @@ public abstract class NpmJson
   public Map<String, Object> getRaw() {
     return raw;
   }
+
+  public Map<String, String> getProperties() { return properties; }
 
   public void setRaw(final Map<String, Object> raw) {
     validate(raw);

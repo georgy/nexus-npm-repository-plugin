@@ -32,6 +32,7 @@ public class PackageRootHandler
     clazz.createProperty("repositoryId", OType.STRING);
     clazz.createProperty("name", OType.STRING);
     clazz.createProperty("description", OType.STRING);
+    clazz.createProperty("properties", OType.EMBEDDEDMAP, OType.STRING);
     clazz.createProperty("raw", OType.STRING);
     clazz.createIndex(clazz.getName() + ".componentId", INDEX_TYPE.UNIQUE_HASH_INDEX, "componentId");
   }
@@ -43,6 +44,7 @@ public class PackageRootHandler
       doc.field("repositoryId", entity.getRepositoryId());
       doc.field("name", entity.getName());
       doc.field("description", entity.getDescription());
+      doc.field("properties", entity.getProperties());
       doc.field("raw", objectMapper.writeValueAsString(entity.getRaw()));
       return doc;
     }
@@ -57,7 +59,10 @@ public class PackageRootHandler
       final String repositoryId = doc.field("repositoryId", OType.STRING);
       final Map<String, Object> raw = objectMapper.readValue(doc.<String>field("raw", OType.STRING),
           new TypeReference<Map<String, Object>>() {});
-      return new PackageRoot(repositoryId, raw);
+      final PackageRoot result = new PackageRoot(repositoryId, raw);
+      final Map<String, String> properties = (Map<String, String>) doc.field("properties", OType.EMBEDDEDMAP);
+      result.getProperties().putAll(properties);
+      return result;
     }
     catch (Exception e) {
       throw Throwables.propagate(e);
