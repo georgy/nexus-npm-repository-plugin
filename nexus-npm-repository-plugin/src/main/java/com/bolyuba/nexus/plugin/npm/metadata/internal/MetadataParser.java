@@ -1,19 +1,24 @@
 package com.bolyuba.nexus.plugin.npm.metadata.internal;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.sonatype.nexus.proxy.item.ContentLocator;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
+import com.google.common.io.Files;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -29,11 +34,14 @@ public class MetadataParser
   {
   }
 
+  private final File temporaryDirectory;
+
   private final NpmRepository npmRepository;
 
   private final ObjectMapper objectMapper;
 
-  public MetadataParser(final NpmRepository npmRepository) {
+  public MetadataParser(final File temporaryDirectory, final NpmRepository npmRepository) {
+    this.temporaryDirectory = checkNotNull(temporaryDirectory);
     this.npmRepository = checkNotNull(npmRepository);
     this.objectMapper = new ObjectMapper(); // this parses registry JSON
   }
@@ -55,16 +63,99 @@ public class MetadataParser
 
   // ==
 
-  private PackageRoot parsePackageRoot(final JsonParser parser) {
-    try {
-      final Map<String, Object> raw = objectMapper.readValue(parser, new TypeReference<Map<String, Object>>() {});
-      raw.remove("_attachments"); // TODO: on NPM deploy this is where tarball is base64 encoded, so best would be
-      // to tell Jackson to completely ignore _attachments. But how?
-      return new PackageRoot(npmRepository.getId(), raw);
+  private PackageRoot parsePackageRoot(final JsonParser parser) throws IOException {
+    final Map<String, Object> raw = Maps.newHashMap();
+    final Map<String, PackageAttachment> attachments = Maps.newHashMap();
+    checkArgument(parser.nextToken() == JsonToken.START_OBJECT, "Unexpected input %s, expected %s",
+        parser.getCurrentToken(), JsonToken.START_OBJECT);
+    while (parser.nextToken() == JsonToken.FIELD_NAME) {
+      final String fieldName = parser.getCurrentName();
+      if ("_attachments".equals(fieldName)) {
+        parsePackageAttachments(parser, attachments);
+        continue;
+      }
+      final JsonToken token = parser.nextValue();
+      if (token == JsonToken.START_OBJECT) {
+        raw.put(fieldName, parser.readValueAs(new TypeReference<Map<String, Object>>() {}));
+      }
+      else if (token == JsonToken.START_ARRAY) {
+        raw.put(fieldName, parser.readValueAs(new TypeReference<List<Object>>() {}));
+      }
+      else {
+        switch (token) {
+          case VALUE_NULL: {
+            raw.put(fieldName, null);
+            break;
+          }
+          case VALUE_FALSE: {
+            raw.put(fieldName, Boolean.FALSE);
+            break;
+          }
+          case VALUE_TRUE: {
+            raw.put(fieldName, Boolean.TRUE);
+            break;
+          }
+          case VALUE_NUMBER_INT: {
+            raw.put(fieldName, parser.getValueAsInt());
+            break;
+          }
+          case VALUE_NUMBER_FLOAT: {
+            raw.put(fieldName, parser.getValueAsDouble());
+            break;
+          }
+          case VALUE_STRING: {
+            raw.put(fieldName, parser.getValueAsString());
+            break;
+          }
+          default: {
+            throw new IllegalArgumentException("Unexpected token: " + token);
+          }
+        }
+        raw.put(fieldName, parser.getValueAsString());
+      }
     }
-    catch (Exception e) {
-      throw Throwables.propagate(e);
+    final PackageRoot result = new PackageRoot(npmRepository.getId(), raw);
+    if (!attachments.isEmpty()) {
+      result.getAttachments().putAll(attachments);
     }
+    return result;
+  }
+
+  private void parsePackageAttachments(final JsonParser parser,
+                                       final Map<String, PackageAttachment> attachments) throws IOException
+  {
+    checkArgument(parser.nextToken() == JsonToken.START_OBJECT, "Unexpected input %s, expected %s",
+        parser.getCurrentToken(), JsonToken.START_OBJECT);
+    while (parser.nextToken() == JsonToken.FIELD_NAME) {
+      final PackageAttachment attachment = parsePackageAttachment(parser);
+      attachments.put(attachment.getName(), attachment);
+    }
+  }
+
+  private PackageAttachment parsePackageAttachment(final JsonParser parser) throws IOException {
+    String name = parser.getCurrentName();
+    String contentType = "application/octet-stream";
+    long length = ContentLocator.UNKNOWN_LENGTH;
+    File file = null;
+    checkArgument(parser.nextToken() == JsonToken.START_OBJECT, "Unexpected input %s, expected %s",
+        parser.getCurrentToken(), JsonToken.START_OBJECT);
+    while (parser.nextToken() == JsonToken.FIELD_NAME) {
+      final String fieldName = parser.getCurrentName();
+      parser.nextValue();
+      if ("content_type".equals(fieldName)) {
+        contentType = parser.getValueAsString();
+      }
+      else if ("length".equals(fieldName)) {
+        length = parser.getValueAsLong();
+      }
+      else if ("data".equals(fieldName)) {
+        file = File.createTempFile("npm_attachment", "temp", temporaryDirectory);
+        // TODO: can Jackson stream binary? I doubt...
+        Files.write(parser.getBinaryValue(), file);
+      }
+    }
+    checkArgument(file.length() == length, "Invalid content length!");
+    return new PackageAttachment(name, file, contentType);
   }
 
   // ==
@@ -117,7 +208,6 @@ public class MetadataParser
           if (parser.getCurrentName().startsWith("_")) {
             continue; // skip it
           }
-          parser.nextValue();
           return parsePackageRoot(parser);
         }
         return null;

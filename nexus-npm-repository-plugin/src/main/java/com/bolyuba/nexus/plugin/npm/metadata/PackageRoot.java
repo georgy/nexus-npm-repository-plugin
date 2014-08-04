@@ -11,11 +11,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class PackageRoot
     extends NpmJson
 {
-  private Map<String, PackageVersion> wrappedVersions;
+  private final Map<String, PackageVersion> wrappedVersions;
+
+  private final Map<String, PackageAttachment> attachments;
 
   public PackageRoot(final String repositoryId, final Map<String, Object> raw) {
     super(repositoryId, raw);
-    this.wrappedVersions = wrapVersions(raw);
+    this.wrappedVersions = Maps.newHashMap();
+    this.wrappedVersions.putAll(wrapVersions(raw));
+    this.attachments = Maps.newHashMap();
   }
 
   public String getComponentId() {return getRepositoryId() + ":" + getName(); }
@@ -31,6 +35,8 @@ public class PackageRoot
   public Map<String, PackageVersion> getVersions() {
     return wrappedVersions;
   }
+
+  public Map<String, PackageAttachment> getAttachments() { return attachments; }
 
   /**
    * Reduces the document backing map to a "shrinked" version where only latest version is
@@ -77,12 +83,12 @@ public class PackageRoot
   public void overlay(final PackageRoot packageRoot) {
     checkArgument(getComponentId().equals(packageRoot.getComponentId()), "Cannot overlay different package roots!");
     overlay(getRaw(), packageRoot.getRaw()); // this changes underlying raw map directly
-    this.wrappedVersions = wrapVersions(getRaw());
+    this.wrappedVersions.clear();
+    this.wrappedVersions.putAll(wrapVersions(getRaw()));
   }
 
-  public Map<String, Object> overlay(Map<String, Object> me, Map<String, Object> him) {
+  private Map<String, Object> overlay(Map<String, Object> me, Map<String, Object> him) {
     for (String key : him.keySet()) {
-      // TODO: special case for version:latest from him not slap my versions!
       if (him.get(key) instanceof Map && me.get(key) instanceof Map) {
         Map myChild = (Map) me.get(key);
         Map hisChild = (Map) him.get(key);

@@ -74,6 +74,7 @@ public class MetadataStoreTest
     tmpDir = util.createTempDir();
 
     when(applicationDirectories.getWorkDirectory(anyString())).thenReturn(tmpDir);
+    when(applicationDirectories.getTemporaryDirectory()).thenReturn(tmpDir);
     when(httpClientManager.create(any(ProxyRepository.class), any(RemoteStorageContext.class))).thenReturn(
         HttpClients.createDefault());
 
@@ -106,7 +107,7 @@ public class MetadataStoreTest
     };
 
     metadataStore = new OrientMetadataStore(applicationDirectories);
-    metadataService = new MetadataServiceFactoryImpl(metadataStore, httpClientManager);
+    metadataService = new MetadataServiceFactoryImpl(applicationDirectories, metadataStore, httpClientManager);
     hostedMetadataService = metadataService.createHostedMetadataService(npmHostedRepository);
     proxyMetadataService = metadataService.createProxyMetadataService(npmProxyRepository);
 
@@ -128,8 +129,8 @@ public class MetadataStoreTest
         new GZIPInputStream(new FileInputStream(util.resolveFile("src/test/npm/ROOT_all.json.gz"))),
         NpmRepository.JSON_MIME_TYPE, -1);
     // this is "illegal" case using internal stuff, but is for testing only
-    final MetadataParser parser = new com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataParser(npmProxyRepository);
-    final MetadataConsumer consumer = new com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataConsumer(
+    final MetadataParser parser = new MetadataParser(applicationDirectories.getTemporaryDirectory(), npmProxyRepository);
+    final MetadataConsumer consumer = new MetadataConsumer(
         npmProxyRepository,
         parser, metadataStore);
     consumer.consumeRegistryRoot(input);

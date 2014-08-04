@@ -4,6 +4,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
@@ -25,18 +26,23 @@ public class MetadataServiceFactoryImpl
     extends ComponentSupport
     implements MetadataServiceFactory
 {
+  private final ApplicationDirectories applicationDirectories;
+
   private final MetadataStore metadataStore;
 
   private final HttpClientManager httpClientManager;
 
   @Inject
-  public MetadataServiceFactoryImpl(final MetadataStore metadataStore, final HttpClientManager httpClientManager) {
+  public MetadataServiceFactoryImpl(final ApplicationDirectories applicationDirectories,
+                                    final MetadataStore metadataStore, final HttpClientManager httpClientManager)
+  {
+    this.applicationDirectories = checkNotNull(applicationDirectories);
     this.metadataStore = checkNotNull(metadataStore);
     this.httpClientManager = checkNotNull(httpClientManager);
   }
 
   private MetadataParser createParser(final NpmRepository npmRepository) {
-    return new MetadataParser(npmRepository);
+    return new MetadataParser(applicationDirectories.getTemporaryDirectory(), npmRepository);
   }
 
   private MetadataConsumer createConsumer(final NpmRepository npmRepository) {
