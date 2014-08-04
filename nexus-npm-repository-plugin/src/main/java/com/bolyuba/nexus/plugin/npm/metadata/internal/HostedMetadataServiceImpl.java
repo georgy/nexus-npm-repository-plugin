@@ -27,11 +27,6 @@ public class HostedMetadataServiceImpl
   }
 
   @Override
-  public int consumeRegistryRoot(final ContentLocator contentLocator) throws IOException {
-    return metadataConsumer.consumeRegistryRoot(contentLocator);
-  }
-
-  @Override
   public PackageRoot consumePackageRoot(final ContentLocator contentLocator) throws IOException {
     return metadataConsumer.consumePackageRoot(contentLocator);
   }

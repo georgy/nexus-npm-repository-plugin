@@ -11,8 +11,6 @@ import org.sonatype.nexus.proxy.item.ContentLocator;
  */
 public interface HostedMetadataService
 {
-  int consumeRegistryRoot(final ContentLocator contentLocator) throws IOException;
-
   PackageRoot consumePackageRoot(final ContentLocator contentLocator) throws IOException;
 
   ContentLocator produceRegistryRoot() throws IOException;
