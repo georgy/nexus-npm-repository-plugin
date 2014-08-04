@@ -45,12 +45,16 @@ public class MetadataServiceFactoryImpl
     return new MetadataParser(applicationDirectories.getTemporaryDirectory(), npmRepository);
   }
 
+  private MetadataGenerator createGenerator(final NpmRepository npmRepository) {
+    return new MetadataGenerator(npmRepository, metadataStore);
+  }
+
   private MetadataConsumer createConsumer(final NpmRepository npmRepository) {
     return new MetadataConsumer(npmRepository, createParser(npmRepository), metadataStore);
   }
 
   private MetadataProducer createProducer(final NpmRepository npmRepository) {
-    return new MetadataProducer(npmRepository, metadataStore);
+    return new MetadataProducer(createGenerator(npmRepository));
   }
 
   @Override

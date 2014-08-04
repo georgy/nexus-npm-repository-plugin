@@ -28,42 +28,29 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class MetadataProducer
 {
-  private final NpmRepository npmRepository;
-
-  private final MetadataStore metadataStore;
+  private final MetadataGenerator metadataGenerator;
 
   private final ObjectMapper objectMapper;
 
-  public MetadataProducer(final NpmRepository npmRepository, final MetadataStore metadataStore) {
-    this.npmRepository = checkNotNull(npmRepository);
-    this.metadataStore = checkNotNull(metadataStore);
+  public MetadataProducer(final MetadataGenerator metadataGenerator) {
+    this.metadataGenerator = checkNotNull(metadataGenerator);
     this.objectMapper = new ObjectMapper(); // this generates registry JSON
   }
 
   public RegistryRootContentLocator produceRegistryRoot() throws IOException {
-    return new RegistryRootContentLocator(this, metadataStore.listPackageNames(npmRepository));
+    return new RegistryRootContentLocator(this, metadataGenerator.listPackageNames());
   }
 
   @Nullable
   public StringContentLocator produceShrinkedPackageRoot(final String packageName) throws IOException {
-    final PackageRoot root = metadataStore.getPackageByName(npmRepository, packageName);
-    if (root == null) {
-      return null;
-    }
-    root.shrinkToLatestVersionOnly();
+    final PackageRoot root = metadataGenerator.generateShrinkedPackageRoot(packageName);
     final String jsonString = objectMapper.writeValueAsString(root.getRaw());
     return new StringContentLocator(jsonString, NpmRepository.JSON_MIME_TYPE);
   }
 
   @Nullable
   public StringContentLocator producePackageRoot(final String packageName) throws IOException {
-    final PackageRoot root = metadataStore.getPackageByName(npmRepository, packageName);
-    if (root == null || root.isIncomplete()) {
-      return null;
-    }
-    for (PackageVersion packageVersion : root.getVersions().values()) {
-      filterPackageVersion(packageVersion);
-    }
+    final PackageRoot root = metadataGenerator.generatePackageRoot(packageName);
     final String jsonString = objectMapper.writeValueAsString(root.getRaw());
     return new StringContentLocator(jsonString, NpmRepository.JSON_MIME_TYPE);
   }
@@ -72,27 +59,14 @@ public class MetadataProducer
   public StringContentLocator producePackageVersion(final String packageName, final String packageVersion)
       throws IOException
   {
-    final PackageRoot root = metadataStore.getPackageByName(npmRepository, packageName);
-    if (root == null || root.isUnpublished()) {
-      return null;
-    }
-    final PackageVersion version = root.getVersions().get(packageVersion);
-    if (version == null || version.isIncomplete()) {
-      return null;
-    }
-    filterPackageVersion(version);
+    final PackageVersion version = metadataGenerator.generatePackageVersion(packageName, packageVersion);
     final String jsonString = objectMapper.writeValueAsString(version.getRaw());
     return new StringContentLocator(jsonString, NpmRepository.JSON_MIME_TYPE);
   }
 
-  // ==
-
-  private void filterPackageVersion(final PackageVersion packageVersion) {
-    // TODO: set tarball url
-  }
-
   /**
-   * A content locator that streams the potentially huge registry root JSON document out of all of the package documents.
+   * A content locator that streams the potentially huge registry root JSON document out of all of the package
+   * documents.
    */
   private static class RegistryRootContentLocator
       extends AbstractContentLocator
