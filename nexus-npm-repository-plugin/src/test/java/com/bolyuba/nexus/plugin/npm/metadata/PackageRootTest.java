@@ -65,7 +65,7 @@ public class PackageRootTest
     assertThat(commonjs1.getVersions().keySet(), hasItems("0.0.1", "0.0.2", "0.0.3"));
     assertThat(commonjs1.isIncomplete(), is(true));
 
-    objectMapper.writeValue(System.out, commonjs1.getRaw());
+    // objectMapper.writeValue(System.out, commonjs1.getRaw());
   }
 
   @Test

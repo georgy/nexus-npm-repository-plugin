@@ -5,6 +5,9 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.sonatype.nexus.web.BaseUrlHolder;
+import org.sonatype.sisu.goodies.common.SimpleFormat;
+
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
@@ -70,6 +73,9 @@ public class MetadataGenerator
   // ==
 
   private void filterPackageVersion(final PackageVersion packageVersion) {
-    // TODO: set tarball url
+    packageVersion.setDistTarball(SimpleFormat
+        .format("%s/content/repositories/%s/%s/-/%s-%s.tgz", BaseUrlHolder.get(), npmRepository.getId(),
+            packageVersion.getName(), packageVersion.getName(),
+            packageVersion.getVersion()));
   }
 }

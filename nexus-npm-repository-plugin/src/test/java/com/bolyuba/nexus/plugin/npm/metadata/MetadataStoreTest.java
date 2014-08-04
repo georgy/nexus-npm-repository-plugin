@@ -14,6 +14,7 @@ import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
 import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
+import org.sonatype.nexus.web.BaseUrlHolder;
 import org.sonatype.sisu.litmus.testsupport.TestSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
@@ -71,6 +72,7 @@ public class MetadataStoreTest
 
   @Before
   public void setup() throws Exception {
+    BaseUrlHolder.set("http://localhost:8081/nexus");
     tmpDir = util.createTempDir();
 
     when(applicationDirectories.getWorkDirectory(anyString())).thenReturn(tmpDir);
@@ -117,6 +119,7 @@ public class MetadataStoreTest
   @After
   public void teardown() throws Exception {
     metadataStore.stop();
+    BaseUrlHolder.unset();
   }
 
   /**
@@ -160,6 +163,7 @@ public class MetadataStoreTest
     // get the one from file
     final File jsonFile = util.resolveFile("src/test/npm/ROOT_commonjs.json");
     JSONObject onDisk = new JSONObject(Files.toString(jsonFile, Charsets.UTF_8));
+    onDisk.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").put("tarball", "http://localhost:8081/nexus/content/repositories/proxy/commonjs/-/commonjs-0.0.1.tgz");
     JSONObject versions = onDisk.getJSONObject("versions");
     JSONObject diskV001 = versions.getJSONObject("0.0.1");
 
@@ -192,6 +196,7 @@ public class MetadataStoreTest
 
     JSONObject onDisk = new JSONObject(Files.toString(jsonFile, Charsets.UTF_8));
     onDisk.remove("_attachments");
+    onDisk.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").put("tarball", "http://localhost:8081/nexus/content/repositories/hosted/commonjs/-/commonjs-0.0.1.tgz");
     final StringContentLocator contentLocator = (StringContentLocator) hostedMetadataService
         .producePackageRoot("commonjs");
     JSONObject onStore = new JSONObject(
