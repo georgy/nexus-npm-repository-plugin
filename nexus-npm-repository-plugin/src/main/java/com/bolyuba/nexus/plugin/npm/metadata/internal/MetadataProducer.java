@@ -44,6 +44,9 @@ public class MetadataProducer
   @Nullable
   public StringContentLocator produceShrinkedPackageRoot(final String packageName) throws IOException {
     final PackageRoot root = metadataGenerator.generateShrinkedPackageRoot(packageName);
+    if (root == null) {
+      return null;
+    }
     final String jsonString = objectMapper.writeValueAsString(root.getRaw());
     return new StringContentLocator(jsonString, NpmRepository.JSON_MIME_TYPE);
   }
@@ -51,6 +54,9 @@ public class MetadataProducer
   @Nullable
   public StringContentLocator producePackageRoot(final String packageName) throws IOException {
     final PackageRoot root = metadataGenerator.generatePackageRoot(packageName);
+    if (root == null) {
+      return null;
+    }
     final String jsonString = objectMapper.writeValueAsString(root.getRaw());
     return new StringContentLocator(jsonString, NpmRepository.JSON_MIME_TYPE);
   }
@@ -60,6 +66,9 @@ public class MetadataProducer
       throws IOException
   {
     final PackageVersion version = metadataGenerator.generatePackageVersion(packageName, packageVersion);
+    if (version == null) {
+      return null;
+    }
     final String jsonString = objectMapper.writeValueAsString(version.getRaw());
     return new StringContentLocator(jsonString, NpmRepository.JSON_MIME_TYPE);
   }
