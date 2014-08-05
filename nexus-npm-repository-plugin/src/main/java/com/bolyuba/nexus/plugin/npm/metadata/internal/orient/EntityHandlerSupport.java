@@ -9,7 +9,7 @@ import com.orientechnologies.orient.core.metadata.schema.OSchema;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Created by cstamas on 29/07/14.
+ * {@link EntityHandler} support.
  */
 public abstract class EntityHandlerSupport<T>
     implements EntityHandler<T>

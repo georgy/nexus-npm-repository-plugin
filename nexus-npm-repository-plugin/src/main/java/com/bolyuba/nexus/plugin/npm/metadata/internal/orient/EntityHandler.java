@@ -4,7 +4,7 @@ import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 
 /**
- * Created by cstamas on 29/07/14.
+ * Bridge for OrientDB document and entities.
  */
 public interface EntityHandler<T>
 {

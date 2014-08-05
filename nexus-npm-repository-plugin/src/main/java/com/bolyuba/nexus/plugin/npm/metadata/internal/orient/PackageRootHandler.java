@@ -14,7 +14,7 @@ import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 
 /**
- * Created by cstamas on 29/07/14.
+ * {@link EntityHandler} for {@link PackageRoot} entity.
  */
 public class PackageRootHandler
     extends EntityHandlerSupport<PackageRoot>
