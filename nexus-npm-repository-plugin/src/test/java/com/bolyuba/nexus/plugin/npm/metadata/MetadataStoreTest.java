@@ -22,7 +22,6 @@ import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.DefaultNpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepositoryConfigurator;
-import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataConsumer;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataParser;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataServiceFactoryImpl;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.orient.OrientMetadataStore;
@@ -134,11 +133,8 @@ public class MetadataStoreTest
         new GZIPInputStream(new FileInputStream(util.resolveFile("src/test/npm/ROOT_all.json.gz"))),
         NpmRepository.JSON_MIME_TYPE, -1);
     // this is "illegal" case using internal stuff, but is for testing only
-    final MetadataParser parser = new MetadataParser(applicationDirectories.getTemporaryDirectory(), npmProxyRepository);
-    final MetadataConsumer consumer = new MetadataConsumer(
-        npmProxyRepository,
-        parser, metadataStore);
-    consumer.consumeRegistryRoot(input);
+    final MetadataParser parser = new MetadataParser(applicationDirectories.getTemporaryDirectory());
+    metadataStore.updatePackages(npmProxyRepository, parser.parseRegistryRoot(npmProxyRepository.getId(), input));
 
     log("Splice done");
     // we pushed all into DB, now query
@@ -184,7 +180,7 @@ public class MetadataStoreTest
     final ContentLocator input = new PreparedContentLocator(
         new FileInputStream(jsonFile),
         NpmRepository.JSON_MIME_TYPE, -1);
-    hostedMetadataService.consumePackageRoot(input);
+    hostedMetadataService.consumePackageRoot(new PackageRequest(new ResourceStoreRequest("/commonjs")), input);
 
     assertThat(metadataStore.listPackageNames(npmHostedRepository), hasSize(1));
 
@@ -207,7 +203,7 @@ public class MetadataStoreTest
     onDisk.getJSONObject("versions").getJSONObject("0.0.1").remove("_rev"); // TODO: See MetadataGenerator#filterPackageVersion
     onDisk.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").put("tarball", "http://localhost:8081/nexus/content/repositories/hosted/commonjs/-/commonjs-0.0.1.tgz");
     final StringContentLocator contentLocator = (StringContentLocator) hostedMetadataService
-        .producePackageRoot("commonjs");
+        .producePackageRoot(new PackageRequest(new ResourceStoreRequest("/commonjs")));
     JSONObject onStore = new JSONObject(
         ByteSource.wrap(contentLocator.getByteArray()).asCharSource(Charsets.UTF_8).read());
 

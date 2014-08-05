@@ -9,7 +9,9 @@ import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
+import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
 import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
@@ -26,45 +28,39 @@ public class MetadataServiceFactoryImpl
     extends ComponentSupport
     implements MetadataServiceFactory
 {
-  private final ApplicationDirectories applicationDirectories;
-
   private final MetadataStore metadataStore;
 
   private final HttpClientManager httpClientManager;
 
+  private final MetadataParser metadataParser;
+
   @Inject
   public MetadataServiceFactoryImpl(final ApplicationDirectories applicationDirectories,
-                                    final MetadataStore metadataStore, final HttpClientManager httpClientManager)
+                                    final MetadataStore metadataStore,
+                                    final HttpClientManager httpClientManager)
   {
-    this.applicationDirectories = checkNotNull(applicationDirectories);
     this.metadataStore = checkNotNull(metadataStore);
     this.httpClientManager = checkNotNull(httpClientManager);
-  }
-
-  private MetadataParser createParser(final NpmRepository npmRepository) {
-    return new MetadataParser(applicationDirectories.getTemporaryDirectory(), npmRepository);
+    this.metadataParser = new MetadataParser(applicationDirectories.getTemporaryDirectory());
   }
 
   private MetadataGenerator createGenerator(final NpmRepository npmRepository) {
     return new MetadataGenerator(npmRepository, metadataStore);
   }
 
-  private MetadataConsumer createConsumer(final NpmRepository npmRepository) {
-    return new MetadataConsumer(npmRepository, createParser(npmRepository), metadataStore);
-  }
-
-  private MetadataProducer createProducer(final NpmRepository npmRepository) {
-    return new MetadataProducer(createGenerator(npmRepository));
-  }
-
   @Override
   public HostedMetadataService createHostedMetadataService(final NpmHostedRepository npmHostedRepository) {
-    return new HostedMetadataServiceImpl(createConsumer(npmHostedRepository), createProducer(npmHostedRepository));
+    return new HostedMetadataServiceImpl(npmHostedRepository, createGenerator(npmHostedRepository), metadataParser);
   }
 
   @Override
   public ProxyMetadataService createProxyMetadataService(final NpmProxyRepository npmProxyRepository) {
     return new ProxyMetadataServiceImpl(npmProxyRepository, httpClientManager, metadataStore,
-        createParser(npmProxyRepository), createProducer(npmProxyRepository));
+        createGenerator(npmProxyRepository), metadataParser);
+  }
+
+  @Override
+  public GroupMetadataService createGroupMetadataService(final NpmGroupRepository npmGroupRepository) {
+    throw new UnsupportedOperationException("not yet there");
   }
 }

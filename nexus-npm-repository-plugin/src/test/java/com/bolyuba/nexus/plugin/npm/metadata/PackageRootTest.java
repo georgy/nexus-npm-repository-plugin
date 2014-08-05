@@ -73,9 +73,9 @@ public class PackageRootTest
     final NpmRepository npmRepository = mock(NpmRepository.class);
     when(npmRepository.getId()).thenReturn("repo");
     final File uploadRequest = util.resolveFile("src/test/npm/ROOT_testproject.json");
-    final MetadataParser parser = new MetadataParser(util.createTempDir(), npmRepository);
+    final MetadataParser parser = new MetadataParser(util.createTempDir());
     final PackageRoot root = parser
-        .parsePackageRoot(new FileContentLocator(uploadRequest, NpmRepository.JSON_MIME_TYPE));
+        .parsePackageRoot(npmRepository.getId(), new FileContentLocator(uploadRequest, NpmRepository.JSON_MIME_TYPE));
 
     assertThat(root.getAttachments().size(), is(1));
     assertThat(root.getAttachments(), hasKey("testproject-0.0.0.tgz"));

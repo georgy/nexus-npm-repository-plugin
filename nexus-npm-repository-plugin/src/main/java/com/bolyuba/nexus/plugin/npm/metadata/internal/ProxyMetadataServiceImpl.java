@@ -12,7 +12,6 @@ import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
-import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataParser.PackageRootIterator;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.google.common.base.Function;
@@ -47,21 +46,21 @@ public class ProxyMetadataServiceImpl
 
   private final MetadataStore metadataStore;
 
-  private final MetadataParser metadataParser;
+  private final MetadataGenerator metadataGenerator;
 
-  private final MetadataProducer metadataProducer;
+  private final MetadataParser metadataParser;
 
   public ProxyMetadataServiceImpl(final NpmProxyRepository npmProxyRepository,
                                   final HttpClientManager httpClientManager,
                                   final MetadataStore metadataStore,
-                                  final MetadataParser metadataParser,
-                                  final MetadataProducer metadataProducer)
+                                  final MetadataGenerator metadataGenerator,
+                                  final MetadataParser metadataParser)
   {
     this.npmProxyRepository = checkNotNull(npmProxyRepository);
     this.httpClientManager = checkNotNull(httpClientManager);
     this.metadataStore = checkNotNull(metadataStore);
+    this.metadataGenerator = checkNotNull(metadataGenerator);
     this.metadataParser = checkNotNull(metadataParser);
-    this.metadataProducer = checkNotNull(metadataProducer);
   }
 
   @Override
@@ -78,43 +77,44 @@ public class ProxyMetadataServiceImpl
   }
 
   @Override
-  public ContentLocator produceRegistryRoot(final PackageRequest packageRequest) throws IOException {
-    if (!packageRequest.getStoreRequest().isRequestLocalOnly()) {
+  public ContentLocator produceRegistryRoot(final PackageRequest request) throws IOException {
+    if (!request.getStoreRequest().isRequestLocalOnly()) {
       final List<String> packageNames = metadataStore.listPackageNames(npmProxyRepository);
       if (packageNames.isEmpty()) {
         fetchRegistryRoot();
         // TODO: expire when needed all packages? When to refetch?
       }
     }
-    return metadataProducer.produceRegistryRoot();
+    return metadataParser.produceRegistryRoot(metadataGenerator.generateRegistryRoot());
   }
 
   @Nullable
   @Override
-  public ContentLocator producePackageRoot(final PackageRequest packageRequest) throws IOException {
-    checkArgument(packageRequest.isPackageRoot(), "Package root request expected, but got %s",
-        packageRequest.getPath());
-    if (!packageRequest.getStoreRequest().isRequestLocalOnly()) {
-      if (mayUpdatePackageRoot(packageRequest.getName()) == null) {
+  public ContentLocator producePackageRoot(final PackageRequest request) throws IOException {
+    checkArgument(request.isPackageRoot(), "Package root request expected, but got %s",
+        request.getPath());
+    if (!request.getStoreRequest().isRequestLocalOnly()) {
+      if (mayUpdatePackageRoot(request.getName()) == null) {
         return null;
       }
     }
-    return metadataProducer.producePackageRoot(packageRequest.getName());
+    return metadataParser.producePackageRoot(metadataGenerator.generatePackageRoot(request.getName()));
   }
 
   @Nullable
   @Override
-  public ContentLocator producePackageVersion(final PackageRequest packageRequest)
+  public ContentLocator producePackageVersion(final PackageRequest request)
       throws IOException
   {
-    checkArgument(packageRequest.isPackageVersion(), "Package version request expected, but got %s",
-        packageRequest.getPath());
-    if (!packageRequest.getStoreRequest().isRequestLocalOnly()) {
-      if (mayUpdatePackageRoot(packageRequest.getName()) == null) {
+    checkArgument(request.isPackageVersion(), "Package version request expected, but got %s",
+        request.getPath());
+    if (!request.getStoreRequest().isRequestLocalOnly()) {
+      if (mayUpdatePackageRoot(request.getName()) == null) {
         return null;
       }
     }
-    return metadataProducer.producePackageVersion(packageRequest.getName(), packageRequest.getVersion());
+    return metadataParser
+        .producePackageVersion(metadataGenerator.generatePackageVersion(request.getName(), request.getVersion()));
   }
 
   // ==
@@ -124,7 +124,7 @@ public class ProxyMetadataServiceImpl
    */
   private PackageRoot mayUpdatePackageRoot(final String packageName) throws IOException {
     final long now = System.currentTimeMillis();
-    PackageRoot packageRoot = metadataStore.getPackageByName(npmProxyRepository, packageName);
+    PackageRoot packageRoot = metadataGenerator.generatePackageRoot(packageName);
     if (packageRoot == null || isExpired(packageRoot, now)) {
       packageRoot = fetchPackageRoot(packageName, packageRoot);
       if (packageRoot == null) {
@@ -180,7 +180,7 @@ public class ProxyMetadataServiceImpl
         if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
           final PreparedContentLocator pcl = new PreparedContentLocator(httpResponse.getEntity().getContent(),
               NpmRepository.JSON_MIME_TYPE, ContentLocator.UNKNOWN_LENGTH);
-          try (final PackageRootIterator roots = metadataParser.parseRegistryRoot(pcl)) {
+          try (final PackageRootIterator roots = metadataParser.parseRegistryRoot(npmProxyRepository.getId(), pcl)) {
             return metadataStore.updatePackages(npmProxyRepository, roots);
           }
         }
@@ -222,7 +222,7 @@ public class ProxyMetadataServiceImpl
         if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
           final PreparedContentLocator pcl = new PreparedContentLocator(httpResponse.getEntity().getContent(),
               NpmRepository.JSON_MIME_TYPE, ContentLocator.UNKNOWN_LENGTH);
-          final PackageRoot fresh = metadataParser.parsePackageRoot(pcl);
+          final PackageRoot fresh = metadataParser.parsePackageRoot(npmProxyRepository.getId(), pcl);
           if (httpResponse.containsHeader("etag")) {
             fresh.getProperties().put(PROP_ETAG, httpResponse.getFirstHeader("etag").getValue());
           }

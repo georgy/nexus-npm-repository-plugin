@@ -1,14 +1,12 @@
-package com.bolyuba.nexus.plugin.npm.hosted;
+package com.bolyuba.nexus.plugin.npm.group;
 
-import com.bolyuba.nexus.plugin.npm.NpmContentClass;
-import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
-import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
-import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
-import org.codehaus.plexus.util.xml.Xpp3Dom;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.model.CRepository;
@@ -28,16 +26,20 @@ import org.sonatype.nexus.proxy.item.PreparedContentLocator;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.nexus.proxy.registry.ContentClass;
-import org.sonatype.nexus.proxy.repository.AbstractRepository;
+import org.sonatype.nexus.proxy.repository.AbstractGroupRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
+import com.bolyuba.nexus.plugin.npm.NpmContentClass;
+import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
+import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
+import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.proxy.ItemNotFoundException.reasonFor;
@@ -45,34 +47,34 @@ import static org.sonatype.nexus.proxy.ItemNotFoundException.reasonFor;
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
-@Named(DefaultNpmHostedRepository.ROLE_HINT)
+@Named(DefaultNpmGroupRepository.ROLE_HINT)
 @Description("Npm registry hosted repo")
-public class DefaultNpmHostedRepository
-        extends AbstractRepository
-        implements NpmHostedRepository, NpmRepository {
+public class DefaultNpmGroupRepository
+        extends AbstractGroupRepository
+        implements NpmGroupRepository, NpmRepository  {
 
-    public static final String ROLE_HINT = "npm-hosted";
+    public static final String ROLE_HINT = "npm-group";
 
     private final ContentClass contentClass;
 
-    private final NpmHostedRepositoryConfigurator configurator;
+    private final NpmGroupRepositoryConfigurator configurator;
 
     private final RepositoryKind repositoryKind;
 
     private final NpmMimeRulesSource mimeRulesSource;
 
-    private final HostedMetadataService hostedMetadataService;
+    private final GroupMetadataService groupMetadataService;
 
     @Inject
-    public DefaultNpmHostedRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
-                                      final NpmHostedRepositoryConfigurator configurator,
-                                      final MetadataServiceFactory metadataServiceFactory) {
+    public DefaultNpmGroupRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
+                                     final NpmGroupRepositoryConfigurator configurator,
+                                     final MetadataServiceFactory metadataServiceFactory) {
 
-        this.hostedMetadataService = metadataServiceFactory.createHostedMetadataService(this);
+        this.groupMetadataService = metadataServiceFactory.createGroupMetadataService(this);
         this.mimeRulesSource = new NpmMimeRulesSource();
         this.contentClass = checkNotNull(contentClass);
         this.configurator = checkNotNull(configurator);
-        this.repositoryKind = new DefaultRepositoryKind(NpmHostedRepository.class, null);
+        this.repositoryKind = new DefaultRepositoryKind(NpmGroupRepository.class, null);
     }
 
     @Override
@@ -97,10 +99,10 @@ public class DefaultNpmHostedRepository
 
     @Override
     protected CRepositoryExternalConfigurationHolderFactory<?> getExternalConfigurationHolderFactory() {
-        return new CRepositoryExternalConfigurationHolderFactory<NpmHostedRepositoryConfiguration>() {
+        return new CRepositoryExternalConfigurationHolderFactory<NpmGroupRepositoryConfiguration>() {
             @Override
-            public NpmHostedRepositoryConfiguration createExternalConfigurationHolder(final CRepository config) {
-                return new NpmHostedRepositoryConfiguration((Xpp3Dom) config.getExternalConfiguration());
+            public NpmGroupRepositoryConfiguration createExternalConfigurationHolder(final CRepository config) {
+                return new NpmGroupRepositoryConfiguration((Xpp3Dom) config.getExternalConfiguration());
             }
         };
     }
@@ -112,11 +114,11 @@ public class DefaultNpmHostedRepository
             if (packageRequest.isMetadata()) {
               ContentLocator contentLocator;
               if (packageRequest.isRegistryRoot()) {
-                contentLocator = hostedMetadataService.produceRegistryRoot(packageRequest);
+                contentLocator = groupMetadataService.produceRegistryRoot(packageRequest);
               } else if (packageRequest.isPackageRoot()) {
-                contentLocator = hostedMetadataService.producePackageRoot(packageRequest);
+                contentLocator = groupMetadataService.producePackageRoot(packageRequest);
               } else {
-                contentLocator = hostedMetadataService.producePackageVersion(packageRequest);
+                contentLocator = groupMetadataService.producePackageVersion(packageRequest);
               }
               if (contentLocator == null) {
                 throw new ItemNotFoundException(reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
@@ -125,7 +127,7 @@ public class DefaultNpmHostedRepository
             } else {
                 // registry special
                 if (packageRequest.isRegistrySpecial() && packageRequest.getPath().startsWith("/-/all")) {
-                  return new DefaultStorageFileItem(this, storeRequest, true, true, hostedMetadataService.produceRegistryRoot(packageRequest));
+                  return new DefaultStorageFileItem(this, storeRequest, true, true, groupMetadataService.produceRegistryRoot(packageRequest));
                 }
                 throw new ItemNotFoundException(reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
             }
@@ -158,7 +160,7 @@ public class DefaultNpmHostedRepository
 
             publisherLock.lock(Action.create);
             try {
-                final PackageRoot packageRoot = hostedMetadataService.consumePackageRoot(packageRequest, new PreparedContentLocator(is, NpmRepository.JSON_MIME_TYPE, ContentLocator.UNKNOWN_LENGTH));
+                final PackageRoot packageRoot = groupMetadataService.consumePackageRoot(packageRequest, new PreparedContentLocator(is, NpmRepository.JSON_MIME_TYPE, ContentLocator.UNKNOWN_LENGTH));
 
                 if (!packageRoot.getAttachments().isEmpty()) {
                   for (PackageAttachment attachment : packageRoot.getAttachments().values()) {

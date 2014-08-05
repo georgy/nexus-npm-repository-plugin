@@ -1,69 +1,110 @@
 package com.bolyuba.nexus.plugin.npm.metadata.internal;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
+import org.sonatype.nexus.proxy.item.AbstractContentLocator;
 import org.sonatype.nexus.proxy.item.ContentLocator;
+import org.sonatype.nexus.proxy.item.StringContentLocator;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Parses "raw" (streamed or not) NPM metadata from external source (either NPM CLI performing deploy or
- * proxying a NPM registry) and producing {@link PackageRoot} instances.
+ * Metadata parser and producer, out of "raw" (streamed or not) source to entities and other way around.
  */
 public class MetadataParser
 {
-  public static interface PackageRootIterator
-      extends Iterator<PackageRoot>, Closeable
-  {
-  }
-
   private final File temporaryDirectory;
-
-  private final NpmRepository npmRepository;
 
   private final ObjectMapper objectMapper;
 
-  public MetadataParser(final File temporaryDirectory, final NpmRepository npmRepository) {
+  public MetadataParser(final File temporaryDirectory) {
     this.temporaryDirectory = checkNotNull(temporaryDirectory);
-    this.npmRepository = checkNotNull(npmRepository);
     this.objectMapper = new ObjectMapper(); // this parses registry JSON
   }
 
-  public PackageRootIterator parseRegistryRoot(final ContentLocator contentLocator) throws IOException {
+  // Parse API
+
+  public PackageRootIterator parseRegistryRoot(final String repositoryId, final ContentLocator contentLocator) throws IOException {
+    checkNotNull(repositoryId);
+    checkNotNull(contentLocator);
     checkArgument(NpmRepository.JSON_MIME_TYPE.equals(contentLocator.getMimeType()), "JSON is expected inout!");
-    return new PackageRootIteratorImpl(objectMapper.getFactory().createParser(contentLocator.getContent()));
+    return new ParsingPackageRootIterator(repositoryId,  objectMapper.getFactory().createParser(contentLocator.getContent()));
   }
 
-  public PackageRoot parsePackageRoot(final ContentLocator contentLocator) throws IOException {
+  public PackageRoot parsePackageRoot(final String repositoryId, final ContentLocator contentLocator) throws IOException {
+    checkNotNull(repositoryId);
+    checkNotNull(contentLocator);
     checkArgument(NpmRepository.JSON_MIME_TYPE.equals(contentLocator.getMimeType()), "JSON is expected inout!");
     try (final JsonParser parser = objectMapper.getFactory().createParser(contentLocator.getContent())) {
-      final PackageRoot packageRoot = parsePackageRoot(parser);
+      final PackageRoot packageRoot = parsePackageRoot(repositoryId, parser);
       checkArgument(!packageRoot.isIncomplete(),
           "Wrong API use, incomplete package roots should not be consumed this way!");
       return packageRoot;
     }
   }
 
+  // Produce API
+
+  public RegistryRootContentLocator produceRegistryRoot(final PackageRootIterator packageRootIterator) throws IOException {
+    checkNotNull(packageRootIterator);
+    return new RegistryRootContentLocator(this, packageRootIterator);
+  }
+
+  @Nullable
+  public StringContentLocator produceShrinkedPackageRoot(final PackageRoot root) throws IOException {
+    if (root == null) {
+      return null;
+    }
+    final String jsonString = objectMapper.writeValueAsString(root.getRaw());
+    return new StringContentLocator(jsonString, NpmRepository.JSON_MIME_TYPE);
+  }
+
+  @Nullable
+  public StringContentLocator producePackageRoot(final PackageRoot root) throws IOException {
+    if (root == null) {
+      return null;
+    }
+    final String jsonString = objectMapper.writeValueAsString(root.getRaw());
+    return new StringContentLocator(jsonString, NpmRepository.JSON_MIME_TYPE);
+  }
+
+  @Nullable
+  public StringContentLocator producePackageVersion(final PackageVersion version)
+      throws IOException
+  {
+    if (version == null) {
+      return null;
+    }
+    final String jsonString = objectMapper.writeValueAsString(version.getRaw());
+    return new StringContentLocator(jsonString, NpmRepository.JSON_MIME_TYPE);
+  }
+
   // ==
 
-  private PackageRoot parsePackageRoot(final JsonParser parser) throws IOException {
+  private PackageRoot parsePackageRoot(final String repositoryId, final JsonParser parser) throws IOException {
     final Map<String, Object> raw = Maps.newHashMap();
     final Map<String, PackageAttachment> attachments = Maps.newHashMap();
     checkArgument(parser.nextToken() == JsonToken.START_OBJECT, "Unexpected input %s, expected %s",
@@ -114,7 +155,7 @@ public class MetadataParser
         raw.put(fieldName, parser.getValueAsString());
       }
     }
-    final PackageRoot result = new PackageRoot(npmRepository.getId(), raw);
+    final PackageRoot result = new PackageRoot(repositoryId, raw);
     if (!attachments.isEmpty()) {
       result.getAttachments().putAll(attachments);
     }
@@ -160,14 +201,17 @@ public class MetadataParser
 
   // ==
 
-  private class PackageRootIteratorImpl
+  private class ParsingPackageRootIterator
       implements PackageRootIterator
   {
+    private final String repositoryId;
+
     private final JsonParser parser;
 
     private PackageRoot nextPackageRoot;
 
-    private PackageRootIteratorImpl(final JsonParser parser) {
+    private ParsingPackageRootIterator(final String repositoryId, final JsonParser parser) {
+      this.repositoryId = repositoryId;
       this.parser = parser;
       nextPackageRoot = getNext();
     }
@@ -208,7 +252,7 @@ public class MetadataParser
           if (parser.getCurrentName().startsWith("_")) {
             continue; // skip it
           }
-          return parsePackageRoot(parser);
+          return parsePackageRoot(repositoryId, parser);
         }
         return null;
       }
@@ -220,6 +264,71 @@ public class MetadataParser
     @Override
     public void remove() {
       throw new UnsupportedOperationException("Remove unsupported");
+    }
+  }
+
+  // ==
+
+  /**
+   * A content locator that streams the potentially huge registry root JSON document out of all of the package
+   * documents.
+   */
+  private static class RegistryRootContentLocator
+      extends AbstractContentLocator
+      implements Iterator<ByteSource>
+  {
+    private final MetadataParser metadataParser;
+
+    private final PackageRootIterator packageRootIterator;
+
+    private boolean first;
+
+    protected RegistryRootContentLocator(final MetadataParser metadataParser, final PackageRootIterator packageRootIterator) {
+      super(NpmRepository.JSON_MIME_TYPE, false, ContentLocator.UNKNOWN_LENGTH);
+      this.metadataParser = metadataParser;
+      this.packageRootIterator = packageRootIterator;
+      this.first = true;
+    }
+
+    @Override
+    public InputStream getContent() throws IOException {
+      return ByteSource.concat(this).openStream();
+    }
+
+    @Override
+    public boolean hasNext() {
+      return first || packageRootIterator.hasNext();
+    }
+
+    @Override
+    public ByteSource next() {
+      try {
+        final List<ByteSource> sources = Lists.newArrayList();
+        if (first) {
+          first = false;
+          sources.add(ByteSource.wrap("{".getBytes(Charsets.UTF_8)));
+        }
+        if (packageRootIterator.hasNext()) {
+          final PackageRoot packageRoot = packageRootIterator.next();
+          sources.add(ByteSource.wrap(("\"" + packageRoot.getName() + "\":").getBytes(Charsets.UTF_8)));
+          sources.add(ByteSource.wrap(metadataParser.produceShrinkedPackageRoot(packageRoot).getByteArray()));
+        }
+        if (!packageRootIterator.hasNext()) {
+          sources.add(ByteSource.wrap("}".getBytes(Charsets.UTF_8)));
+        }
+        else {
+          sources.add(ByteSource.wrap(",".getBytes(Charsets.UTF_8)));
+        }
+        return ByteSource.concat(sources);
+      }
+      catch (Exception e) {
+        throw Throwables.propagate(e);
+      }
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("Remove not supported");
     }
   }
 }

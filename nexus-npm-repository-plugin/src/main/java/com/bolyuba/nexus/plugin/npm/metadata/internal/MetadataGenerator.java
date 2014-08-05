@@ -1,6 +1,7 @@
 package com.bolyuba.nexus.plugin.npm.metadata.internal;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -11,11 +12,13 @@ import org.sonatype.sisu.goodies.common.SimpleFormat;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
+import com.google.common.base.Throwables;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Produces NPM metadata from underlying store, filtering it and applying other logic.
+ * Produces NPM metadata from underlying store, filtering it and applying other logic. Packages should be sent downstream
+ * only by getting the over this component, as underlying store stores JSON documents as-is (as fetched from remote)!
  */
 public class MetadataGenerator
 {
@@ -28,8 +31,14 @@ public class MetadataGenerator
     this.metadataStore = checkNotNull(metadataStore);
   }
 
-  public List<String> listPackageNames() {
-    return metadataStore.listPackageNames(npmRepository);
+  public PackageRoot consumePackageRoot(final PackageRoot packageRoot)
+      throws IOException
+  {
+    return metadataStore.updatePackage(npmRepository, packageRoot);
+  }
+
+  public PackageRootIterator generateRegistryRoot() {
+    return new MetadataStorePackageRootIterator(metadataStore.listPackageNames(npmRepository));
   }
 
   @Nullable
@@ -86,5 +95,42 @@ public class MetadataGenerator
             packageVersion.getVersion()));
     packageVersion.getRaw().remove("_id"); // TODO: why? Original code did this too
     packageVersion.getRaw().remove("_rev"); // TODO: why? Original code did this too
+  }
+
+  // ==
+
+  private class MetadataStorePackageRootIterator
+      implements PackageRootIterator
+  {
+    private final Iterator<String> packageNames;
+
+    private MetadataStorePackageRootIterator(final List<String> packageNames) {
+      this.packageNames = packageNames.iterator();
+    }
+
+    @Override
+    public void close() throws IOException {
+      // nop
+    }
+
+    @Override
+    public boolean hasNext() {
+      return packageNames.hasNext();
+    }
+
+    @Override
+    public PackageRoot next() {
+      try {
+        return generateShrinkedPackageRoot(packageNames.next());
+      }
+      catch (IOException e) {
+        throw Throwables.propagate(e);
+      }
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("Remove not supported.");
+    }
   }
 }
