@@ -11,10 +11,8 @@ import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryCoreConfiguration;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
 import org.sonatype.nexus.configuration.model.DefaultCRepository;
-import org.sonatype.nexus.proxy.maven.MavenRepository;
-import org.sonatype.nexus.proxy.maven.RepositoryPolicy;
 import org.sonatype.nexus.proxy.repository.RepositoryWritePolicy;
-import org.sonatype.nexus.templates.repository.maven.AbstractMavenRepositoryTemplate;
+import org.sonatype.nexus.templates.repository.AbstractRepositoryTemplate;
 
 import java.io.IOException;
 
@@ -22,11 +20,12 @@ import java.io.IOException;
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
 public class NpmHostedRepositoryTemplate
-        extends AbstractMavenRepositoryTemplate {
+        extends AbstractRepositoryTemplate
+{
 
     public NpmHostedRepositoryTemplate(final NpmRepositoryTemplateProvider provider, final String id,
                                        final String description) {
-        super(provider, id, description, new NpmContentClass(), DefaultNpmHostedRepository.class, RepositoryPolicy.RELEASE);
+        super(provider, id, description, new NpmContentClass(), DefaultNpmHostedRepository.class);
     }
 
     @Override
@@ -47,10 +46,6 @@ public class NpmHostedRepositoryTemplate
 
         final NpmHostedRepositoryConfiguration exConf = new NpmHostedRepositoryConfiguration(ex);
 
-        if (getRepositoryPolicy() != null) {
-          exConf.setRepositoryPolicy(getRepositoryPolicy());
-        }
-
         repo.externalConfigurationImple = exConf;
 
         repo.setWritePolicy(RepositoryWritePolicy.ALLOW_WRITE.name());
@@ -68,7 +63,7 @@ public class NpmHostedRepositoryTemplate
     }
 
     @Override
-    public MavenRepository create() throws ConfigurationException, IOException {
-        return super.create();
+    public NpmRepository create() throws ConfigurationException, IOException {
+        return (NpmRepository) super.create();
     }
 }

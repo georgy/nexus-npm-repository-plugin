@@ -3,7 +3,6 @@ package com.bolyuba.nexus.plugin.npm.proxy;
 import java.io.IOException;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
-import com.bolyuba.nexus.plugin.npm.NpmPlugin;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
