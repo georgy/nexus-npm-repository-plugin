@@ -7,6 +7,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.zip.GZIPInputStream;
 
 import org.sonatype.nexus.configuration.application.ApplicationDirectories;
+import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.PreparedContentLocator;
 import org.sonatype.nexus.proxy.item.StringContentLocator;
@@ -25,6 +26,7 @@ import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataConsumer;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataParser;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataServiceFactoryImpl;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.orient.OrientMetadataStore;
+import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepositoryConfigurator;
@@ -146,7 +148,7 @@ public class MetadataStoreTest
     log(commonjs.getName() + " || " + commonjs.getVersions().keySet() + "unpublished=" + commonjs.isUnpublished() +
         " incomplete=" + commonjs.isIncomplete());
 
-    final ContentLocator output = proxyMetadataService.produceRegistryRoot();
+    final ContentLocator output = proxyMetadataService.produceRegistryRoot(new PackageRequest(new ResourceStoreRequest("/")));
     try (InputStream is = output.getContent()) {
       java.nio.file.Files.copy(is, new File(tmpDir, "root.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
@@ -156,14 +158,15 @@ public class MetadataStoreTest
   public void proxyPackageRootRoundtrip() throws Exception {
     // this call will get it from remote, store, and return it as raw stream
     final StringContentLocator contentLocator = (StringContentLocator) proxyMetadataService
-        .producePackageVersion("commonjs", "0.0.1");
+        .producePackageVersion(new PackageRequest(new ResourceStoreRequest("/commonjs/0.0.1")));
     JSONObject proxiedV001 = new JSONObject(
         ByteSource.wrap(contentLocator.getByteArray()).asCharSource(Charsets.UTF_8).read());
 
     // get the one from file
     final File jsonFile = util.resolveFile("src/test/npm/ROOT_commonjs.json");
     JSONObject onDisk = new JSONObject(Files.toString(jsonFile, Charsets.UTF_8));
-    onDisk.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").put("tarball", "http://localhost:8081/nexus/content/repositories/proxy/commonjs/-/commonjs-0.0.1.tgz");
+    onDisk.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").put("tarball",
+        "http://localhost:8081/nexus/content/repositories/proxy/commonjs/-/commonjs-0.0.1.tgz");
     JSONObject versions = onDisk.getJSONObject("versions");
     JSONObject diskV001 = versions.getJSONObject("0.0.1");
     diskV001.remove("_id"); // TODO: See MetadataGenerator#filterPackageVersion

@@ -124,7 +124,10 @@ public class DefaultNpmHostedRepository
               return new DefaultStorageFileItem(this, storeRequest, true, true, contentLocator);
             } else {
                 // registry special
-                return delegateDoRetrieveLocalItem(storeRequest);
+                if (packageRequest.isRegistrySpecial() && packageRequest.getPath().startsWith("/-/all")) {
+                  return new DefaultStorageFileItem(this, storeRequest, true, true, hostedMetadataService.produceRegistryRoot());
+                }
+                throw new ItemNotFoundException(reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
             }
         } catch (IllegalArgumentException ignore) {
             // something completely different

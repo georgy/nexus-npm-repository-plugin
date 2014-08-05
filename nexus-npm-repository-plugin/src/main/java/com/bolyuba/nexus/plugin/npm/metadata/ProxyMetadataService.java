@@ -20,11 +20,11 @@ public interface ProxyMetadataService
    */
   boolean expireMetadataCaches(PackageRequest request);
 
-  ContentLocator produceRegistryRoot() throws IOException;
+  ContentLocator produceRegistryRoot(PackageRequest packageRequest) throws IOException;
 
   @Nullable
-  ContentLocator producePackageRoot(String packageName) throws IOException;
+  ContentLocator producePackageRoot(PackageRequest packageRequest) throws IOException;
 
   @Nullable
-  ContentLocator producePackageVersion(String packageName, String packageVersion) throws IOException;
+  ContentLocator producePackageVersion(PackageRequest packageRequest) throws IOException;
 }

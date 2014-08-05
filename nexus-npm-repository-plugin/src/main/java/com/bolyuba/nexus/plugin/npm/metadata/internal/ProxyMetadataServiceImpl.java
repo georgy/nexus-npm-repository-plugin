@@ -24,6 +24,7 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -38,7 +39,7 @@ public class ProxyMetadataServiceImpl
 
   private static final String PROP_EXPIRED = "remote.expired";
 
-  private final Logger log = LoggerFactory.getLogger(ProxyMetadataServiceImpl.class);
+  private static final Logger outboundRequestLog = LoggerFactory.getLogger("remote.storage.outbound");
 
   private final NpmProxyRepository npmProxyRepository;
 
@@ -66,7 +67,8 @@ public class ProxyMetadataServiceImpl
   @Override
   public boolean expireMetadataCaches(final PackageRequest request) {
     // TODO: obey package name, version narrowing
-    return 0 < metadataStore.updatePackages(npmProxyRepository, null, new Function<PackageRoot, PackageRoot>() {
+    return 0 < metadataStore.updatePackages(npmProxyRepository, null, new Function<PackageRoot, PackageRoot>()
+    {
       @Override
       public PackageRoot apply(@Nullable final PackageRoot input) {
         input.getProperties().put(PROP_EXPIRED, Boolean.TRUE.toString());
@@ -76,33 +78,43 @@ public class ProxyMetadataServiceImpl
   }
 
   @Override
-  public ContentLocator produceRegistryRoot() throws IOException {
-    final List<String> packageNames = metadataStore.listPackageNames(npmProxyRepository);
-    if (packageNames.isEmpty()) {
-      fetchRegistryRoot();
-      // TODO: expire when needed all packages? When to refetch?
+  public ContentLocator produceRegistryRoot(final PackageRequest packageRequest) throws IOException {
+    if (!packageRequest.getStoreRequest().isRequestLocalOnly()) {
+      final List<String> packageNames = metadataStore.listPackageNames(npmProxyRepository);
+      if (packageNames.isEmpty()) {
+        fetchRegistryRoot();
+        // TODO: expire when needed all packages? When to refetch?
+      }
     }
     return metadataProducer.produceRegistryRoot();
   }
 
   @Nullable
   @Override
-  public ContentLocator producePackageRoot(final String packageName) throws IOException {
-    if (mayUpdatePackageRoot(packageName) == null) {
-      return null;
+  public ContentLocator producePackageRoot(final PackageRequest packageRequest) throws IOException {
+    checkArgument(packageRequest.isPackageRoot(), "Package root request expected, but got %s",
+        packageRequest.getPath());
+    if (!packageRequest.getStoreRequest().isRequestLocalOnly()) {
+      if (mayUpdatePackageRoot(packageRequest.getName()) == null) {
+        return null;
+      }
     }
-    return metadataProducer.producePackageRoot(packageName);
+    return metadataProducer.producePackageRoot(packageRequest.getName());
   }
 
   @Nullable
   @Override
-  public ContentLocator producePackageVersion(final String packageName, final String packageVersion)
+  public ContentLocator producePackageVersion(final PackageRequest packageRequest)
       throws IOException
   {
-    if (mayUpdatePackageRoot(packageName) == null) {
-      return null;
+    checkArgument(packageRequest.isPackageVersion(), "Package version request expected, but got %s",
+        packageRequest.getPath());
+    if (!packageRequest.getStoreRequest().isRequestLocalOnly()) {
+      if (mayUpdatePackageRoot(packageRequest.getName()) == null) {
+        return null;
+      }
     }
-    return metadataProducer.producePackageVersion(packageName, packageVersion);
+    return metadataProducer.producePackageVersion(packageRequest.getName(), packageRequest.getVersion());
   }
 
   // ==
@@ -152,16 +164,19 @@ public class ProxyMetadataServiceImpl
   /**
    * Performs a HTTP GET to fetch the registry root.
    */
-  protected int fetchRegistryRoot() throws IOException {
+  private int fetchRegistryRoot() throws IOException {
     final HttpClient httpClient = httpClientManager.create(npmProxyRepository,
         npmProxyRepository.getRemoteStorageContext());
     try {
-      final HttpGet get = new HttpGet(
-          npmProxyRepository.getRemoteUrl() + "/-/all"); // TODO: this in NPM specific, might try both root and NPM api
-      log.info("GET {}", get.getURI());
+      final HttpGet get = new HttpGet(buildUri("-/all")); // TODO: this in NPM specific, might try both root and NPM api
+      // TODO: during devel INFO, should be DEBUG
+      outboundRequestLog.info("{} - NPM GET {}", npmProxyRepository.getId(), get.getURI());
       get.addHeader("accept", NpmRepository.JSON_MIME_TYPE);
       final HttpResponse httpResponse = httpClient.execute(get);
       try {
+        // TODO: during devel INFO, should be DEBUG
+        outboundRequestLog.info("{} - NPM GET {} - {}", npmProxyRepository.getId(), get.getURI(),
+            httpResponse.getStatusLine());
         if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
           final PreparedContentLocator pcl = new PreparedContentLocator(httpResponse.getEntity().getContent(),
               NpmRepository.JSON_MIME_TYPE, ContentLocator.UNKNOWN_LENGTH);
@@ -185,18 +200,22 @@ public class ProxyMetadataServiceImpl
    * (HTTP 200 Ok is returned), the package root is also pushed into {@code MetadataStore}. In short, the returned
    * package root from this method is guaranteed to be present in the store too.
    */
-  protected PackageRoot fetchPackageRoot(final String packageName, final PackageRoot expired) throws IOException {
+  private PackageRoot fetchPackageRoot(final String packageName, final PackageRoot expired) throws IOException {
     final HttpClient httpClient = httpClientManager.create(npmProxyRepository,
         npmProxyRepository.getRemoteStorageContext());
     try {
-      final HttpGet get = new HttpGet(npmProxyRepository.getRemoteUrl() + "/" + packageName);
-      log.info("GET {}", get.getURI());
+      final HttpGet get = new HttpGet(buildUri(packageName));
+      // TODO: during devel INFO, should be DEBUG
+      outboundRequestLog.info("{} - NPM GET {}", npmProxyRepository.getId(), get.getURI());
       get.addHeader("accept", NpmRepository.JSON_MIME_TYPE);
       if (expired != null && expired.getProperties().containsKey(PROP_ETAG)) {
         get.addHeader("if-none-match", expired.getProperties().get(PROP_ETAG));
       }
       final HttpResponse httpResponse = httpClient.execute(get);
       try {
+        // TODO: during devel INFO, should be DEBUG
+        outboundRequestLog.info("{} - NPM GET {} - {}", npmProxyRepository.getId(), get.getURI(),
+            httpResponse.getStatusLine());
         if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_MODIFIED) {
           return expired;
         }
@@ -217,6 +236,19 @@ public class ProxyMetadataServiceImpl
     }
     finally {
       httpClientManager.release(npmProxyRepository, npmProxyRepository.getRemoteStorageContext());
+    }
+  }
+
+  /**
+   * Builds and return registry URI for given package name.
+   */
+  private String buildUri(final String pathElem) {
+    final String registryUrl = npmProxyRepository.getRemoteUrl();
+    if (registryUrl.endsWith("/")) {
+      return registryUrl + pathElem;
+    }
+    else {
+      return registryUrl + "/" + pathElem;
     }
   }
 }

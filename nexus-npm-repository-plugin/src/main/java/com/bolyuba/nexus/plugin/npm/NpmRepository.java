@@ -15,4 +15,6 @@ public interface NpmRepository extends Repository
     String TARBALL_MIME_TYPE = "application/x-gzip";
 
     String NPM_REGISTRY_SPECIAL = "-";
+
+    String NPM_METADATA_SERVICED = "NpmMetadataServiced";
 }
