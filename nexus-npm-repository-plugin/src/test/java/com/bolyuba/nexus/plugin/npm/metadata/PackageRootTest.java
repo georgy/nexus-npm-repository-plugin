@@ -3,6 +3,7 @@ package com.bolyuba.nexus.plugin.npm.metadata;
 import java.io.File;
 import java.util.Map;
 
+import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.nexus.proxy.item.FileContentLocator;
 import org.sonatype.sisu.litmus.testsupport.TestSupport;
 
@@ -19,6 +20,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -73,7 +75,12 @@ public class PackageRootTest
     final NpmRepository npmRepository = mock(NpmRepository.class);
     when(npmRepository.getId()).thenReturn("repo");
     final File uploadRequest = util.resolveFile("src/test/npm/ROOT_testproject.json");
-    final MetadataParser parser = new MetadataParser(util.createTempDir());
+
+    final File tmpDir = util.createTempDir();
+    ApplicationDirectories applicationDirectories = mock(ApplicationDirectories.class);
+    when(applicationDirectories.getTemporaryDirectory()).thenReturn(tmpDir);
+
+    final MetadataParser parser = new MetadataParser(applicationDirectories);
     final PackageRoot root = parser
         .parsePackageRoot(npmRepository.getId(), new FileContentLocator(uploadRequest, NpmRepository.JSON_MIME_TYPE));
 

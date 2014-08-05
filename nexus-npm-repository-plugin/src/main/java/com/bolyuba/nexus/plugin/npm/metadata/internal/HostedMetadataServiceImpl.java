@@ -9,6 +9,8 @@ import org.sonatype.nexus.proxy.item.ContentLocator;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
+import com.bolyuba.nexus.plugin.npm.metadata.Producer;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -17,6 +19,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  * {@link HostedMetadataService} implementation.
  */
 public class HostedMetadataServiceImpl
+    extends GeneratorSupport
     implements HostedMetadataService
 {
   private final NpmHostedRepository npmHostedRepository;
@@ -29,6 +32,7 @@ public class HostedMetadataServiceImpl
                                    final MetadataGenerator metadataGenerator,
                                    final MetadataParser metadataParser)
   {
+    super(metadataParser);
     this.npmHostedRepository = npmHostedRepository;
     this.metadataGenerator = metadataGenerator;
     this.metadataParser = metadataParser;
@@ -44,26 +48,24 @@ public class HostedMetadataServiceImpl
   }
 
   @Override
-  public ContentLocator produceRegistryRoot(final PackageRequest request) throws IOException {
-    return metadataParser.produceRegistryRoot(metadataGenerator.generateRegistryRoot());
+  public PackageRootIterator generateRegistryRoot(final PackageRequest request) throws IOException {
+    return metadataGenerator.generateRegistryRoot();
   }
 
   @Nullable
   @Override
-  public ContentLocator producePackageRoot(final PackageRequest request) throws IOException {
+  public PackageRoot generatePackageRoot(final PackageRequest request) throws IOException {
     checkArgument(request.isPackageRoot(), "Package root request expected, but got %s",
         request.getPath());
-    return metadataParser.producePackageRoot(metadataGenerator.generatePackageRoot(request.getName()));
+    return metadataGenerator.generatePackageRoot(request.getName());
   }
 
   @Nullable
   @Override
-  public ContentLocator producePackageVersion(final PackageRequest request)
-      throws IOException
-  {
+  public PackageVersion generatePackageVersion(final PackageRequest request) throws IOException {
     checkArgument(request.isPackageVersion(), "Package version request expected, but got %s",
         request.getPath());
-    return metadataParser.producePackageVersion(metadataGenerator.generatePackageVersion(request.getName(),
-        request.getVersion()));
+    return metadataGenerator.generatePackageVersion(request.getName(),
+        request.getVersion());
   }
 }

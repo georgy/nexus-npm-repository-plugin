@@ -1,8 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.group;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -12,32 +10,22 @@ import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
 import org.sonatype.nexus.mime.MimeRulesSource;
-import org.sonatype.nexus.proxy.AccessDeniedException;
-import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
-import org.sonatype.nexus.proxy.StorageException;
-import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
-import org.sonatype.nexus.proxy.item.PreparedContentLocator;
-import org.sonatype.nexus.proxy.item.RepositoryItemUid;
-import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractGroupRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
-import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
@@ -141,44 +129,5 @@ public class DefaultNpmGroupRepository
 
     AbstractStorageItem delegateDoRetrieveLocalItem(ResourceStoreRequest storeRequest) throws LocalStorageException, ItemNotFoundException {
         return super.doRetrieveLocalItem(storeRequest);
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public void storeItem(ResourceStoreRequest request, InputStream is, Map<String, String> userAttributes)
-            throws UnsupportedStorageOperationException, IllegalOperationException, StorageException, AccessDeniedException {
-        try {
-            PackageRequest packageRequest = new PackageRequest(request);
-
-            if (!packageRequest.isPackageRoot()) {
-                throw new UnsupportedStorageOperationException("Store operations are only valid for package roots, path: " + packageRequest.getPath());
-            }
-
-            // serialize all publish request for the same
-            final RepositoryItemUid publisherUid = createUid(packageRequest.getPath() + ".publish()");
-            RepositoryItemUidLock publisherLock = publisherUid.getLock();
-
-            publisherLock.lock(Action.create);
-            try {
-                final PackageRoot packageRoot = groupMetadataService.consumePackageRoot(packageRequest, new PreparedContentLocator(is, NpmRepository.JSON_MIME_TYPE, ContentLocator.UNKNOWN_LENGTH));
-
-                if (!packageRoot.getAttachments().isEmpty()) {
-                  for (PackageAttachment attachment : packageRoot.getAttachments().values()) {
-                    final ResourceStoreRequest attachmentRequest = new ResourceStoreRequest(request);
-                    attachmentRequest.setRequestPath(packageRequest.getPath() + RepositoryItemUid.PATH_SEPARATOR + NPM_REGISTRY_SPECIAL +
-                        RepositoryItemUid.PATH_SEPARATOR + attachment.getName());
-                    super.storeItem(attachmentRequest, attachment.getContent(), userAttributes);
-                  }
-                }
-            } finally {
-                publisherLock.unlock();
-            }
-        } catch (IllegalArgumentException e) {
-            // TODO: This might be our tarball, but it also might be something stupid uploaded. Need to validate further
-            // for now just store it
-            super.storeItem(request, is, userAttributes);
-        } catch (IOException e) {
-          throw new LocalStorageException("Upload problem", e);
-        }
     }
 }

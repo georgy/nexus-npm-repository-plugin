@@ -11,4 +11,6 @@ public interface MetadataServiceFactory
   ProxyMetadataService createProxyMetadataService(NpmProxyRepository npmProxyRepository);
 
   GroupMetadataService createGroupMetadataService(NpmGroupRepository npmGroupRepository);
+
+  Producer createProducerFromGenerator(Generator generator);
 }

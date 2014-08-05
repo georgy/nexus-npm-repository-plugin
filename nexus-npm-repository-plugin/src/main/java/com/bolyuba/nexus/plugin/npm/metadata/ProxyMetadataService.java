@@ -8,7 +8,7 @@ import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
  * component ensures first that the store contains up to date data and serves that.
  */
 public interface ProxyMetadataService
-    extends Producer
+    extends Generator, Producer
 {
   /**
    * Expires proxy metadata cache. On next request of an expired metadata, refetch will be done from registry.

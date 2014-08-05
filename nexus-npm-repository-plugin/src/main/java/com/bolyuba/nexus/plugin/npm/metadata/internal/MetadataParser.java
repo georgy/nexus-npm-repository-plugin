@@ -8,10 +8,15 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
+import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.nexus.proxy.item.AbstractContentLocator;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.StringContentLocator;
+import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
@@ -32,29 +37,39 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Metadata parser and producer, out of "raw" (streamed or not) source to entities and other way around.
+ * Metadata parser and producer component, parses out of "raw" (streamed or not) source to entities and other way
+ * around.
  */
+@Singleton
+@Named
 public class MetadataParser
+    extends ComponentSupport
 {
   private final File temporaryDirectory;
 
   private final ObjectMapper objectMapper;
 
-  public MetadataParser(final File temporaryDirectory) {
-    this.temporaryDirectory = checkNotNull(temporaryDirectory);
+  @Inject
+  public MetadataParser(final ApplicationDirectories applicationDirectories) {
+    this.temporaryDirectory = checkNotNull(applicationDirectories.getTemporaryDirectory());
     this.objectMapper = new ObjectMapper(); // this parses registry JSON
   }
 
   // Parse API
 
-  public PackageRootIterator parseRegistryRoot(final String repositoryId, final ContentLocator contentLocator) throws IOException {
+  public PackageRootIterator parseRegistryRoot(final String repositoryId, final ContentLocator contentLocator)
+      throws IOException
+  {
     checkNotNull(repositoryId);
     checkNotNull(contentLocator);
     checkArgument(NpmRepository.JSON_MIME_TYPE.equals(contentLocator.getMimeType()), "JSON is expected inout!");
-    return new ParsingPackageRootIterator(repositoryId,  objectMapper.getFactory().createParser(contentLocator.getContent()));
+    return new ParsingPackageRootIterator(repositoryId,
+        objectMapper.getFactory().createParser(contentLocator.getContent()));
   }
 
-  public PackageRoot parsePackageRoot(final String repositoryId, final ContentLocator contentLocator) throws IOException {
+  public PackageRoot parsePackageRoot(final String repositoryId, final ContentLocator contentLocator)
+      throws IOException
+  {
     checkNotNull(repositoryId);
     checkNotNull(contentLocator);
     checkArgument(NpmRepository.JSON_MIME_TYPE.equals(contentLocator.getMimeType()), "JSON is expected inout!");
@@ -68,7 +83,9 @@ public class MetadataParser
 
   // Produce API
 
-  public RegistryRootContentLocator produceRegistryRoot(final PackageRootIterator packageRootIterator) throws IOException {
+  public RegistryRootContentLocator produceRegistryRoot(final PackageRootIterator packageRootIterator)
+      throws IOException
+  {
     checkNotNull(packageRootIterator);
     return new RegistryRootContentLocator(this, packageRootIterator);
   }
@@ -283,7 +300,9 @@ public class MetadataParser
 
     private boolean first;
 
-    protected RegistryRootContentLocator(final MetadataParser metadataParser, final PackageRootIterator packageRootIterator) {
+    protected RegistryRootContentLocator(final MetadataParser metadataParser,
+                                         final PackageRootIterator packageRootIterator)
+    {
       super(NpmRepository.JSON_MIME_TYPE, false, ContentLocator.UNKNOWN_LENGTH);
       this.metadataParser = metadataParser;
       this.packageRootIterator = packageRootIterator;

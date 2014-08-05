@@ -11,6 +11,7 @@ import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
@@ -30,6 +31,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * {@link ProxyMetadataService} implementation.
  */
 public class ProxyMetadataServiceImpl
+    extends GeneratorSupport
     implements ProxyMetadataService
 {
   private static final String PROP_ETAG = "remote.etag";
@@ -56,6 +58,7 @@ public class ProxyMetadataServiceImpl
                                   final MetadataGenerator metadataGenerator,
                                   final MetadataParser metadataParser)
   {
+    super(metadataParser);
     this.npmProxyRepository = checkNotNull(npmProxyRepository);
     this.httpClientManager = checkNotNull(httpClientManager);
     this.metadataStore = checkNotNull(metadataStore);
@@ -77,7 +80,7 @@ public class ProxyMetadataServiceImpl
   }
 
   @Override
-  public ContentLocator produceRegistryRoot(final PackageRequest request) throws IOException {
+  public PackageRootIterator generateRegistryRoot(final PackageRequest request) throws IOException {
     if (!request.getStoreRequest().isRequestLocalOnly()) {
       final List<String> packageNames = metadataStore.listPackageNames(npmProxyRepository);
       if (packageNames.isEmpty()) {
@@ -85,12 +88,12 @@ public class ProxyMetadataServiceImpl
         // TODO: expire when needed all packages? When to refetch?
       }
     }
-    return metadataParser.produceRegistryRoot(metadataGenerator.generateRegistryRoot());
+    return metadataGenerator.generateRegistryRoot();
   }
 
   @Nullable
   @Override
-  public ContentLocator producePackageRoot(final PackageRequest request) throws IOException {
+  public PackageRoot generatePackageRoot(final PackageRequest request) throws IOException {
     checkArgument(request.isPackageRoot(), "Package root request expected, but got %s",
         request.getPath());
     if (!request.getStoreRequest().isRequestLocalOnly()) {
@@ -98,14 +101,12 @@ public class ProxyMetadataServiceImpl
         return null;
       }
     }
-    return metadataParser.producePackageRoot(metadataGenerator.generatePackageRoot(request.getName()));
+    return metadataGenerator.generatePackageRoot(request.getName());
   }
 
   @Nullable
   @Override
-  public ContentLocator producePackageVersion(final PackageRequest request)
-      throws IOException
-  {
+  public PackageVersion generatePackageVersion(final PackageRequest request) throws IOException {
     checkArgument(request.isPackageVersion(), "Package version request expected, but got %s",
         request.getPath());
     if (!request.getStoreRequest().isRequestLocalOnly()) {
@@ -113,8 +114,7 @@ public class ProxyMetadataServiceImpl
         return null;
       }
     }
-    return metadataParser
-        .producePackageVersion(metadataGenerator.generatePackageVersion(request.getName(), request.getVersion()));
+    return metadataGenerator.generatePackageVersion(request.getName(), request.getVersion());
   }
 
   // ==

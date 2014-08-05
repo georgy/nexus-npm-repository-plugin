@@ -4,16 +4,17 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
+import com.bolyuba.nexus.plugin.npm.metadata.Generator;
 import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
+import com.bolyuba.nexus.plugin.npm.metadata.Producer;
 import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 
@@ -35,13 +36,13 @@ public class MetadataServiceFactoryImpl
   private final MetadataParser metadataParser;
 
   @Inject
-  public MetadataServiceFactoryImpl(final ApplicationDirectories applicationDirectories,
-                                    final MetadataStore metadataStore,
+  public MetadataServiceFactoryImpl(final MetadataStore metadataStore,
+                                    final MetadataParser metadataParser,
                                     final HttpClientManager httpClientManager)
   {
     this.metadataStore = checkNotNull(metadataStore);
+    this.metadataParser = checkNotNull(metadataParser);
     this.httpClientManager = checkNotNull(httpClientManager);
-    this.metadataParser = new MetadataParser(applicationDirectories.getTemporaryDirectory());
   }
 
   private MetadataGenerator createGenerator(final NpmRepository npmRepository) {
@@ -62,5 +63,10 @@ public class MetadataServiceFactoryImpl
   @Override
   public GroupMetadataService createGroupMetadataService(final NpmGroupRepository npmGroupRepository) {
     throw new UnsupportedOperationException("not yet there");
+  }
+
+  @Override
+  public Producer createProducerFromGenerator(final Generator generator) {
+    return new GeneratorProducerImpl(generator, metadataParser);
   }
 }

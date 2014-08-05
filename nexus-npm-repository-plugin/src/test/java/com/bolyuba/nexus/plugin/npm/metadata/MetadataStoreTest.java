@@ -64,6 +64,8 @@ public class MetadataStoreTest
 
   private OrientMetadataStore metadataStore;
 
+  private MetadataParser metadataParser;
+
   private MetadataServiceFactory metadataService;
 
   private HostedMetadataService hostedMetadataService;
@@ -81,7 +83,8 @@ public class MetadataStoreTest
         HttpClients.createDefault());
 
     metadataStore = new OrientMetadataStore(applicationDirectories);
-    metadataService = new MetadataServiceFactoryImpl(applicationDirectories, metadataStore, httpClientManager);
+    metadataParser = new MetadataParser(applicationDirectories);
+    metadataService = new MetadataServiceFactoryImpl(metadataStore, metadataParser, httpClientManager);
 
     // not using mock as it would OOM when it tracks invocations, as we work with large files here
     npmHostedRepository = new DefaultNpmHostedRepository(mock(ContentClass.class), mock(
@@ -133,8 +136,7 @@ public class MetadataStoreTest
         new GZIPInputStream(new FileInputStream(util.resolveFile("src/test/npm/ROOT_all.json.gz"))),
         NpmRepository.JSON_MIME_TYPE, -1);
     // this is "illegal" case using internal stuff, but is for testing only
-    final MetadataParser parser = new MetadataParser(applicationDirectories.getTemporaryDirectory());
-    metadataStore.updatePackages(npmProxyRepository, parser.parseRegistryRoot(npmProxyRepository.getId(), input));
+    metadataStore.updatePackages(npmProxyRepository, metadataParser.parseRegistryRoot(npmProxyRepository.getId(), input));
 
     log("Splice done");
     // we pushed all into DB, now query
