@@ -18,7 +18,6 @@ import org.sonatype.nexus.web.BaseUrlHolder;
 import org.sonatype.sisu.litmus.testsupport.TestSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import com.bolyuba.nexus.plugin.npm.hosted.DefaultNpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepositoryConfigurator;
@@ -80,9 +79,12 @@ public class MetadataStoreTest
     when(httpClientManager.create(any(ProxyRepository.class), any(RemoteStorageContext.class))).thenReturn(
         HttpClients.createDefault());
 
+    metadataStore = new OrientMetadataStore(applicationDirectories);
+    metadataService = new MetadataServiceFactoryImpl(applicationDirectories, metadataStore, httpClientManager);
+
     // not using mock as it would OOM when it tracks invocations, as we work with large files here
     npmHostedRepository = new DefaultNpmHostedRepository(mock(ContentClass.class), mock(
-        NpmHostedRepositoryConfigurator.class), mock(NpmUtility.class))
+        NpmHostedRepositoryConfigurator.class), metadataService)
     {
       @Override
       public String getId() {
@@ -91,7 +93,7 @@ public class MetadataStoreTest
     };
 
     npmProxyRepository = new DefaultNpmProxyRepository(mock(ContentClass.class), mock(
-        NpmProxyRepositoryConfigurator.class), mock(NpmUtility.class))
+        NpmProxyRepositoryConfigurator.class), metadataService)
     {
       @Override
       public String getId() {
@@ -108,8 +110,6 @@ public class MetadataStoreTest
       public String getRemoteUrl() { return "http://registry.npmjs.org/"; }
     };
 
-    metadataStore = new OrientMetadataStore(applicationDirectories);
-    metadataService = new MetadataServiceFactoryImpl(applicationDirectories, metadataStore, httpClientManager);
     hostedMetadataService = metadataService.createHostedMetadataService(npmHostedRepository);
     proxyMetadataService = metadataService.createProxyMetadataService(npmProxyRepository);
 
@@ -166,6 +166,8 @@ public class MetadataStoreTest
     onDisk.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").put("tarball", "http://localhost:8081/nexus/content/repositories/proxy/commonjs/-/commonjs-0.0.1.tgz");
     JSONObject versions = onDisk.getJSONObject("versions");
     JSONObject diskV001 = versions.getJSONObject("0.0.1");
+    diskV001.remove("_id"); // TODO: See MetadataGenerator#filterPackageVersion
+    diskV001.remove("_rev"); // TODO: See MetadataGenerator#filterPackageVersion
 
     JSONAssert.assertEquals(diskV001, proxiedV001, false);
   }
@@ -196,6 +198,10 @@ public class MetadataStoreTest
 
     JSONObject onDisk = new JSONObject(Files.toString(jsonFile, Charsets.UTF_8));
     onDisk.remove("_attachments");
+    onDisk.remove("_id"); // TODO: See MetadataGenerator#filterPackageVersion
+    onDisk.remove("_rev"); // TODO: See MetadataGenerator#filterPackageVersion
+    onDisk.getJSONObject("versions").getJSONObject("0.0.1").remove("_id"); // TODO: See MetadataGenerator#filterPackageVersion
+    onDisk.getJSONObject("versions").getJSONObject("0.0.1").remove("_rev"); // TODO: See MetadataGenerator#filterPackageVersion
     onDisk.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").put("tarball", "http://localhost:8081/nexus/content/repositories/hosted/commonjs/-/commonjs-0.0.1.tgz");
     final StringContentLocator contentLocator = (StringContentLocator) hostedMetadataService
         .producePackageRoot("commonjs");

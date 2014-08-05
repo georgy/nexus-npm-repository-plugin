@@ -17,6 +17,7 @@ import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataStore;
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentPool;
@@ -113,7 +114,8 @@ public class OrientMetadataStore
       db.begin();
       try {
         final OSQLSynchQuery<ODocument> query = new OSQLSynchQuery<>(
-            "select from " + entityHandler.getSchemaName() + " where @rid > ? limit 1000");
+            "select from " + entityHandler.getSchemaName() + " where repositoryId='" + repository.getId() +
+                "' and @rid > ? limit 1000");
         ORID last = new ORecordId();
         final List<String> result = Lists.newArrayList();
         List<ODocument> resultset = db.query(query, last);
@@ -219,6 +221,44 @@ public class OrientMetadataStore
       }
     }
   }
+
+  @Override
+  public int updatePackages(final NpmRepository repository, final Predicate<PackageRoot> predicate,
+                            final Function<PackageRoot, PackageRoot> function)
+  {
+    checkNotNull(repository);
+    checkNotNull(function);
+    final EntityHandler<PackageRoot> entityHandler = getHandlerFor(PackageRoot.class);
+    try (ODatabaseDocumentTx db = db()) {
+      db.begin();
+      try {
+        final OSQLSynchQuery<ODocument> query = new OSQLSynchQuery<>(
+            "select from " + entityHandler.getSchemaName() + " where repositoryId='" + repository.getId() +
+                "' and @rid > ? limit 1000");
+        ORID last = new ORecordId();
+        List<ODocument> resultset = db.query(query, last);
+        int count = 0;
+        while (!resultset.isEmpty()) {
+          for (ODocument doc : resultset) {
+            PackageRoot root = entityHandler.toEntity(doc);
+            if (predicate != null && !predicate.apply(root)) {
+              continue;
+            }
+            root = function.apply(root);
+            db.save(entityHandler.toDocument(root, doc));
+            count++;
+          }
+          last = resultset.get(resultset.size() - 1).getIdentity();
+          resultset = db.query(query, last);
+        }
+        return count;
+      }
+      finally {
+        db.commit();
+      }
+    }
+  }
+
   // ==
 
   private ODocument doGetPackageByName(final ODatabaseDocumentTx db,

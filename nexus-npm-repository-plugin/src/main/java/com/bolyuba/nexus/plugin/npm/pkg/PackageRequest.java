@@ -21,7 +21,7 @@ public class PackageRequest {
 
     private PackageCoordinates coordinates;
 
-    public PackageRequest(@Nonnull ResourceStoreRequest storeRequest) throws InvalidPackageRequestException {
+    public PackageRequest(@Nonnull ResourceStoreRequest storeRequest) throws IllegalArgumentException {
 
         this.storeRequest = checkNotNull(storeRequest);
         this.coordinates = PackageCoordinates.coordinatesFromUrl(storeRequest.getRequestPath());

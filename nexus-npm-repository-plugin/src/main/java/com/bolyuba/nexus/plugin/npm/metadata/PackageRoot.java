@@ -50,6 +50,7 @@ public class PackageRoot
     final String latest = ((Map<String, String>) getRaw().get("dist-tags")).get("latest");
     ((Map<String, Object>) getRaw().get("versions")).clear();
     ((Map<String, Object>) getRaw().get("versions")).put(latest, "latest");
+    wrappedVersions.clear();
   }
 
   /**

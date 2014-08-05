@@ -5,7 +5,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.PreparedContentLocator;
 import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
@@ -13,13 +12,17 @@ import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
+import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataParser.PackageRootIterator;
+import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
-import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -34,6 +37,8 @@ public class ProxyMetadataServiceImpl
   private static final String PROP_CACHED = "remote.cached";
 
   private static final String PROP_EXPIRED = "remote.expired";
+
+  private final Logger log = LoggerFactory.getLogger(ProxyMetadataServiceImpl.class);
 
   private final NpmProxyRepository npmProxyRepository;
 
@@ -58,22 +63,24 @@ public class ProxyMetadataServiceImpl
     this.metadataProducer = checkNotNull(metadataProducer);
   }
 
-  @VisibleForTesting
-  public MetadataParser getMetadataParser() {
-    return metadataParser;
-  }
-
   @Override
-  public boolean expireMetadataCaches(final ResourceStoreRequest request) {
-    // TODO: flip the PROP_EXPIRED prop on selected package roots
-    return false;
+  public boolean expireMetadataCaches(final PackageRequest request) {
+    // TODO: obey package name, version narrowing
+    return 0 < metadataStore.updatePackages(npmProxyRepository, null, new Function<PackageRoot, PackageRoot>() {
+      @Override
+      public PackageRoot apply(@Nullable final PackageRoot input) {
+        input.getProperties().put(PROP_EXPIRED, Boolean.TRUE.toString());
+        return input;
+      }
+    });
   }
 
   @Override
   public ContentLocator produceRegistryRoot() throws IOException {
     final List<String> packageNames = metadataStore.listPackageNames(npmProxyRepository);
     if (packageNames.isEmpty()) {
-      // TODO: fetch and update all packages
+      fetchRegistryRoot();
+      // TODO: expire when needed all packages? When to refetch?
     }
     return metadataProducer.produceRegistryRoot();
   }
@@ -143,6 +150,37 @@ public class ProxyMetadataServiceImpl
   }
 
   /**
+   * Performs a HTTP GET to fetch the registry root.
+   */
+  protected int fetchRegistryRoot() throws IOException {
+    final HttpClient httpClient = httpClientManager.create(npmProxyRepository,
+        npmProxyRepository.getRemoteStorageContext());
+    try {
+      final HttpGet get = new HttpGet(
+          npmProxyRepository.getRemoteUrl() + "/-/all"); // TODO: this in NPM specific, might try both root and NPM api
+      log.info("GET {}", get.getURI());
+      get.addHeader("accept", NpmRepository.JSON_MIME_TYPE);
+      final HttpResponse httpResponse = httpClient.execute(get);
+      try {
+        if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+          final PreparedContentLocator pcl = new PreparedContentLocator(httpResponse.getEntity().getContent(),
+              NpmRepository.JSON_MIME_TYPE, ContentLocator.UNKNOWN_LENGTH);
+          try (final PackageRootIterator roots = metadataParser.parseRegistryRoot(pcl)) {
+            return metadataStore.updatePackages(npmProxyRepository, roots);
+          }
+        }
+        throw new IOException("Unexpected response from registry root " + httpResponse.getStatusLine());
+      }
+      finally {
+        EntityUtils.consumeQuietly(httpResponse.getEntity());
+      }
+    }
+    finally {
+      httpClientManager.release(npmProxyRepository, npmProxyRepository.getRemoteStorageContext());
+    }
+  }
+
+  /**
    * Performs a conditional GET to fetch the package root and returns the fetched package root. If fetch succeeded
    * (HTTP 200 Ok is returned), the package root is also pushed into {@code MetadataStore}. In short, the returned
    * package root from this method is guaranteed to be present in the store too.
@@ -151,7 +189,8 @@ public class ProxyMetadataServiceImpl
     final HttpClient httpClient = httpClientManager.create(npmProxyRepository,
         npmProxyRepository.getRemoteStorageContext());
     try {
-      final HttpGet get = new HttpGet(npmProxyRepository.getRemoteUrl() + packageName);
+      final HttpGet get = new HttpGet(npmProxyRepository.getRemoteUrl() + "/" + packageName);
+      log.info("GET {}", get.getURI());
       get.addHeader("accept", NpmRepository.JSON_MIME_TYPE);
       if (expired != null && expired.getProperties().containsKey(PROP_ETAG)) {
         get.addHeader("if-none-match", expired.getProperties().get(PROP_ETAG));
@@ -162,9 +201,6 @@ public class ProxyMetadataServiceImpl
           return expired;
         }
         if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-          // TODO: NPM registry does not tell the content-type!
-          // TODO: NPM registry does not tell the content-length!
-          // TODO: WTF?
           final PreparedContentLocator pcl = new PreparedContentLocator(httpResponse.getEntity().getContent(),
               NpmRepository.JSON_MIME_TYPE, ContentLocator.UNKNOWN_LENGTH);
           final PackageRoot fresh = metadataParser.parsePackageRoot(pcl);

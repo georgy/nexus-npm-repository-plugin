@@ -4,8 +4,9 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
-import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.ContentLocator;
+
+import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 
 /**
  * Metadata service for proxy repositories. Component producing "raw" (streamed) NPM metadata from underlying store to
@@ -14,7 +15,10 @@ import org.sonatype.nexus.proxy.item.ContentLocator;
  */
 public interface ProxyMetadataService
 {
-  boolean expireMetadataCaches(ResourceStoreRequest request);
+  /**
+   * Expires proxy metadata cache. On next request of an expired metadata, refetch will be done from registry.
+   */
+  boolean expireMetadataCaches(PackageRequest request);
 
   ContentLocator produceRegistryRoot() throws IOException;
 

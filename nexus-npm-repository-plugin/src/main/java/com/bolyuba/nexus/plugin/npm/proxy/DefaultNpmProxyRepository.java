@@ -1,11 +1,12 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
+import java.io.IOException;
+
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import com.bolyuba.nexus.plugin.npm.NpmUtility;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
-import com.bolyuba.nexus.plugin.npm.content.TarballUrlFilteringContentLocator;
-import com.bolyuba.nexus.plugin.npm.pkg.InvalidPackageRequestException;
+import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
+import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
@@ -17,16 +18,19 @@ import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
+import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractProxyRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
+import org.sonatype.nexus.proxy.walker.WalkerFilter;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sonatype.nexus.proxy.ItemNotFoundException.reasonFor;
 
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
@@ -47,14 +51,14 @@ public class DefaultNpmProxyRepository
 
     private final NpmMimeRulesSource mimeRulesSource;
 
-    private final NpmUtility utility;
+    private final ProxyMetadataService proxyMetadataService;
 
     @Inject
     public DefaultNpmProxyRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
                                      final NpmProxyRepositoryConfigurator configurator,
-                                     final NpmUtility npmUtility) {
+                                     final MetadataServiceFactory metadataServiceFactory) {
 
-        this.utility = checkNotNull(npmUtility);
+        this.proxyMetadataService = metadataServiceFactory.createProxyMetadataService(this);
         this.contentClass = checkNotNull(contentClass);
         this.configurator = checkNotNull(configurator);
 
@@ -93,22 +97,44 @@ public class DefaultNpmProxyRepository
     }
 
     @Override
+    protected boolean doExpireProxyCaches(final ResourceStoreRequest request, final WalkerFilter filter) {
+        boolean result = super.doExpireProxyCaches(request, filter);
+        try {
+          boolean npmResult = proxyMetadataService.expireMetadataCaches(new PackageRequest(request));
+          return result || npmResult;
+        } catch (IllegalArgumentException ignore) {
+          // ignore
+          return result;
+        }
+    }
+
+    @Override
     protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest) throws ItemNotFoundException, LocalStorageException {
-        // only care about request if it is coming from npm client
-        if (utility.isNmpRequest(storeRequest)) {
-            try {
-                PackageRequest packageRequest = new PackageRequest(storeRequest);
-                if (packageRequest.isPackage()) {
-                    return delegateDoRetrieveLocalItem(utility.replaceRequest(storeRequest));
-                } else {
-                    // huh?
-                    return delegateDoRetrieveLocalItem(storeRequest);
-                }
-            } catch (InvalidPackageRequestException ignore) {
-                return delegateDoRetrieveLocalItem(storeRequest);
+        try {
+            PackageRequest packageRequest = new PackageRequest(storeRequest);
+            if (packageRequest.isMetadata()) {
+              storeRequest.setRequestLocalOnly(true); // do not try to apply core-proxy
+              ContentLocator contentLocator;
+              if (packageRequest.isRegistryRoot()) {
+                contentLocator = proxyMetadataService.produceRegistryRoot();
+              } else if (packageRequest.isPackageRoot()) {
+                contentLocator = proxyMetadataService.producePackageRoot(packageRequest.getName());
+              } else {
+                contentLocator = proxyMetadataService.producePackageVersion(packageRequest.getName(), packageRequest.getVersion());
+              }
+              if (contentLocator == null) {
+                log.debug("No NPM metadata for path %s", storeRequest.getRequestPath());
+                throw new ItemNotFoundException(reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
+              }
+              return new DefaultStorageFileItem(this, storeRequest, true, true, contentLocator);
+            } else {
+              // registry special, like a tarball
+              return delegateDoRetrieveLocalItem(storeRequest);
             }
-        } else {
+        } catch (IllegalArgumentException ignore) {
             return delegateDoRetrieveLocalItem(storeRequest);
+        } catch (IOException e) {
+          throw new LocalStorageException("Metadata service error", e);
         }
     }
 
@@ -117,39 +143,16 @@ public class DefaultNpmProxyRepository
         try {
             ResourceStoreRequest storeRequest = item.getResourceStoreRequest();
             PackageRequest packageRequest = new PackageRequest(storeRequest);
-
-            if (packageRequest.isPackage()) {
-                DefaultStorageFileItem wrappedItem = wrapItem((DefaultStorageFileItem) item);
-                return delegateDoCacheItem(wrappedItem);
+            if (packageRequest.isMetadata()) {
+              // no cache, is done by MetadataService (should not get here at all)
+              return item;
             } else {
-                // no cache 4 u
-                return item;
+              return delegateDoCacheItem(item);
             }
-        } catch (InvalidPackageRequestException ignore) {
+        } catch (IllegalArgumentException ignore) {
             // do it old style
             return delegateDoCacheItem(item);
         }
-    }
-
-    DefaultStorageFileItem wrapItem(DefaultStorageFileItem item) {
-        ResourceStoreRequest request = item.getResourceStoreRequest();
-
-        TarballUrlFilteringContentLocator decoratedContentLocator =
-                new TarballUrlFilteringContentLocator(item.getContentLocator(), request, this.getRemoteUrl());
-
-        utility.wrapRequest(request);
-
-        return getWrappedStorageFileItem(item, decoratedContentLocator, request);
-    }
-
-    // tests to mock these methods
-    DefaultStorageFileItem getWrappedStorageFileItem(DefaultStorageFileItem item, TarballUrlFilteringContentLocator decoratedContentLocator, ResourceStoreRequest decoratedRequest) {
-        return new DefaultStorageFileItem(
-                this,
-                decoratedRequest,
-                item.isReadable(),
-                item.isWritable(),
-                decoratedContentLocator);
     }
 
     AbstractStorageItem delegateDoCacheItem(AbstractStorageItem item) throws LocalStorageException {

@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 
 /**
  * Database.
@@ -39,4 +41,9 @@ public interface MetadataStore
    * @see PackageRoot#overlay(PackageRoot)
    */
   int updatePackages(NpmRepository repository, Iterator<PackageRoot> packageRootIterator);
+
+  /**
+   * Massive update of packages, applying a function on them.
+   */
+  int updatePackages(NpmRepository repository, Predicate<PackageRoot> predicate, Function<PackageRoot, PackageRoot> function);
 }

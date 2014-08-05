@@ -1,6 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.content;
 
-import org.mockito.MockitoAnnotations;
+import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -11,45 +11,49 @@ import static org.testng.Assert.assertNull;
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
-public class NpmMimeRulesSourceTest {
+public class NpmMimeRulesSourceTest
+{
+  private NpmMimeRulesSource sut;
 
+  @BeforeMethod
+  void setup() {
+    sut = new NpmMimeRulesSource();
+  }
 
-    private NpmMimeRulesSource sut;
+  @Test
+  public void nullPath_noSuggestion() {
+    String ruleForPath = sut.getRuleForPath(null);
 
-    @BeforeMethod
-    void setup () {
-        MockitoAnnotations.initMocks(this);
+    assertNull(ruleForPath);
+  }
 
-        sut = new NpmMimeRulesSource();
-    }
+  @Test
+  public void randomPath_noSuggestion() {
+    String ruleForPath = sut.getRuleForPath("/random/path");
 
-    @Test
-    public void nullPath_noSuggestion() {
-        String ruleForPath = sut.getRuleForPath(null);
+    assertNotNull(ruleForPath);
+    assertEquals(ruleForPath, NpmRepository.JSON_MIME_TYPE);
+  }
 
-        assertNull(ruleForPath);
-    }
+  @Test
+  public void packageRootContent_JsonMimeType() {
+    String ruleForPath = sut.getRuleForPath("/package/-content.json");
 
-    @Test
-    public void randomPath_noSuggestion() {
-        String ruleForPath = sut.getRuleForPath("/random/path");
+    assertNull(ruleForPath);
+  }
 
-        assertNull(ruleForPath);
-    }
+  @Test
+  public void packageVersionContent_JsonMimeType() {
+    String ruleForPath = sut.getRuleForPath("/package/42.42.42/-content.json");
 
-    @Test
-    public void packageRootContent_JsonMimeType() {
-        String ruleForPath = sut.getRuleForPath("/package/-content.json");
+    assertNull(ruleForPath);
+  }
 
-        assertNotNull(ruleForPath);
-        assertEquals(ruleForPath, "application/json");
-    }
+  @Test
+  public void tarball_TarballMimeType() {
+    String ruleForPath = sut.getRuleForPath("/package/-/package-1.0.0.tgz");
 
-    @Test
-    public void packageVersionContent_JsonMimeType() {
-        String ruleForPath = sut.getRuleForPath("/package/42.42.42/-content.json");
-
-        assertNotNull(ruleForPath);
-        assertEquals(ruleForPath, "application/json");
-    }
+    assertNotNull(ruleForPath);
+    assertEquals(ruleForPath, NpmRepository.TARBALL_MIME_TYPE);
+  }
 }

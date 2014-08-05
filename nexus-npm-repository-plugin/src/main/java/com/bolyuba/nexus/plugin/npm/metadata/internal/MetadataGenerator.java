@@ -39,6 +39,7 @@ public class MetadataGenerator
       return null;
     }
     root.shrinkToLatestVersionOnly();
+    filterPackageRoot(root);
     return root;
   }
 
@@ -48,9 +49,7 @@ public class MetadataGenerator
     if (root == null || root.isIncomplete()) {
       return null;
     }
-    for (PackageVersion packageVersion : root.getVersions().values()) {
-      filterPackageVersion(packageVersion);
-    }
+    filterPackageRoot(root);
     return root;
   }
 
@@ -72,10 +71,20 @@ public class MetadataGenerator
 
   // ==
 
+  private void filterPackageRoot(final PackageRoot packageRoot) {
+    packageRoot.getRaw().remove("_id"); // TODO: why? Original code did this too
+    packageRoot.getRaw().remove("_rev"); // TODO: why? Original code did this too
+    for (PackageVersion packageVersion : packageRoot.getVersions().values()) {
+      filterPackageVersion(packageVersion);
+    }
+  }
+
   private void filterPackageVersion(final PackageVersion packageVersion) {
     packageVersion.setDistTarball(SimpleFormat
         .format("%s/content/repositories/%s/%s/-/%s-%s.tgz", BaseUrlHolder.get(), npmRepository.getId(),
             packageVersion.getName(), packageVersion.getName(),
             packageVersion.getVersion()));
+    packageVersion.getRaw().remove("_id"); // TODO: why? Original code did this too
+    packageVersion.getRaw().remove("_rev"); // TODO: why? Original code did this too
   }
 }

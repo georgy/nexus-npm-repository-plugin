@@ -66,11 +66,6 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.sonatype.nexus</groupId>
             <artifactId>nexus-plugin-api</artifactId>
             <scope>provided</scope>

@@ -56,7 +56,7 @@ class PackageCoordinates {
                 '}';
     }
 
-    public static PackageCoordinates coordinatesFromUrl(@Nonnull String requestPath) throws InvalidPackageRequestException {
+    public static PackageCoordinates coordinatesFromUrl(@Nonnull String requestPath) throws IllegalArgumentException {
         PackageCoordinates coordinates = new PackageCoordinates();
         final String normalizedPath = requestPath.toLowerCase();
         coordinates.path = normalizedPath;
@@ -89,21 +89,21 @@ class PackageCoordinates {
             return coordinates;
         }
 
-        throw new InvalidPackageRequestException("Path " + requestPath + " cannot be turned into PackageCoordinates");
+        throw new IllegalArgumentException("Path " + requestPath + " cannot be turned into PackageCoordinates");
     }
 
     /**
      * See http://wiki.commonjs.org/wiki/Packages/Registry#Changes_to_Packages_Spec
      */
-    private static String validate(@Nonnull String nameOrVersion, String errorPrefix) throws InvalidPackageRequestException {
+    private static String validate(@Nonnull String nameOrVersion, String errorPrefix) throws IllegalArgumentException {
         if (nameOrVersion.startsWith(NpmRepository.NPM_REGISTRY_SPECIAL)) {
-            throw new InvalidPackageRequestException(errorPrefix + nameOrVersion);
+            throw new IllegalArgumentException(errorPrefix + nameOrVersion);
         }
         if (nameOrVersion.equals(".")) {
-            throw new InvalidPackageRequestException(errorPrefix + nameOrVersion);
+            throw new IllegalArgumentException(errorPrefix + nameOrVersion);
         }
         if (nameOrVersion.equals("..")) {
-            throw new InvalidPackageRequestException(errorPrefix + nameOrVersion);
+            throw new IllegalArgumentException(errorPrefix + nameOrVersion);
         }
         return nameOrVersion;
     }
