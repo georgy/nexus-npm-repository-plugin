@@ -1,12 +1,9 @@
 package com.bolyuba.nexus.plugin.npm.metadata.internal;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -109,26 +106,27 @@ public class ProxyMetadataServiceImpl
 
   @Override
   protected PackageRootIterator doGenerateRegistryRoot(final PackageRequest request) throws IOException {
-    if (!request.getStoreRequest().isRequestLocalOnly()) {
+    // TODO: ContentServlet sets isLocal to paths ending with "/", so registry root will be local!
+    if (request.getPath().endsWith("/") || !request.getStoreRequest().isRequestLocalOnly()) {
       // doing what NPM CLI does it's in own cache, using an invalid document (name "-" is invalid)
       PackageRoot registryRoot = metadataStore.getPackageByName(npmProxyRepository, REGISTRY_ROOT_PACKAGE_NAME);
       final long now = System.currentTimeMillis();
       if (registryRoot == null || isExpired(registryRoot, now)) {
         fetchRegistryRoot(); // fetch all
+        if (registryRoot == null) {
+          // create a fluke package root
+          final Map<String, Object> versions = Maps.newHashMap();
+          versions.put("0.0.0", "latest");
+          final Map<String, Object> raw = Maps.newHashMap();
+          raw.put("name", REGISTRY_ROOT_PACKAGE_NAME);
+          raw.put("description", "NX registry root package");
+          raw.put("versions", versions);
+          registryRoot = new PackageRoot(npmProxyRepository.getId(), raw);
+        }
+        registryRoot.getProperties().put(PROP_EXPIRED, Boolean.FALSE.toString());
+        registryRoot.getProperties().put(PROP_CACHED, Long.toString(now));
+        metadataStore.updatePackage(npmProxyRepository, registryRoot);
       }
-      if (registryRoot == null) {
-        // create a fluke package root
-        final Map<String, Object> versions = Maps.newHashMap();
-        versions.put("0.0.0", "latest");
-        final Map<String, Object> raw = Maps.newHashMap();
-        raw.put("name", REGISTRY_ROOT_PACKAGE_NAME);
-        raw.put("description", "NX registry root package");
-        raw.put("versions", versions);
-        registryRoot = new PackageRoot(npmProxyRepository.getId(), raw);
-      }
-      registryRoot.getProperties().put(PROP_EXPIRED, Boolean.FALSE.toString());
-      registryRoot.getProperties().put(PROP_CACHED, Long.toString(now));
-      metadataStore.updatePackage(npmProxyRepository, registryRoot);
     }
     return metadataGenerator.generateRegistryRoot();
   }
@@ -229,12 +227,19 @@ public class ProxyMetadataServiceImpl
           try {
             final FileContentLocator cl = new FileContentLocator(tempFile, NpmRepository.JSON_MIME_TYPE);
             try (final PackageRootIterator roots = metadataParser.parseRegistryRoot(npmProxyRepository.getId(), cl)) {
-              return metadataStore.updatePackages(npmProxyRepository, roots);
+              try {
+                int count = metadataStore.updatePackages(npmProxyRepository, roots);
+                log.info("NPM Registry root updated {} packages for {}", count, npmProxyRepository.getId());
+                return count;
+              } catch (Exception e) {
+                // TODO: salvage as much as possible?
+                log.warn("NPM Registry root update failed for {}", npmProxyRepository.getId(), e);
+                return -1;
+              }
             }
           }
           finally {
             tempFile.delete();
-            log.info("NPM Registry root updated for {}", npmProxyRepository.getId());
           }
         }
         throw new IOException("Unexpected response from registry root " + httpResponse.getStatusLine());
