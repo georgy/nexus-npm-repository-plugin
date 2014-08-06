@@ -1,11 +1,16 @@
 package com.bolyuba.nexus.plugin.npm.metadata.internal;
 
+import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import org.sonatype.nexus.proxy.item.ContentLocator;
+import org.sonatype.nexus.proxy.item.FileContentLocator;
 import org.sonatype.nexus.proxy.item.PreparedContentLocator;
 import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
 
@@ -16,6 +21,7 @@ import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.google.common.base.Function;
+import com.google.common.collect.Maps;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
@@ -33,6 +39,8 @@ public class ProxyMetadataServiceImpl
     extends GeneratorSupport
     implements ProxyMetadataService
 {
+  private static final String REGISTRY_ROOT_PACKAGE_NAME = "-";
+
   private static final String PROP_ETAG = "remote.etag";
 
   private static final String PROP_CACHED = "remote.cached";
@@ -45,6 +53,8 @@ public class ProxyMetadataServiceImpl
 
   private final HttpClientManager httpClientManager;
 
+  private final File temporaryDirectory;
+
   private final MetadataStore metadataStore;
 
   private final MetadataGenerator metadataGenerator;
@@ -53,6 +63,7 @@ public class ProxyMetadataServiceImpl
 
   public ProxyMetadataServiceImpl(final NpmProxyRepository npmProxyRepository,
                                   final HttpClientManager httpClientManager,
+                                  final File temporaryDirectory,
                                   final MetadataStore metadataStore,
                                   final MetadataGenerator metadataGenerator,
                                   final MetadataParser metadataParser)
@@ -60,6 +71,7 @@ public class ProxyMetadataServiceImpl
     super(metadataParser);
     this.npmProxyRepository = checkNotNull(npmProxyRepository);
     this.httpClientManager = checkNotNull(httpClientManager);
+    this.temporaryDirectory = checkNotNull(temporaryDirectory);
     this.metadataStore = checkNotNull(metadataStore);
     this.metadataGenerator = checkNotNull(metadataGenerator);
     this.metadataParser = checkNotNull(metadataParser);
@@ -67,25 +79,54 @@ public class ProxyMetadataServiceImpl
 
   @Override
   public boolean expireMetadataCaches(final PackageRequest request) {
-    // TODO: obey package name, version narrowing
-    return 0 < metadataStore.updatePackages(npmProxyRepository, null, new Function<PackageRoot, PackageRoot>()
-    {
-      @Override
-      public PackageRoot apply(@Nullable final PackageRoot input) {
-        input.getProperties().put(PROP_EXPIRED, Boolean.TRUE.toString());
-        return input;
+    if (request.isPackage()) {
+      final PackageRoot packageRoot = metadataStore.getPackageByName(npmProxyRepository, request.getName());
+      if (packageRoot == null) {
+        return false;
       }
-    });
+      packageRoot.getProperties().put(PROP_EXPIRED, Boolean.TRUE.toString());
+      metadataStore.updatePackage(npmProxyRepository, packageRoot);
+      return true;
+    }
+    else {
+      final PackageRoot registryRoot = metadataStore.getPackageByName(npmProxyRepository, REGISTRY_ROOT_PACKAGE_NAME);
+      if (registryRoot != null) {
+        registryRoot.getProperties().put(PROP_EXPIRED, Boolean.TRUE.toString());
+        metadataStore.updatePackage(npmProxyRepository, registryRoot);
+      }
+      return 0 < metadataStore.updatePackages(npmProxyRepository, null, new Function<PackageRoot, PackageRoot>()
+      {
+        @Override
+        public PackageRoot apply(@Nullable final PackageRoot input) {
+          input.getProperties().put(PROP_EXPIRED, Boolean.TRUE.toString());
+          return input;
+        }
+      });
+    }
   }
 
   @Override
   protected PackageRootIterator doGenerateRegistryRoot(final PackageRequest request) throws IOException {
     if (!request.getStoreRequest().isRequestLocalOnly()) {
-      final List<String> packageNames = metadataStore.listPackageNames(npmProxyRepository);
-      if (packageNames.isEmpty()) {
-        fetchRegistryRoot();
-        // TODO: expire when needed all packages? When to refetch?
+      // doing what NPM CLI does it's in own cache, using an invalid document (name "-" is invalid)
+      PackageRoot registryRoot = metadataStore.getPackageByName(npmProxyRepository, REGISTRY_ROOT_PACKAGE_NAME);
+      final long now = System.currentTimeMillis();
+      if (registryRoot == null || isExpired(registryRoot, now)) {
+        fetchRegistryRoot(); // fetch all
       }
+      if (registryRoot == null) {
+        // create a fluke package root
+        final Map<String, Object> versions = Maps.newHashMap();
+        versions.put("0.0.0", "latest");
+        final Map<String, Object> raw = Maps.newHashMap();
+        raw.put("name", REGISTRY_ROOT_PACKAGE_NAME);
+        raw.put("description", "NX registry root package");
+        raw.put("versions", versions);
+        registryRoot = new PackageRoot(npmProxyRepository.getId(), raw);
+      }
+      registryRoot.getProperties().put(PROP_EXPIRED, Boolean.FALSE.toString());
+      registryRoot.getProperties().put(PROP_CACHED, Long.toString(now));
+      metadataStore.updatePackage(npmProxyRepository, registryRoot);
     }
     return metadataGenerator.generateRegistryRoot();
   }
@@ -157,7 +198,10 @@ public class ProxyMetadataServiceImpl
   }
 
   /**
-   * Performs a HTTP GET to fetch the registry root.
+   * Performs a HTTP GET to fetch the registry root. Note: by testing on my mac (MBP 2012 SSD), seems OrientDB is "slow"
+   * to consume the streamed HTTP response (ie. to push it immediately into database, maintaining indexes etc). Hence,
+   * we save the response JSON to temp file and parse it from there to not have remote registry HTTP Server give up
+   * on connection with us.
    */
   private int fetchRegistryRoot() throws IOException {
     final HttpClient httpClient = httpClientManager.create(npmProxyRepository,
@@ -173,10 +217,18 @@ public class ProxyMetadataServiceImpl
         outboundRequestLog.info("{} - NPM GET {} - {}", npmProxyRepository.getId(), get.getURI(),
             httpResponse.getStatusLine());
         if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-          final PreparedContentLocator pcl = new PreparedContentLocator(httpResponse.getEntity().getContent(),
-              NpmRepository.JSON_MIME_TYPE, ContentLocator.UNKNOWN_LENGTH);
-          try (final PackageRootIterator roots = metadataParser.parseRegistryRoot(npmProxyRepository.getId(), pcl)) {
-            return metadataStore.updatePackages(npmProxyRepository, roots);
+          final File tempFile = File
+              .createTempFile(npmProxyRepository.getId() + "-root", "temp.json", temporaryDirectory);
+          final BufferedInputStream bis = new BufferedInputStream(httpResponse.getEntity().getContent());
+          Files.copy(bis, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+          try {
+            final FileContentLocator cl = new FileContentLocator(tempFile, NpmRepository.JSON_MIME_TYPE);
+            try (final PackageRootIterator roots = metadataParser.parseRegistryRoot(npmProxyRepository.getId(), cl)) {
+              return metadataStore.updatePackages(npmProxyRepository, roots);
+            }
+          }
+          finally {
+            tempFile.delete();
           }
         }
         throw new IOException("Unexpected response from registry root " + httpResponse.getStatusLine());

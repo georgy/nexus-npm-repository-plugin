@@ -3,7 +3,6 @@ package com.bolyuba.nexus.plugin.npm.metadata;
 import java.io.File;
 import java.util.Map;
 
-import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.nexus.proxy.item.FileContentLocator;
 import org.sonatype.sisu.litmus.testsupport.TestSupport;
 
@@ -76,10 +75,8 @@ public class PackageRootTest
     final File uploadRequest = util.resolveFile("src/test/npm/ROOT_testproject.json");
 
     final File tmpDir = util.createTempDir();
-    ApplicationDirectories applicationDirectories = mock(ApplicationDirectories.class);
-    when(applicationDirectories.getTemporaryDirectory()).thenReturn(tmpDir);
 
-    final MetadataParser parser = new MetadataParser(applicationDirectories);
+    final MetadataParser parser = new MetadataParser(tmpDir);
     final PackageRoot root = parser
         .parsePackageRoot(npmRepository.getId(), new FileContentLocator(uploadRequest, NpmRepository.JSON_MIME_TYPE));
 

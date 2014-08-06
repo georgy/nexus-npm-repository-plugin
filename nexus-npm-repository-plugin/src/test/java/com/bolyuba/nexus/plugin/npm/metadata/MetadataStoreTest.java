@@ -73,9 +73,9 @@ public class MetadataStoreTest
 
   private OrientMetadataStore metadataStore;
 
-  private MetadataParser metadataParser;
+  private MetadataServiceFactoryImpl metadataService;
 
-  private MetadataServiceFactory metadataService;
+  private MetadataParser metadataParser;
 
   @Before
   public void setup() throws Exception {
@@ -88,8 +88,8 @@ public class MetadataStoreTest
         HttpClients.createDefault());
 
     metadataStore = new OrientMetadataStore(applicationDirectories);
-    metadataParser = new MetadataParser(applicationDirectories);
-    metadataService = new MetadataServiceFactoryImpl(metadataStore, metadataParser, httpClientManager);
+    metadataService = new MetadataServiceFactoryImpl(applicationDirectories, metadataStore, httpClientManager);
+    metadataParser = metadataService.getMetadataParser();
 
     // not using mock as it would OOM when it tracks invocations, as we work with large files here
     npmHostedRepository = new DefaultNpmHostedRepository(mock(ContentClass.class), mock(
@@ -169,7 +169,7 @@ public class MetadataStoreTest
         " incomplete=" + commonjs.isIncomplete());
 
     final ContentLocator output = npmProxyRepository.getMetadataService().getProducer().produceRegistryRoot(
-        new PackageRequest(new ResourceStoreRequest("/")));
+        new PackageRequest(new ResourceStoreRequest("/", true, false)));
     try (InputStream is = output.getContent()) {
       java.nio.file.Files.copy(is, new File(tmpDir, "root.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
@@ -270,7 +270,7 @@ public class MetadataStoreTest
     assertThat(testproject, notNullValue());
 
     final PackageRootIterator iterator = npmGroupRepository.getMetadataService().generateRegistryRoot(
-        new PackageRequest(new ResourceStoreRequest("/")));
+        new PackageRequest(new ResourceStoreRequest("/", true, false)));
     boolean found = false;
     int count = 0;
     while (iterator.hasNext()) {

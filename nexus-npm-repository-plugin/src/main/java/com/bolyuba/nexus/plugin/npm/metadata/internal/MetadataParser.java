@@ -8,11 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
 
-import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.nexus.proxy.item.AbstractContentLocator;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.StringContentLocator;
@@ -40,8 +36,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Metadata parser and producer component, parses out of "raw" (streamed or not) source to entities and other way
  * around.
  */
-@Singleton
-@Named
 public class MetadataParser
     extends ComponentSupport
 {
@@ -49,9 +43,8 @@ public class MetadataParser
 
   private final ObjectMapper objectMapper;
 
-  @Inject
-  public MetadataParser(final ApplicationDirectories applicationDirectories) {
-    this.temporaryDirectory = checkNotNull(applicationDirectories.getTemporaryDirectory());
+  public MetadataParser(final File temporaryDirectory) {
+    this.temporaryDirectory = checkNotNull(temporaryDirectory);
     this.objectMapper = new ObjectMapper(); // this parses registry JSON
   }
 

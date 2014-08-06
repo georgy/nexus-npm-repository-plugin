@@ -1,9 +1,12 @@
 package com.bolyuba.nexus.plugin.npm.metadata.internal;
 
+import java.io.File;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
@@ -15,6 +18,7 @@ import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
 import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
+import com.google.common.annotations.VisibleForTesting;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -27,20 +31,36 @@ public class MetadataServiceFactoryImpl
     extends ComponentSupport
     implements MetadataServiceFactory
 {
-  private final MetadataStore metadataStore;
+  private final File temporaryDirectory;
 
-  private final HttpClientManager httpClientManager;
+  private final MetadataStore metadataStore;
 
   private final MetadataParser metadataParser;
 
+  private final HttpClientManager httpClientManager;
+
   @Inject
-  public MetadataServiceFactoryImpl(final MetadataStore metadataStore,
-                                    final MetadataParser metadataParser,
+  public MetadataServiceFactoryImpl(final ApplicationDirectories applicationDirectories,
+                                    final MetadataStore metadataStore,
                                     final HttpClientManager httpClientManager)
   {
+    this(applicationDirectories.getTemporaryDirectory(), metadataStore, httpClientManager);
+  }
+
+  @VisibleForTesting
+  public MetadataServiceFactoryImpl(final File temporaryDirectory,
+                                    final MetadataStore metadataStore,
+                                    final HttpClientManager httpClientManager)
+  {
+    this.temporaryDirectory = checkNotNull(temporaryDirectory);
     this.metadataStore = checkNotNull(metadataStore);
-    this.metadataParser = checkNotNull(metadataParser);
+    this.metadataParser = new MetadataParser(temporaryDirectory);
     this.httpClientManager = checkNotNull(httpClientManager);
+  }
+
+  @VisibleForTesting
+  public MetadataParser getMetadataParser() {
+    return metadataParser;
   }
 
   private MetadataGenerator createGenerator(final NpmRepository npmRepository) {
@@ -54,7 +74,7 @@ public class MetadataServiceFactoryImpl
 
   @Override
   public ProxyMetadataService createProxyMetadataService(final NpmProxyRepository npmProxyRepository) {
-    return new ProxyMetadataServiceImpl(npmProxyRepository, httpClientManager, metadataStore,
+    return new ProxyMetadataServiceImpl(npmProxyRepository, httpClientManager, temporaryDirectory,  metadataStore,
         createGenerator(npmProxyRepository), metadataParser);
   }
 
