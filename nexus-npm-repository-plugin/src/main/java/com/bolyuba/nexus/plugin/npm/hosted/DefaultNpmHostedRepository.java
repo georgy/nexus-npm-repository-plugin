@@ -173,14 +173,19 @@ public class DefaultNpmHostedRepository
           return Action.create;
         }
         else {
-          final PackageRequest packageRequest = new PackageRequest(rsr);
-          if (packageRequest.isPackage()) {
-            // treat package root as entity
-            return hostedMetadataService.generatePackageRoot(packageRequest) == null ? Action.create : Action.update;
-          }
-          else {
-            // this is "who knows what"
-            return Action.create;
+          try {
+            final PackageRequest packageRequest = new PackageRequest(rsr);
+            if (packageRequest.isPackage()) {
+              // treat package root as entity
+              return hostedMetadataService.generatePackageRoot(packageRequest) == null ? Action.create : Action.update;
+            }
+            else {
+              // not a package request, do what originally happened
+              return super.getResultingActionOnWrite(rsr);
+            }
+          } catch (IllegalArgumentException e) {
+            // not a package request, do what originally happened
+            return super.getResultingActionOnWrite(rsr);
           }
         }
       }
