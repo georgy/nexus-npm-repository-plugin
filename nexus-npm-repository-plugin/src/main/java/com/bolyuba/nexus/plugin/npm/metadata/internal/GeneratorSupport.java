@@ -4,17 +4,18 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
-import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.bolyuba.nexus.plugin.npm.metadata.Generator;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.metadata.Producer;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
- * Generator support.
+ * {@link Generator} support class.
  */
 public abstract class GeneratorSupport
     extends ComponentSupport
@@ -22,27 +23,41 @@ public abstract class GeneratorSupport
 {
   private final Producer producer;
 
-  public GeneratorSupport(final MetadataParser metadataParser) {
-    this.producer = new GeneratorProducerImpl(this, checkNotNull(metadataParser));
+  protected GeneratorSupport(final MetadataParser metadataParser) {
+    this.producer = new GeneratorProducerImpl(this, metadataParser);
   }
 
-  public ContentLocator produceRegistryRoot(
-      final PackageRequest request) throws IOException
-  {
-    return producer.produceRegistryRoot(request);
+  @Override
+  public Producer getProducer() {
+    return producer;
+  }
+
+  @Override
+  public PackageRootIterator generateRegistryRoot(final PackageRequest request) throws IOException {
+    return doGenerateRegistryRoot(request);
+  }
+
+  protected abstract PackageRootIterator doGenerateRegistryRoot(final PackageRequest request) throws IOException;
+
+  @Nullable
+  @Override
+  public PackageRoot generatePackageRoot(final PackageRequest request) throws IOException {
+    checkArgument(request.isPackageRoot(), "Package root request expected, but got %s",
+        request.getPath());
+    return doGeneratePackageRoot(request);
   }
 
   @Nullable
-  public ContentLocator producePackageVersion(
-      final PackageRequest request) throws IOException
-  {
-    return producer.producePackageVersion(request);
+  protected abstract PackageRoot doGeneratePackageRoot(final PackageRequest request) throws IOException;
+
+  @Nullable
+  @Override
+  public PackageVersion generatePackageVersion(final PackageRequest request) throws IOException {
+    checkArgument(request.isPackageVersion(), "Package version request expected, but got %s",
+        request.getPath());
+    return doGeneratePackageVersion(request);
   }
 
   @Nullable
-  public ContentLocator producePackageRoot(
-      final PackageRequest request) throws IOException
-  {
-    return producer.producePackageRoot(request);
-  }
+  protected abstract PackageVersion doGeneratePackageVersion(final PackageRequest request) throws IOException;
 }

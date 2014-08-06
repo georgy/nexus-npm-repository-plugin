@@ -24,7 +24,6 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -80,7 +79,7 @@ public class ProxyMetadataServiceImpl
   }
 
   @Override
-  public PackageRootIterator generateRegistryRoot(final PackageRequest request) throws IOException {
+  protected PackageRootIterator doGenerateRegistryRoot(final PackageRequest request) throws IOException {
     if (!request.getStoreRequest().isRequestLocalOnly()) {
       final List<String> packageNames = metadataStore.listPackageNames(npmProxyRepository);
       if (packageNames.isEmpty()) {
@@ -93,9 +92,7 @@ public class ProxyMetadataServiceImpl
 
   @Nullable
   @Override
-  public PackageRoot generatePackageRoot(final PackageRequest request) throws IOException {
-    checkArgument(request.isPackageRoot(), "Package root request expected, but got %s",
-        request.getPath());
+  protected PackageRoot doGeneratePackageRoot(final PackageRequest request) throws IOException {
     if (!request.getStoreRequest().isRequestLocalOnly()) {
       if (mayUpdatePackageRoot(request.getName()) == null) {
         return null;
@@ -106,9 +103,7 @@ public class ProxyMetadataServiceImpl
 
   @Nullable
   @Override
-  public PackageVersion generatePackageVersion(final PackageRequest request) throws IOException {
-    checkArgument(request.isPackageVersion(), "Package version request expected, but got %s",
-        request.getPath());
+  protected PackageVersion doGeneratePackageVersion(final PackageRequest request) throws IOException {
     if (!request.getStoreRequest().isRequestLocalOnly()) {
       if (mayUpdatePackageRoot(request.getName()) == null) {
         return null;

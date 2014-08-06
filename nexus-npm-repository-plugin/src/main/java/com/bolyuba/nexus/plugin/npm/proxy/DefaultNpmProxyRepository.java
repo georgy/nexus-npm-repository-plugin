@@ -68,6 +68,9 @@ public class DefaultNpmProxyRepository
     }
 
     @Override
+    public ProxyMetadataService getMetadataService() { return proxyMetadataService; }
+
+    @Override
     protected Configurator getConfigurator() {
         return configurator;
     }
@@ -117,13 +120,13 @@ public class DefaultNpmProxyRepository
             if (packageRequest.isMetadata()) {
               ContentLocator contentLocator;
               if (packageRequest.isRegistryRoot()) {
-                contentLocator = proxyMetadataService.produceRegistryRoot(packageRequest);
+                contentLocator = proxyMetadataService.getProducer().produceRegistryRoot(packageRequest);
               }
               else if (packageRequest.isPackageRoot()) {
-                contentLocator = proxyMetadataService.producePackageRoot(packageRequest);
+                contentLocator = proxyMetadataService.getProducer().producePackageRoot(packageRequest);
               }
               else {
-                contentLocator = proxyMetadataService.producePackageVersion(packageRequest);
+                contentLocator = proxyMetadataService.getProducer().producePackageVersion(packageRequest);
               }
               if (contentLocator == null) {
                 log.debug("No NPM metadata for path {}", storeRequest.getRequestPath());
@@ -136,7 +139,7 @@ public class DefaultNpmProxyRepository
               // registry special
               if (packageRequest.isRegistrySpecial() && packageRequest.getPath().startsWith("/-/all")) {
                 return new DefaultStorageFileItem(this, storeRequest, true, true,
-                    proxyMetadataService.produceRegistryRoot(packageRequest));
+                    proxyMetadataService.getProducer().produceRegistryRoot(packageRequest));
               }
               throw new ItemNotFoundException(
                   reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));

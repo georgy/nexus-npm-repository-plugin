@@ -66,6 +66,9 @@ public class DefaultNpmGroupRepository
     }
 
     @Override
+    public GroupMetadataService getMetadataService() { return groupMetadataService; }
+
+    @Override
     protected Configurator getConfigurator() {
         return this.configurator;
     }
@@ -95,6 +98,7 @@ public class DefaultNpmGroupRepository
         };
     }
 
+  
     @Override
     protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest) throws ItemNotFoundException, LocalStorageException {
         try {
@@ -102,11 +106,11 @@ public class DefaultNpmGroupRepository
             if (packageRequest.isMetadata()) {
               ContentLocator contentLocator;
               if (packageRequest.isRegistryRoot()) {
-                contentLocator = groupMetadataService.produceRegistryRoot(packageRequest);
+                contentLocator = groupMetadataService.getProducer().produceRegistryRoot(packageRequest);
               } else if (packageRequest.isPackageRoot()) {
-                contentLocator = groupMetadataService.producePackageRoot(packageRequest);
+                contentLocator = groupMetadataService.getProducer().producePackageRoot(packageRequest);
               } else {
-                contentLocator = groupMetadataService.producePackageVersion(packageRequest);
+                contentLocator = groupMetadataService.getProducer().producePackageVersion(packageRequest);
               }
               if (contentLocator == null) {
                 throw new ItemNotFoundException(reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
@@ -115,7 +119,7 @@ public class DefaultNpmGroupRepository
             } else {
                 // registry special
                 if (packageRequest.isRegistrySpecial() && packageRequest.getPath().startsWith("/-/all")) {
-                  return new DefaultStorageFileItem(this, storeRequest, true, true, groupMetadataService.produceRegistryRoot(packageRequest));
+                  return new DefaultStorageFileItem(this, storeRequest, true, true, groupMetadataService.getProducer().produceRegistryRoot(packageRequest));
                 }
                 throw new ItemNotFoundException(reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
             }

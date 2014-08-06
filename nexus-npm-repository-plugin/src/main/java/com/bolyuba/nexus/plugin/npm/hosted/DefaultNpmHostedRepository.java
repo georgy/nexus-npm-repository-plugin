@@ -7,7 +7,6 @@ import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
-import com.bolyuba.nexus.plugin.npm.metadata.Producer;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.inject.Description;
@@ -77,6 +76,9 @@ public class DefaultNpmHostedRepository
     }
 
     @Override
+    public HostedMetadataService getMetadataService() { return hostedMetadataService; }
+
+    @Override
     protected Configurator getConfigurator() {
         return this.configurator;
     }
@@ -113,11 +115,11 @@ public class DefaultNpmHostedRepository
             if (packageRequest.isMetadata()) {
               ContentLocator contentLocator;
               if (packageRequest.isRegistryRoot()) {
-                contentLocator = hostedMetadataService.produceRegistryRoot(packageRequest);
+                contentLocator = hostedMetadataService.getProducer().produceRegistryRoot(packageRequest);
               } else if (packageRequest.isPackageRoot()) {
-                contentLocator = hostedMetadataService.producePackageRoot(packageRequest);
+                contentLocator = hostedMetadataService.getProducer().producePackageRoot(packageRequest);
               } else {
-                contentLocator = hostedMetadataService.producePackageVersion(packageRequest);
+                contentLocator = hostedMetadataService.getProducer().producePackageVersion(packageRequest);
               }
               if (contentLocator == null) {
                 throw new ItemNotFoundException(reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
@@ -126,7 +128,7 @@ public class DefaultNpmHostedRepository
             } else {
                 // registry special
                 if (packageRequest.isRegistrySpecial() && packageRequest.getPath().startsWith("/-/all")) {
-                  return new DefaultStorageFileItem(this, storeRequest, true, true, hostedMetadataService.produceRegistryRoot(packageRequest));
+                  return new DefaultStorageFileItem(this, storeRequest, true, true, hostedMetadataService.getProducer().produceRegistryRoot(packageRequest));
                 }
                 throw new ItemNotFoundException(reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
             }

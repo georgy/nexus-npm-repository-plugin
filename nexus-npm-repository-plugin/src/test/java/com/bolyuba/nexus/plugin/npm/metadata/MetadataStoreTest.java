@@ -146,7 +146,7 @@ public class MetadataStoreTest
     log(commonjs.getName() + " || " + commonjs.getVersions().keySet() + "unpublished=" + commonjs.isUnpublished() +
         " incomplete=" + commonjs.isIncomplete());
 
-    final ContentLocator output = proxyMetadataService.produceRegistryRoot(new PackageRequest(new ResourceStoreRequest("/")));
+    final ContentLocator output = proxyMetadataService.getProducer().produceRegistryRoot(new PackageRequest(new ResourceStoreRequest("/")));
     try (InputStream is = output.getContent()) {
       java.nio.file.Files.copy(is, new File(tmpDir, "root.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
@@ -156,7 +156,7 @@ public class MetadataStoreTest
   public void proxyPackageRootRoundtrip() throws Exception {
     // this call will get it from remote, store, and return it as raw stream
     final StringContentLocator contentLocator = (StringContentLocator) proxyMetadataService
-        .producePackageVersion(new PackageRequest(new ResourceStoreRequest("/commonjs/0.0.1")));
+        .getProducer().producePackageVersion(new PackageRequest(new ResourceStoreRequest("/commonjs/0.0.1")));
     JSONObject proxiedV001 = new JSONObject(
         ByteSource.wrap(contentLocator.getByteArray()).asCharSource(Charsets.UTF_8).read());
 
@@ -205,7 +205,7 @@ public class MetadataStoreTest
     onDisk.getJSONObject("versions").getJSONObject("0.0.1").remove("_rev"); // TODO: See MetadataGenerator#filterPackageVersion
     onDisk.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").put("tarball", "http://localhost:8081/nexus/content/repositories/hosted/commonjs/-/commonjs-0.0.1.tgz");
     final StringContentLocator contentLocator = (StringContentLocator) hostedMetadataService
-        .producePackageRoot(new PackageRequest(new ResourceStoreRequest("/commonjs")));
+        .getProducer().producePackageRoot(new PackageRequest(new ResourceStoreRequest("/commonjs")));
     JSONObject onStore = new JSONObject(
         ByteSource.wrap(contentLocator.getByteArray()).asCharSource(Charsets.UTF_8).read());
 

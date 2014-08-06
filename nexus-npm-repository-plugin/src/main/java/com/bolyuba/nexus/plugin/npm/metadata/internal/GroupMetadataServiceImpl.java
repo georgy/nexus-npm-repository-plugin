@@ -4,44 +4,33 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
-import org.sonatype.nexus.proxy.item.ContentLocator;
-
-import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
-import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
+import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepository;
+import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 
 /**
- * {@link HostedMetadataService} implementation.
+ * {@link GroupMetadataService} implementation.
  */
-public class HostedMetadataServiceImpl
+public class GroupMetadataServiceImpl
     extends GeneratorSupport
-    implements HostedMetadataService
+    implements GroupMetadataService
 {
-  private final NpmHostedRepository npmHostedRepository;
+  private final NpmGroupRepository npmGroupRepository;
 
   private final MetadataGenerator metadataGenerator;
 
   private final MetadataParser metadataParser;
 
-  public HostedMetadataServiceImpl(final NpmHostedRepository npmHostedRepository,
-                                   final MetadataGenerator metadataGenerator,
-                                   final MetadataParser metadataParser)
+  public GroupMetadataServiceImpl(final NpmGroupRepository npmGroupRepository,
+                                  final MetadataGenerator metadataGenerator,
+                                  final MetadataParser metadataParser)
   {
     super(metadataParser);
-    this.npmHostedRepository = npmHostedRepository;
+    this.npmGroupRepository = npmGroupRepository;
     this.metadataGenerator = metadataGenerator;
     this.metadataParser = metadataParser;
-  }
-
-
-  @Override
-  public PackageRoot consumePackageRoot(final PackageRequest request, final ContentLocator contentLocator)
-      throws IOException
-  {
-    return metadataGenerator.consumePackageRoot(
-        metadataParser.parsePackageRoot(npmHostedRepository.getId(), contentLocator));
   }
 
   @Override

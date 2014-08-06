@@ -10,11 +10,9 @@ import org.sonatype.sisu.goodies.common.ComponentSupport;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
-import com.bolyuba.nexus.plugin.npm.metadata.Generator;
 import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
-import com.bolyuba.nexus.plugin.npm.metadata.Producer;
 import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 
@@ -63,10 +61,5 @@ public class MetadataServiceFactoryImpl
   @Override
   public GroupMetadataService createGroupMetadataService(final NpmGroupRepository npmGroupRepository) {
     throw new UnsupportedOperationException("not yet there");
-  }
-
-  @Override
-  public Producer createProducerFromGenerator(final Generator generator) {
-    return new GeneratorProducerImpl(generator, metadataParser);
   }
 }
