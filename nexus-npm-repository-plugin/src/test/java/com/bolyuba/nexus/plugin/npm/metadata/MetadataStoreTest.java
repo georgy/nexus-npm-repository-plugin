@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import org.sonatype.nexus.configuration.application.ApplicationDirectories;
@@ -13,23 +14,29 @@ import org.sonatype.nexus.proxy.item.PreparedContentLocator;
 import org.sonatype.nexus.proxy.item.StringContentLocator;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
+import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
 import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
 import org.sonatype.nexus.web.BaseUrlHolder;
 import org.sonatype.sisu.litmus.testsupport.TestSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.group.DefaultNpmGroupRepository;
+import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepository;
+import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepositoryConfigurator;
 import com.bolyuba.nexus.plugin.npm.hosted.DefaultNpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepositoryConfigurator;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataParser;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataServiceFactoryImpl;
+import com.bolyuba.nexus.plugin.npm.metadata.internal.PackageRootIterator;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.orient.OrientMetadataStore;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepositoryConfigurator;
 import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
 import org.apache.http.impl.client.HttpClients;
@@ -56,6 +63,8 @@ public class MetadataStoreTest
 
   private NpmProxyRepository npmProxyRepository;
 
+  private NpmGroupRepository npmGroupRepository;
+
   @Mock
   private ApplicationDirectories applicationDirectories;
 
@@ -67,10 +76,6 @@ public class MetadataStoreTest
   private MetadataParser metadataParser;
 
   private MetadataServiceFactory metadataService;
-
-  private HostedMetadataService hostedMetadataService;
-
-  private ProxyMetadataService proxyMetadataService;
 
   @Before
   public void setup() throws Exception {
@@ -96,6 +101,7 @@ public class MetadataStoreTest
       }
     };
 
+    // not using mock as it would OOM when it tracks invocations, as we work with large files here
     npmProxyRepository = new DefaultNpmProxyRepository(mock(ContentClass.class), mock(
         NpmProxyRepositoryConfigurator.class), metadataService)
     {
@@ -114,8 +120,23 @@ public class MetadataStoreTest
       public String getRemoteUrl() { return "http://registry.npmjs.org/"; }
     };
 
-    hostedMetadataService = metadataService.createHostedMetadataService(npmHostedRepository);
-    proxyMetadataService = metadataService.createProxyMetadataService(npmProxyRepository);
+    // not using mock as it would OOM when it tracks invocations, as we work with large files here
+    npmGroupRepository = new DefaultNpmGroupRepository(mock(ContentClass.class), mock(
+        NpmGroupRepositoryConfigurator.class), metadataService)
+    {
+      @Override
+      public String getId() {
+        return "hosted";
+      }
+
+      @Override
+      public List<Repository> getMemberRepositories() {
+        final List<Repository> result = Lists.newArrayList();
+        result.add(npmHostedRepository);
+        result.add(npmProxyRepository);
+        return result;
+      }
+    };
 
     metadataStore.start();
   }
@@ -136,7 +157,8 @@ public class MetadataStoreTest
         new GZIPInputStream(new FileInputStream(util.resolveFile("src/test/npm/ROOT_all.json.gz"))),
         NpmRepository.JSON_MIME_TYPE, -1);
     // this is "illegal" case using internal stuff, but is for testing only
-    metadataStore.updatePackages(npmProxyRepository, metadataParser.parseRegistryRoot(npmProxyRepository.getId(), input));
+    metadataStore
+        .updatePackages(npmProxyRepository, metadataParser.parseRegistryRoot(npmProxyRepository.getId(), input));
 
     log("Splice done");
     // we pushed all into DB, now query
@@ -146,7 +168,8 @@ public class MetadataStoreTest
     log(commonjs.getName() + " || " + commonjs.getVersions().keySet() + "unpublished=" + commonjs.isUnpublished() +
         " incomplete=" + commonjs.isIncomplete());
 
-    final ContentLocator output = proxyMetadataService.getProducer().produceRegistryRoot(new PackageRequest(new ResourceStoreRequest("/")));
+    final ContentLocator output = npmProxyRepository.getMetadataService().getProducer().produceRegistryRoot(
+        new PackageRequest(new ResourceStoreRequest("/")));
     try (InputStream is = output.getContent()) {
       java.nio.file.Files.copy(is, new File(tmpDir, "root.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
@@ -155,7 +178,7 @@ public class MetadataStoreTest
   @Test
   public void proxyPackageRootRoundtrip() throws Exception {
     // this call will get it from remote, store, and return it as raw stream
-    final StringContentLocator contentLocator = (StringContentLocator) proxyMetadataService
+    final StringContentLocator contentLocator = (StringContentLocator) npmProxyRepository.getMetadataService()
         .getProducer().producePackageVersion(new PackageRequest(new ResourceStoreRequest("/commonjs/0.0.1")));
     JSONObject proxiedV001 = new JSONObject(
         ByteSource.wrap(contentLocator.getByteArray()).asCharSource(Charsets.UTF_8).read());
@@ -182,7 +205,8 @@ public class MetadataStoreTest
     final ContentLocator input = new PreparedContentLocator(
         new FileInputStream(jsonFile),
         NpmRepository.JSON_MIME_TYPE, -1);
-    hostedMetadataService.consumePackageRoot(new PackageRequest(new ResourceStoreRequest("/commonjs")), input);
+    npmHostedRepository.getMetadataService().consumePackageRoot(
+        new PackageRequest(new ResourceStoreRequest("/commonjs")), input);
 
     assertThat(metadataStore.listPackageNames(npmHostedRepository), hasSize(1));
 
@@ -201,14 +225,57 @@ public class MetadataStoreTest
     onDisk.remove("_attachments");
     onDisk.remove("_id"); // TODO: See MetadataGenerator#filterPackageVersion
     onDisk.remove("_rev"); // TODO: See MetadataGenerator#filterPackageVersion
-    onDisk.getJSONObject("versions").getJSONObject("0.0.1").remove("_id"); // TODO: See MetadataGenerator#filterPackageVersion
-    onDisk.getJSONObject("versions").getJSONObject("0.0.1").remove("_rev"); // TODO: See MetadataGenerator#filterPackageVersion
-    onDisk.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").put("tarball", "http://localhost:8081/nexus/content/repositories/hosted/commonjs/-/commonjs-0.0.1.tgz");
-    final StringContentLocator contentLocator = (StringContentLocator) hostedMetadataService
+    onDisk.getJSONObject("versions").getJSONObject("0.0.1")
+        .remove("_id"); // TODO: See MetadataGenerator#filterPackageVersion
+    onDisk.getJSONObject("versions").getJSONObject("0.0.1")
+        .remove("_rev"); // TODO: See MetadataGenerator#filterPackageVersion
+    onDisk.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist")
+        .put("tarball", "http://localhost:8081/nexus/content/repositories/hosted/commonjs/-/commonjs-0.0.1.tgz");
+    final StringContentLocator contentLocator = (StringContentLocator) npmHostedRepository.getMetadataService()
         .getProducer().producePackageRoot(new PackageRequest(new ResourceStoreRequest("/commonjs")));
     JSONObject onStore = new JSONObject(
         ByteSource.wrap(contentLocator.getByteArray()).asCharSource(Charsets.UTF_8).read());
 
     JSONAssert.assertEquals(onDisk, onStore, false);
+  }
+
+  /**
+   * Simple smoke test that checks group functionality, it should aggregate members.
+   */
+  @Test
+  public void groupPackageRootRoundtrip() throws Exception {
+    // deploy private project to hosted repo
+    {
+      final File jsonFile = util.resolveFile("src/test/npm/ROOT_testproject.json");
+      final ContentLocator input = new PreparedContentLocator(
+          new FileInputStream(jsonFile),
+          NpmRepository.JSON_MIME_TYPE, -1);
+      npmHostedRepository.getMetadataService().consumePackageRoot(
+          new PackageRequest(new ResourceStoreRequest("/testproject")), input);
+    }
+
+    // proxy is set up against registry.npmjs.org, so no need to seed it
+
+    // verify we have all what registry.mpmjs.org has + testproject
+    final PackageRoot commonjs = npmGroupRepository.getMetadataService()
+        .generatePackageRoot(new PackageRequest(new ResourceStoreRequest("/commonjs")));
+    assertThat(commonjs, notNullValue());
+
+    final PackageRoot testproject = npmGroupRepository.getMetadataService()
+        .generatePackageRoot(new PackageRequest(new ResourceStoreRequest("/testproject")));
+    assertThat(testproject, notNullValue());
+
+    final PackageRootIterator iterator = npmGroupRepository.getMetadataService().generateRegistryRoot(new PackageRequest(new ResourceStoreRequest("/")));
+    boolean found = false;
+    int count = 0;
+    while (iterator.hasNext()) {
+      PackageRoot root = iterator.next();
+      if ("testproject".equals(root.getName())) {
+        found = true;
+      }
+      count++;
+    }
+    assertThat(count, greaterThan(1)); // we have ALL from registry.npmjs.org + testproject
+    assertThat(found, is(true)); // we need to have testproject in there
   }
 }

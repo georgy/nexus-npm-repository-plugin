@@ -36,7 +36,7 @@ import static org.sonatype.nexus.proxy.ItemNotFoundException.reasonFor;
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
 @Named(DefaultNpmGroupRepository.ROLE_HINT)
-@Description("Npm registry hosted repo")
+@Description("Npm registry group repo")
 public class DefaultNpmGroupRepository
         extends AbstractGroupRepository
         implements NpmGroupRepository, NpmRepository  {
@@ -98,8 +98,7 @@ public class DefaultNpmGroupRepository
         };
     }
 
-  
-    @Override
+   @Override
     protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest) throws ItemNotFoundException, LocalStorageException {
         try {
             PackageRequest packageRequest = new PackageRequest(storeRequest);
@@ -125,13 +124,9 @@ public class DefaultNpmGroupRepository
             }
         } catch (IllegalArgumentException ignore) {
             // something completely different
-            return delegateDoRetrieveLocalItem(storeRequest);
+            return super.doRetrieveLocalItem(storeRequest);
         } catch (IOException e) {
           throw new LocalStorageException("Metadata service error", e);
         }
-    }
-
-    AbstractStorageItem delegateDoRetrieveLocalItem(ResourceStoreRequest storeRequest) throws LocalStorageException, ItemNotFoundException {
-        return super.doRetrieveLocalItem(storeRequest);
     }
 }

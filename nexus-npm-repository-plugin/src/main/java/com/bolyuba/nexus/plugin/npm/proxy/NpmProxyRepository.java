@@ -14,6 +14,7 @@ import org.sonatype.nexus.proxy.repository.ProxyRepository;
 public interface NpmProxyRepository
         extends NpmRepository, ProxyRepository {
 
+  @Override
   ProxyMetadataService getMetadataService();
 
 }

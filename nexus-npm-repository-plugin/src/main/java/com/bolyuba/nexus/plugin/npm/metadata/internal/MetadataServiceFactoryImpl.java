@@ -60,6 +60,6 @@ public class MetadataServiceFactoryImpl
 
   @Override
   public GroupMetadataService createGroupMetadataService(final NpmGroupRepository npmGroupRepository) {
-    throw new UnsupportedOperationException("not yet there");
+    return new GroupMetadataServiceImpl(npmGroupRepository, metadataParser);
   }
 }

@@ -11,5 +11,6 @@ import org.sonatype.nexus.proxy.repository.HostedRepository;
 public interface NpmHostedRepository
         extends NpmRepository, HostedRepository {
 
+  @Override
   HostedMetadataService getMetadataService();
 }

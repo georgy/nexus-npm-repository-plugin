@@ -11,5 +11,6 @@ import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
 public interface NpmGroupRepository
     extends NpmRepository, GroupRepository {
 
+  @Override
   GroupMetadataService getMetadataService();
 }
