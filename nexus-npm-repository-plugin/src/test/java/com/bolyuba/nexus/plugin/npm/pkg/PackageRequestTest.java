@@ -28,7 +28,7 @@ public class PackageRequestTest {
     }
 
     @Test
-    public void sameRequestReturned() throws InvalidPackageRequestException {
+    public void sameRequestReturned() throws IllegalArgumentException {
         Mockito.when(mockRequest.getRequestPath()).thenReturn("/");
         PackageRequest packageRequest = new PackageRequest(mockRequest);
 
@@ -36,7 +36,7 @@ public class PackageRequestTest {
     }
 
     @Test
-    public void correctPathReturned() throws InvalidPackageRequestException {
+    public void correctPathReturned() throws IllegalArgumentException {
         Mockito.when(mockRequest.getRequestPath()).thenReturn("/-/all");
         PackageRequest packageRequest = new PackageRequest(mockRequest);
 
@@ -44,7 +44,7 @@ public class PackageRequestTest {
     }
 
     @Test
-    public void registryRoot() throws InvalidPackageRequestException {
+    public void registryRoot() throws IllegalArgumentException {
         Mockito.when(mockRequest.getRequestPath()).thenReturn("/");
         PackageRequest packageRequest = new PackageRequest(mockRequest);
 
@@ -55,7 +55,7 @@ public class PackageRequestTest {
     }
 
     @Test
-    public void packageRoot() throws InvalidPackageRequestException {
+    public void packageRoot() throws IllegalArgumentException {
         Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem");
         PackageRequest packageRequest = new PackageRequest(mockRequest);
 
@@ -66,7 +66,7 @@ public class PackageRequestTest {
     }
 
     @Test
-    public void packageVersion() throws InvalidPackageRequestException {
+    public void packageVersion() throws IllegalArgumentException {
         Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem/139.16");
         PackageRequest packageRequest = new PackageRequest(mockRequest);
 
@@ -77,7 +77,7 @@ public class PackageRequestTest {
     }
 
     @Test
-    public void registrySpecial() throws InvalidPackageRequestException {
+    public void registrySpecial() throws IllegalArgumentException {
         Mockito.when(mockRequest.getRequestPath()).thenReturn("/-/all");
         PackageRequest packageRequest = new PackageRequest(mockRequest);
 
@@ -89,18 +89,18 @@ public class PackageRequestTest {
 
 
     // Check that content cache escapes registry namespace
-    @Test(expectedExceptions = InvalidPackageRequestException.class,
+    @Test(expectedExceptions = IllegalArgumentException.class,
             expectedExceptionsMessageRegExp = "Invalid package version: -content.json")
-    public void packageRootContentCache_InvalidPackageRequest() throws InvalidPackageRequestException {
-        Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem/" + NpmRepository.JSON_CONTENT_FILE_NAME);
+    public void packageRootContentCache_InvalidPackageRequest() throws IllegalArgumentException {
+        Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem/-content.json");
         new PackageRequest(mockRequest);
         fail("Expected InvalidPackageRequestException");
     }
 
-    @Test(expectedExceptions = InvalidPackageRequestException.class,
+    @Test(expectedExceptions = IllegalArgumentException.class,
             expectedExceptionsMessageRegExp = "Path /golem/1.42.0/-content.json cannot be turned into PackageCoordinates")
-    public void packageVersionContentCache_InvalidPackageRequest() throws InvalidPackageRequestException {
-        Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem/1.42.0/" + NpmRepository.JSON_CONTENT_FILE_NAME);
+    public void packageVersionContentCache_InvalidPackageRequest() throws IllegalArgumentException {
+        Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem/1.42.0/-content.json");
         new PackageRequest(mockRequest);
         fail("Expected InvalidPackageRequestException");
     }

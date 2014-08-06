@@ -19,6 +19,7 @@
         <pluginName>Nexus npm repository plugin</pluginName>
         <pluginDescription>Adds npm (https://www.npmjs.org/) capabilities to Nexus OSS</pluginDescription>
         <pluginSiteUrl>http://nexus.bolyuba.com</pluginSiteUrl>
+        <orientdb.version>1.7.7</orientdb.version>
     </properties>
 
     <repositories>
@@ -65,11 +66,6 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.sonatype.nexus</groupId>
             <artifactId>nexus-plugin-api</artifactId>
             <scope>provided</scope>
@@ -82,6 +78,19 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- OrientDB, for now here and we will see where to move it in 2.9 -->
+        <dependency>
+          <groupId>com.orientechnologies</groupId>
+          <artifactId>orient-commons</artifactId>
+          <version>${orientdb.version}</version>
+        </dependency>
+
+        <dependency>
+          <groupId>com.orientechnologies</groupId>
+          <artifactId>orientdb-core</artifactId>
+          <version>${orientdb.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.sonatype.nexus</groupId>
             <artifactId>nexus-plugin-testsupport</artifactId>
@@ -91,6 +100,13 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.skyscreamer</groupId>
+            <artifactId>jsonassert</artifactId>
+            <version>1.2.3</version>
             <scope>test</scope>
         </dependency>
 

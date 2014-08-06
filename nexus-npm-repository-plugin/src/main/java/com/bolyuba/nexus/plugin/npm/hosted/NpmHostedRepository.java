@@ -1,6 +1,8 @@
 package com.bolyuba.nexus.plugin.npm.hosted;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
+
 import org.sonatype.nexus.proxy.repository.HostedRepository;
 
 /**
@@ -8,4 +10,7 @@ import org.sonatype.nexus.proxy.repository.HostedRepository;
  */
 public interface NpmHostedRepository
         extends NpmRepository, HostedRepository {
+
+  @Override
+  HostedMetadataService getMetadataService();
 }

@@ -6,6 +6,7 @@ import javax.annotation.Nonnull;
 
 import static com.bolyuba.nexus.plugin.npm.pkg.PackageCoordinates.Type.PACKAGE_ROOT;
 import static com.bolyuba.nexus.plugin.npm.pkg.PackageCoordinates.Type.PACKAGE_VERSION;
+import static com.bolyuba.nexus.plugin.npm.pkg.PackageCoordinates.Type.REGISTRY_ROOT;
 import static com.bolyuba.nexus.plugin.npm.pkg.PackageCoordinates.Type.REGISTRY_SPECIAL;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -20,7 +21,7 @@ public class PackageRequest {
 
     private PackageCoordinates coordinates;
 
-    public PackageRequest(@Nonnull ResourceStoreRequest storeRequest) throws InvalidPackageRequestException {
+    public PackageRequest(@Nonnull ResourceStoreRequest storeRequest) throws IllegalArgumentException {
 
         this.storeRequest = checkNotNull(storeRequest);
         this.coordinates = PackageCoordinates.coordinatesFromUrl(storeRequest.getRequestPath());
@@ -30,9 +31,13 @@ public class PackageRequest {
         return storeRequest;
     }
 
-    public boolean isPackageRoot() {
-        return PACKAGE_ROOT == coordinates.getType();
+    public boolean isRegistryRoot() {
+      return REGISTRY_ROOT == coordinates.getType();
     }
+
+    public boolean isPackageRoot() {
+          return PACKAGE_ROOT == coordinates.getType();
+      }
 
     public boolean isPackageVersion() {
         return PACKAGE_VERSION == coordinates.getType();
@@ -46,9 +51,13 @@ public class PackageRequest {
         return isPackageRoot() || isPackageVersion();
     }
 
-    public String getPath() {
-        return coordinates.getPath();
+    public boolean isMetadata() {
+      return isRegistryRoot() || isPackageRoot() || isPackageVersion();
     }
+
+    public String getPath() {
+          return coordinates.getPath();
+      }
 
     public String getName() {
         return coordinates.getPackageName();

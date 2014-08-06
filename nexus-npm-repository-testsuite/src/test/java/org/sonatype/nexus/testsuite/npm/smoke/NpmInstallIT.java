@@ -35,7 +35,7 @@ public class NpmInstallIT
     createNpmProxyRepository(testMethodName());
 
     final File localDirectory = util.createTempDir();
-    final String cmd = String.format("npm install commonjs --registry %s --cache %s --userconfig not-exists",
+    final String cmd = String.format("npm install commonjs --registry %s --cache %s --prefix ./target/prefix --userconfig not-exists",
         nexus().getUrl().toExternalForm() + "content/repositories/" + testMethodName(),
         localDirectory.getAbsolutePath());
 

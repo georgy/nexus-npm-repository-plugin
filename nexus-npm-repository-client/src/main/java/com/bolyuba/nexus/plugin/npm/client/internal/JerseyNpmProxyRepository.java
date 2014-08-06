@@ -10,7 +10,7 @@ public class JerseyNpmProxyRepository
     extends JerseyProxyRepository<NpmProxyRepository>
     implements NpmProxyRepository
 {
-  static final String PROVIDER_ROLE = "com.bolyuba.nexus.plugin.npm.NpmRepository";
+  static final String PROVIDER_ROLE = "org.sonatype.nexus.proxy.repository.Repository";
 
   static final String PROVIDER = "npm-proxy";
 

@@ -19,6 +19,8 @@ public class NpmRepositoryTemplateProvider extends AbstractRepositoryTemplatePro
 
     private static final String NPM_HOSTED = "npm_hosted";
 
+    private static final String NPM_GROUP = "npm_group";
+
     public static final String NPM_PROVIDER = "Npm plugin";
 
     @Override
@@ -27,6 +29,7 @@ public class NpmRepositoryTemplateProvider extends AbstractRepositoryTemplatePro
 
         templates.add(new NpmProxyRepositoryTemplate(this, NPM_PROXY, NPM_PROVIDER));
         templates.add(new NpmHostedRepositoryTemplate(this, NPM_HOSTED, NPM_PROVIDER));
+        templates.add(new NpmGroupRepositoryTemplate(this, NPM_GROUP, NPM_PROVIDER));
 
         return templates;
     }
