@@ -12,9 +12,14 @@ import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 public interface Consumer
 {
   /**
-   * Consumes the package request and it's belonging content into underlying store and returns the consumed package
+   * Parses the package rewuest and it's belonging content into {@link PackageRoot} instance.
+   */
+  PackageRoot parsePackageRoot(PackageRequest request, ContentLocator contentLocator) throws IOException;
+
+  /**
+   * Consumes the package root into underlying store and returns the consumed package
    * root (merged in applicable, in case update happened).
    */
-  PackageRoot consumePackageRoot(PackageRequest request, ContentLocator contentLocator) throws IOException;
+  PackageRoot consumePackageRoot(PackageRequest request, PackageRoot packageRoot) throws IOException;
 }
 

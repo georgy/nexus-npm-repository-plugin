@@ -12,6 +12,8 @@ import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 /**
  * {@link HostedMetadataService} implementation.
  */
@@ -35,13 +37,24 @@ public class HostedMetadataServiceImpl
     this.metadataParser = metadataParser;
   }
 
-
   @Override
-  public PackageRoot consumePackageRoot(final PackageRequest request, final ContentLocator contentLocator)
+  public PackageRoot parsePackageRoot(final PackageRequest request, final ContentLocator contentLocator)
       throws IOException
   {
-    return metadataGenerator.consumePackageRoot(
-        metadataParser.parsePackageRoot(npmHostedRepository.getId(), contentLocator));
+    checkArgument(request.isPackageRoot(), "Package root request expected, but got %s",
+        request.getPath());
+    final PackageRoot packageRoot = metadataParser.parsePackageRoot(npmHostedRepository.getId(), contentLocator);
+    checkArgument(request.getName().equals(packageRoot.getName()),
+        "Package root name '%s' and parsed content name '%s' mismatch", request.getName(), packageRoot.getName());
+    checkArgument(!packageRoot.isIncomplete(), "Incomplete package root parsed");
+    return packageRoot;
+  }
+
+  @Override
+  public PackageRoot consumePackageRoot(final PackageRequest request, final PackageRoot packageRoot)
+      throws IOException
+  {
+    return metadataGenerator.consumePackageRoot(packageRoot);
   }
 
   @Override

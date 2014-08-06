@@ -205,8 +205,10 @@ public class MetadataStoreTest
     final ContentLocator input = new PreparedContentLocator(
         new FileInputStream(jsonFile),
         NpmRepository.JSON_MIME_TYPE, -1);
-    npmHostedRepository.getMetadataService().consumePackageRoot(
-        new PackageRequest(new ResourceStoreRequest("/commonjs")), input);
+    final PackageRequest request = new PackageRequest(new ResourceStoreRequest("/commonjs"));
+    npmHostedRepository.getMetadataService()
+        .consumePackageRoot(request, npmHostedRepository.getMetadataService().parsePackageRoot(
+            request, input));
 
     assertThat(metadataStore.listPackageNames(npmHostedRepository), hasSize(1));
 
@@ -250,8 +252,10 @@ public class MetadataStoreTest
       final ContentLocator input = new PreparedContentLocator(
           new FileInputStream(jsonFile),
           NpmRepository.JSON_MIME_TYPE, -1);
-      npmHostedRepository.getMetadataService().consumePackageRoot(
-          new PackageRequest(new ResourceStoreRequest("/testproject")), input);
+      final PackageRequest request = new PackageRequest(new ResourceStoreRequest("/testproject"));
+      npmHostedRepository.getMetadataService()
+          .consumePackageRoot(request, npmHostedRepository.getMetadataService().parsePackageRoot(
+              request, input));
     }
 
     // proxy is set up against registry.npmjs.org, so no need to seed it
@@ -265,7 +269,8 @@ public class MetadataStoreTest
         .generatePackageRoot(new PackageRequest(new ResourceStoreRequest("/testproject")));
     assertThat(testproject, notNullValue());
 
-    final PackageRootIterator iterator = npmGroupRepository.getMetadataService().generateRegistryRoot(new PackageRequest(new ResourceStoreRequest("/")));
+    final PackageRootIterator iterator = npmGroupRepository.getMetadataService().generateRegistryRoot(
+        new PackageRequest(new ResourceStoreRequest("/")));
     boolean found = false;
     int count = 0;
     while (iterator.hasNext()) {

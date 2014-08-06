@@ -7,6 +7,7 @@ import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
+import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.sisu.Description;
@@ -149,6 +150,45 @@ public class DefaultNpmHostedRepository
         return super.doRetrieveLocalItem(storeRequest);
     }
 
+    @Override
+    public Action getResultingActionOnWrite(final ResourceStoreRequest rsr)
+        throws LocalStorageException
+    {
+      return getResultingActionOnWrite(rsr, null);
+    }
+
+    private Action getResultingActionOnWrite(final ResourceStoreRequest rsr, final PackageRoot packageRoot)
+        throws LocalStorageException
+    {
+      try {
+        if (packageRoot != null) {
+          // treat package version as entity
+          for (PackageVersion version : packageRoot.getVersions().values()) {
+            if (hostedMetadataService.generatePackageVersion(
+                new PackageRequest(new ResourceStoreRequest("/" + version.getName() + "/" + version.getVersion()))) !=
+                null) {
+              return Action.update;
+            }
+          }
+          return Action.create;
+        }
+        else {
+          final PackageRequest packageRequest = new PackageRequest(rsr);
+          if (packageRequest.isPackage()) {
+            // treat package root as entity
+            return hostedMetadataService.generatePackageRoot(packageRequest) == null ? Action.create : Action.update;
+          }
+          else {
+            // this is "who knows what"
+            return Action.create;
+          }
+        }
+      }
+      catch (IOException e) {
+        throw new LocalStorageException("Metadata service error", e);
+      }
+    }
+
     @SuppressWarnings("deprecation")
     @Override
     public void storeItem(ResourceStoreRequest request, InputStream is, Map<String, String> userAttributes)
@@ -166,7 +206,16 @@ public class DefaultNpmHostedRepository
 
             publisherLock.lock(Action.create);
             try {
-                final PackageRoot packageRoot = hostedMetadataService.consumePackageRoot(packageRequest, new PreparedContentLocator(is, NpmRepository.JSON_MIME_TYPE, ContentLocator.UNKNOWN_LENGTH));
+                PackageRoot packageRoot = hostedMetadataService.parsePackageRoot(packageRequest, new PreparedContentLocator(is, NpmRepository.JSON_MIME_TYPE, ContentLocator.UNKNOWN_LENGTH));
+
+                try {
+                  checkConditions(request, getResultingActionOnWrite(request, packageRoot));
+                }
+                catch (ItemNotFoundException e) {
+                  throw new AccessDeniedException(request, e.getMessage());
+                }
+
+                packageRoot = hostedMetadataService.consumePackageRoot(packageRequest, packageRoot);
 
                 if (!packageRoot.getAttachments().isEmpty()) {
                   for (PackageAttachment attachment : packageRoot.getAttachments().values()) {
