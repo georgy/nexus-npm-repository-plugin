@@ -86,6 +86,8 @@ public class PackageRoot
     overlay(getRaw(), packageRoot.getRaw()); // this changes underlying raw map directly
     this.wrappedVersions.clear();
     this.wrappedVersions.putAll(wrapVersions(getRaw()));
+    this.attachments.clear(); // TODO: is clear needed?
+    this.attachments.putAll(packageRoot.getAttachments());
   }
 
   private Map<String, Object> overlay(Map<String, Object> me, Map<String, Object> him) {
