@@ -1,7 +1,9 @@
 package com.bolyuba.nexus.plugin.npm.metadata.internal;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -208,6 +210,7 @@ public class ProxyMetadataServiceImpl
         npmProxyRepository.getRemoteStorageContext());
     try {
       final HttpGet get = new HttpGet(buildUri("-/all")); // TODO: this in NPM specific, might try both root and NPM api
+      log.info("NPM Registry root update for {}", npmProxyRepository.getId());
       // TODO: during devel INFO, should be DEBUG
       outboundRequestLog.info("{} - NPM GET {}", npmProxyRepository.getId(), get.getURI());
       get.addHeader("accept", NpmRepository.JSON_MIME_TYPE);
@@ -219,8 +222,10 @@ public class ProxyMetadataServiceImpl
         if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
           final File tempFile = File
               .createTempFile(npmProxyRepository.getId() + "-root", "temp.json", temporaryDirectory);
-          final BufferedInputStream bis = new BufferedInputStream(httpResponse.getEntity().getContent());
-          Files.copy(bis, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+          try (final BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tempFile))) {
+            httpResponse.getEntity().writeTo(bos);
+            bos.flush();
+          }
           try {
             final FileContentLocator cl = new FileContentLocator(tempFile, NpmRepository.JSON_MIME_TYPE);
             try (final PackageRootIterator roots = metadataParser.parseRegistryRoot(npmProxyRepository.getId(), cl)) {
@@ -229,6 +234,7 @@ public class ProxyMetadataServiceImpl
           }
           finally {
             tempFile.delete();
+            log.info("NPM Registry root updated for {}", npmProxyRepository.getId());
           }
         }
         throw new IOException("Unexpected response from registry root " + httpResponse.getStatusLine());
