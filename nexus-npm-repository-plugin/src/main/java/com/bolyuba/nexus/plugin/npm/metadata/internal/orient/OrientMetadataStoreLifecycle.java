@@ -10,6 +10,7 @@ import org.sonatype.nexus.proxy.events.NexusStoppedEvent;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.google.common.eventbus.Subscribe;
+import com.orientechnologies.orient.core.Orient;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -27,7 +28,11 @@ public class OrientMetadataStoreLifecycle
   @Inject
   public OrientMetadataStoreLifecycle(
       final OrientMetadataStore orientMetadataStore)
-  {this.orientMetadataStore = checkNotNull(orientMetadataStore);}
+  {
+    this.orientMetadataStore = checkNotNull(orientMetadataStore);
+    Orient.instance().removeShutdownHook();
+  }
+
 
   @Subscribe
   public void on(final NexusInitializedEvent e) throws Exception {
@@ -37,5 +42,6 @@ public class OrientMetadataStoreLifecycle
   @Subscribe
   public void on(final NexusStoppedEvent e) throws Exception {
     orientMetadataStore.stop();
+    Orient.instance().shutdown();
   }
 }
