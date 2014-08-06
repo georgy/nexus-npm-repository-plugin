@@ -47,7 +47,9 @@ public class MetadataGenerator
     if (root == null) {
       return null;
     }
-    root.shrinkToLatestVersionOnly();
+    if (!root.isIncomplete()) {
+      root.shrinkToLatestVersionOnly();
+    }
     filterPackageRoot(root);
     return root;
   }

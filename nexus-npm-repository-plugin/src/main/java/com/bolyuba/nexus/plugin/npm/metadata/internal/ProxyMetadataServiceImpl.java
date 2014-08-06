@@ -117,10 +117,13 @@ public class ProxyMetadataServiceImpl
           // create a fluke package root
           final Map<String, Object> versions = Maps.newHashMap();
           versions.put("0.0.0", "latest");
+          final Map<String, Object> distTags = Maps.newHashMap();
+          distTags.put("latest", "0.0.0");
           final Map<String, Object> raw = Maps.newHashMap();
           raw.put("name", REGISTRY_ROOT_PACKAGE_NAME);
           raw.put("description", "NX registry root package");
           raw.put("versions", versions);
+          raw.put("dist-tags", distTags);
           registryRoot = new PackageRoot(npmProxyRepository.getId(), raw);
         }
         registryRoot.getProperties().put(PROP_EXPIRED, Boolean.FALSE.toString());
