@@ -1,8 +1,8 @@
 package com.bolyuba.nexus.plugin.npm.templates;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
-import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
+import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepositoryConfiguration;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.configuration.ConfigurationException;
@@ -11,6 +11,7 @@ import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryCoreConfiguration;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
 import org.sonatype.nexus.configuration.model.DefaultCRepository;
+import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.repository.RepositoryWritePolicy;
 import org.sonatype.nexus.templates.repository.AbstractRepositoryTemplate;
 
@@ -34,7 +35,7 @@ public class NpmProxyRepositoryTemplate
         repo.setId("test");
         repo.setName("test");
 
-        repo.setProviderRole(NpmRepository.class.getName());
+        repo.setProviderRole(Repository.class.getName());
         repo.setProviderHint(DefaultNpmProxyRepository.ROLE_HINT);
 
         repo.setRemoteStorage(new CRemoteStorage());
@@ -61,7 +62,7 @@ public class NpmProxyRepositoryTemplate
     }
 
     @Override
-    public NpmRepository create() throws ConfigurationException, IOException {
-        return (NpmRepository) super.create();
+    public NpmProxyRepository create() throws ConfigurationException, IOException {
+        return (NpmProxyRepository) super.create();
     }
 }

@@ -1,8 +1,10 @@
 package com.bolyuba.nexus.plugin.npm.metadata.internal;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import javax.annotation.Nullable;
 
@@ -14,8 +16,8 @@ import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /**
  * {@link GroupMetadataService} implementation.
@@ -38,7 +40,6 @@ public class GroupMetadataServiceImpl
     final List<NpmRepository> members = getMembers();
     final List<PackageRootIterator> iterators = Lists.newArrayList();
     for (NpmRepository member : members) {
-      // TODO: duplicate packages???
       iterators.add(member.getMetadataService().generateRegistryRoot(request));
     }
     return new AggregatedPackageRootIterator(iterators);
@@ -89,16 +90,46 @@ public class GroupMetadataServiceImpl
 
   // ==
 
+  /**
+   * Aggregates multiple {@link PackageRootIterator}s but keeps package names unique.
+   */
   private static class AggregatedPackageRootIterator
       implements PackageRootIterator
   {
     private final List<PackageRootIterator> iterators;
 
-    private final Iterator<PackageRoot> iterator;
+    private final Iterator<PackageRootIterator> iteratorsIterator;
+
+    private final HashSet<String> names;
+
+    private PackageRootIterator currentIterator;
+
+    private PackageRoot next;
 
     private AggregatedPackageRootIterator(final List<PackageRootIterator> iterators) {
       this.iterators = iterators;
-      this.iterator = Iterators.concat(iterators.iterator());
+      this.iteratorsIterator = iterators.iterator();
+      this.names = Sets.newHashSet();
+      this.currentIterator = iteratorsIterator.hasNext() ? iteratorsIterator.next() : PackageRootIterator.EMPTY;
+      this.next = getNext();
+    }
+
+    private PackageRoot getNext() {
+      while (currentIterator != PackageRootIterator.EMPTY) {
+        while (currentIterator.hasNext()) {
+          final PackageRoot next = currentIterator.next();
+          if (names.add(next.getName())) {
+            return next;
+          }
+        }
+        if (iteratorsIterator.hasNext()) {
+          currentIterator = iteratorsIterator.next();
+        }
+        else {
+          currentIterator = PackageRootIterator.EMPTY;
+        }
+      }
+      return null; // no more
     }
 
     @Override
@@ -115,7 +146,7 @@ public class GroupMetadataServiceImpl
 
     @Override
     public boolean hasNext() {
-      boolean hasNext = iterator.hasNext();
+      boolean hasNext = next != null;
       if (!hasNext) {
         close();
       }
@@ -124,7 +155,15 @@ public class GroupMetadataServiceImpl
 
     @Override
     public PackageRoot next() {
-      return iterator.next();
+      final PackageRoot result = next;
+      if (result == null) {
+        throw new NoSuchElementException("Iterator depleted");
+      }
+      next = getNext();
+      if (next == null) {
+        close();
+      }
+      return result;
     }
 
     @Override

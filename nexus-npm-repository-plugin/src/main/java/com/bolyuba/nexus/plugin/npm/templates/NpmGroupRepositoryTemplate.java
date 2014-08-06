@@ -1,31 +1,32 @@
 package com.bolyuba.nexus.plugin.npm.templates;
 
-import com.bolyuba.nexus.plugin.npm.NpmContentClass;
-import com.bolyuba.nexus.plugin.npm.hosted.DefaultNpmHostedRepository;
-import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
-import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepositoryConfiguration;
-import org.codehaus.plexus.util.xml.Xpp3Dom;
+import java.io.IOException;
+
 import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryCoreConfiguration;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
 import org.sonatype.nexus.configuration.model.DefaultCRepository;
-import org.sonatype.nexus.proxy.repository.Repository;
+import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.RepositoryWritePolicy;
 import org.sonatype.nexus.templates.repository.AbstractRepositoryTemplate;
 
-import java.io.IOException;
+import com.bolyuba.nexus.plugin.npm.NpmContentClass;
+import com.bolyuba.nexus.plugin.npm.group.DefaultNpmGroupRepository;
+import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepository;
+import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepositoryConfiguration;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
-public class NpmHostedRepositoryTemplate
+public class NpmGroupRepositoryTemplate
         extends AbstractRepositoryTemplate
 {
 
-    public NpmHostedRepositoryTemplate(final NpmRepositoryTemplateProvider provider, final String id,
-                                       final String description) {
-        super(provider, id, description, new NpmContentClass(), DefaultNpmHostedRepository.class);
+    public NpmGroupRepositoryTemplate(final NpmRepositoryTemplateProvider provider, final String id,
+                                      final String description) {
+        super(provider, id, description, new NpmContentClass(), DefaultNpmGroupRepository.class);
     }
 
     @Override
@@ -34,13 +35,13 @@ public class NpmHostedRepositoryTemplate
         repo.setId("test");
         repo.setName("test");
 
-        repo.setProviderRole(Repository.class.getName());
-        repo.setProviderHint(DefaultNpmHostedRepository.ROLE_HINT);
+        repo.setProviderRole(GroupRepository.class.getName());
+        repo.setProviderHint(DefaultNpmGroupRepository.ROLE_HINT);
 
         final Xpp3Dom ex = new Xpp3Dom(DefaultCRepository.EXTERNAL_CONFIGURATION_NODE_NAME);
         repo.setExternalConfiguration(ex);
 
-        final NpmHostedRepositoryConfiguration exConf = new NpmHostedRepositoryConfiguration(ex);
+        final NpmGroupRepositoryConfiguration exConf = new NpmGroupRepositoryConfiguration(ex);
 
         repo.externalConfigurationImple = exConf;
 
@@ -50,16 +51,16 @@ public class NpmHostedRepositoryTemplate
         repo.setSearchable(true);
 
         return new CRepositoryCoreConfiguration(getTemplateProvider().getApplicationConfiguration(), repo,
-                new CRepositoryExternalConfigurationHolderFactory<NpmHostedRepositoryConfiguration>() {
+                new CRepositoryExternalConfigurationHolderFactory<NpmGroupRepositoryConfiguration>() {
                     @Override
-                    public NpmHostedRepositoryConfiguration createExternalConfigurationHolder(final CRepository config) {
-                        return new NpmHostedRepositoryConfiguration((Xpp3Dom) config.getExternalConfiguration());
+                    public NpmGroupRepositoryConfiguration createExternalConfigurationHolder(final CRepository config) {
+                        return new NpmGroupRepositoryConfiguration((Xpp3Dom) config.getExternalConfiguration());
                     }
                 });
     }
 
     @Override
-    public NpmHostedRepository create() throws ConfigurationException, IOException {
-        return (NpmHostedRepository) super.create();
+    public NpmGroupRepository create() throws ConfigurationException, IOException {
+        return (NpmGroupRepository) super.create();
     }
 }

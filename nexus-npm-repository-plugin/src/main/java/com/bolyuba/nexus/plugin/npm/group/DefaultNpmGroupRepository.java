@@ -2,10 +2,10 @@ package com.bolyuba.nexus.plugin.npm.group;
 
 import java.io.IOException;
 
+import javax.enterprise.inject.Typed;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import org.sonatype.inject.Description;
 import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
@@ -19,15 +19,16 @@ import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractGroupRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
+import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
-import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
 import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.eclipse.sisu.Description;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.proxy.ItemNotFoundException.reasonFor;
@@ -36,10 +37,11 @@ import static org.sonatype.nexus.proxy.ItemNotFoundException.reasonFor;
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
 @Named(DefaultNpmGroupRepository.ROLE_HINT)
+@Typed(GroupRepository.class)
 @Description("Npm registry group repo")
 public class DefaultNpmGroupRepository
         extends AbstractGroupRepository
-        implements NpmGroupRepository, NpmRepository  {
+        implements NpmGroupRepository, GroupRepository  {
 
     public static final String ROLE_HINT = "npm-group";
 
