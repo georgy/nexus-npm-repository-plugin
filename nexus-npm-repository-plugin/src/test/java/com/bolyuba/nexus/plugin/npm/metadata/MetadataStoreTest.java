@@ -2,6 +2,7 @@ package com.bolyuba.nexus.plugin.npm.metadata;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
@@ -30,7 +31,9 @@ import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepositoryConfigurator;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataParser;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.MetadataServiceFactoryImpl;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.PackageRootIterator;
+import com.bolyuba.nexus.plugin.npm.metadata.internal.ProxyMetadataTransport;
 import com.bolyuba.nexus.plugin.npm.metadata.internal.orient.OrientMetadataStore;
+import com.bolyuba.nexus.plugin.npm.metadata.internal.proxy.HttpProxyMetadataTransport;
 import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
@@ -77,6 +80,8 @@ public class MetadataStoreTest
 
   private MetadataParser metadataParser;
 
+  private ProxyMetadataTransport proxyMetadataTransport;
+
   @Before
   public void setup() throws Exception {
     BaseUrlHolder.set("http://localhost:8081/nexus");
@@ -88,8 +93,16 @@ public class MetadataStoreTest
         HttpClients.createDefault());
 
     metadataStore = new OrientMetadataStore(applicationDirectories);
-    metadataService = new MetadataServiceFactoryImpl(applicationDirectories, metadataStore, httpClientManager);
-    metadataParser = metadataService.getMetadataParser();
+    metadataParser = new MetadataParser(applicationDirectories.getTemporaryDirectory());
+    // proxy transport but without root fetch, to not harrass registry and make tests dead slow
+    proxyMetadataTransport = new HttpProxyMetadataTransport(metadataParser, httpClientManager)
+    {
+      @Override
+      public PackageRootIterator fetchRegistryRoot(final NpmProxyRepository npmProxyRepository) throws IOException {
+        return PackageRootIterator.EMPTY;
+      }
+    };
+    metadataService = new MetadataServiceFactoryImpl(metadataStore, metadataParser, proxyMetadataTransport);
 
     // not using mock as it would OOM when it tracks invocations, as we work with large files here
     npmHostedRepository = new DefaultNpmHostedRepository(mock(ContentClass.class), mock(

@@ -8,7 +8,11 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
+import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.nexus.proxy.item.AbstractContentLocator;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.StringContentLocator;
@@ -22,6 +26,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -36,6 +41,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Metadata parser and producer component, parses out of "raw" (streamed or not) source to entities and other way
  * around.
  */
+@Singleton
+@Named
 public class MetadataParser
     extends ComponentSupport
 {
@@ -43,9 +50,19 @@ public class MetadataParser
 
   private final ObjectMapper objectMapper;
 
+  @Inject
+  public MetadataParser(final ApplicationDirectories applicationDirectories) {
+    this(applicationDirectories.getTemporaryDirectory());
+  }
+
+  @VisibleForTesting
   public MetadataParser(final File temporaryDirectory) {
     this.temporaryDirectory = checkNotNull(temporaryDirectory);
     this.objectMapper = new ObjectMapper(); // this parses registry JSON
+  }
+
+  public File getTemporaryDirectory() {
+    return temporaryDirectory;
   }
 
   // Parse API
