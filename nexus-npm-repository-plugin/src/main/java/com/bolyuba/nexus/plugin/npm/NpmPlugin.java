@@ -1,9 +1,9 @@
 package com.bolyuba.nexus.plugin.npm;
 
-import org.sonatype.nexus.plugin.PluginIdentity;
-
 import javax.inject.Named;
 import javax.inject.Singleton;
+
+import org.sonatype.nexus.plugin.PluginIdentity;
 
 /**
  * This plugin adds Npm support to Sonatype Nexus. Implementation is based on
@@ -15,9 +15,9 @@ import javax.inject.Singleton;
 @Singleton
 public class NpmPlugin extends PluginIdentity {
 
-    public static final String ARTIFACT_ID = "nexus-npm-repository-plugin";
+    public static final String GROUP_ID = "org.sonatype.nexus.plugins";
 
-    public static final String GROUP_ID = "com.bolyuba.nexus.plugin";
+    public static final String ARTIFACT_ID = "nexus-npm-repository-plugin";
 
     public NpmPlugin() throws Exception {
         super(GROUP_ID, ARTIFACT_ID);

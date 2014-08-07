@@ -45,8 +45,9 @@ public abstract class NpmITSupport
     return super.configureNexus(configuration)
         .setLogLevel("com.bolyuba.nexus.plugin.npm", "DEBUG")
         .addPlugins(
-            artifactResolver().resolvePluginFromDependencyManagement("com.bolyuba.nexus.plugin",
-                "nexus-npm-repository-plugin"));
+            artifactResolver().resolvePluginFromDependencyManagement(
+                "org.sonatype.nexus.plugins", "nexus-npm-repository-plugin"
+            ));
   }
 
   /**
