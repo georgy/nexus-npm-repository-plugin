@@ -31,26 +31,21 @@ public class MetadataServiceFactoryImpl
 
   private final MetadataParser metadataParser;
 
-  private final ProxyMetadataTransport httpProxyMetadataTransport;
+  private final ProxyMetadataTransport proxyMetadataTransport;
 
   @Inject
   public MetadataServiceFactoryImpl(final MetadataStore metadataStore,
                                     final MetadataParser metadataParser,
-                                    final ProxyMetadataTransport httpProxyMetadataTransport)
+                                    final ProxyMetadataTransport proxyMetadataTransport)
   {
     this.metadataStore = checkNotNull(metadataStore);
     this.metadataParser = checkNotNull(metadataParser);
-    this.httpProxyMetadataTransport = checkNotNull(httpProxyMetadataTransport);
-  }
-
-  @VisibleForTesting
-  public MetadataParser getMetadataParser() {
-    return metadataParser;
+    this.proxyMetadataTransport = checkNotNull(proxyMetadataTransport);
   }
 
   @VisibleForTesting
   public ProxyMetadataTransport getProxyMetadataTransport() {
-    return httpProxyMetadataTransport;
+    return proxyMetadataTransport;
   }
 
   @VisibleForTesting
