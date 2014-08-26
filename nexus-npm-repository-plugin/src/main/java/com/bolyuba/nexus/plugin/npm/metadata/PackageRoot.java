@@ -47,7 +47,12 @@ public class PackageRoot
     if (isUnpublished()) {
       return;
     }
-    final String latest = ((Map<String, String>) getRaw().get("dist-tags")).get("latest");
+    final String latest = resolveTagToVersion (getRaw(), "latest");
+    if ("latest".equals(latest)) {
+      // TODO: WTF? Fix this, either using semver and sorting versions or whatnot
+      // but then we end up with same problem as in maven: what is latest? "Biggest" version or last deployed?
+      throw new IllegalStateException("Cannot resolve 'latest' from dist-tags!");
+    }
     ((Map<String, Object>) getRaw().get("versions")).clear();
     ((Map<String, Object>) getRaw().get("versions")).put(latest, "latest");
     wrappedVersions.clear();
@@ -129,7 +134,7 @@ public class PackageRoot
           wrappedVersions.put(versionsEntry.getKey(),
               new PackageVersion(getRepositoryId(), (Map<String, Object>) versionsEntry.getValue()));
         }
-        else if ("latest".equals(versionsEntry.getValue())) {
+        else if (versionsEntry.getValue() instanceof String) {
           // create an "incomplete" document
           final Map<String, Object> latestVersion = Maps.newHashMap();
           latestVersion.put("name", raw.get("name"));
@@ -145,5 +150,19 @@ public class PackageRoot
       }
     }
     return wrappedVersions;
+  }
+
+  /**
+   * Resolves a "tag" to version using "dist-tags" entry in package root document. If no tag found or dist-tags
+   * section is completely missing, passed in tag is returned as-is.
+   */
+  private String resolveTagToVersion(final Map<String, Object> raw, final String tag) {
+    if (raw.containsKey("dist-tags")) {
+      final Map<String, String> distTags = (Map<String, String>) raw.get("dist-tags");
+      if (distTags.containsKey(tag)) {
+        return distTags.get(tag);
+      }
+    }
+    return tag;
   }
 }
