@@ -28,6 +28,17 @@ public class PackageVersion
     return (String) ((Map) getRaw().get("dist")).get("tarball");
   }
 
+  public String getDistTarballFilename() {
+    String tarballUrl = getDistTarball();
+    int idx = tarballUrl.lastIndexOf("/");
+    if (idx != -1) {
+      return tarballUrl.substring(idx + 1);
+    } else {
+      //Unknown tarball, construct default
+      return getName() + "-" + getVersion() + ".tgz";
+    }
+  }
+
   public void setDistTarball(String tarball) {
     checkNotNull(tarball);
     ((Map) getRaw().get("dist")).put("tarball", tarball);
