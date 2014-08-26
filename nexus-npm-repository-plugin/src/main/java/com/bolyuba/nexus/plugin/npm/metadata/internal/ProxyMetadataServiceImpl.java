@@ -86,7 +86,12 @@ public class ProxyMetadataServiceImpl
       final long now = System.currentTimeMillis();
       if (registryRoot == null || isExpired(registryRoot, now)) {
         // fetch all from remote, this takes some time (currently 40MB JSON)
-        log.info("NPM Registry root update for {}", npmProxyRepository.getId());
+        if (registryRoot == null) {
+          log.info("Initial NPM Registry root update for {}", npmProxyRepository.getId());
+        }
+        else {
+          log.info("Expired NPM Registry root update for {}", npmProxyRepository.getId());
+        }
         try (final PackageRootIterator packageRootIterator = proxyMetadataTransport
             .fetchRegistryRoot(npmProxyRepository)) {
           int count = metadataStore.updatePackages(npmProxyRepository, packageRootIterator);
@@ -166,20 +171,31 @@ public class ProxyMetadataServiceImpl
    * version is required.
    */
   private boolean isExpired(final PackageRoot packageRoot, final long now) {
-    if (packageRoot.isIncomplete()) {
+    if (!REGISTRY_ROOT_PACKAGE_NAME.equals(packageRoot.getName()) && packageRoot.isIncomplete()) {
+      // registry root is made incomplete for simplicity's sake
+      log.trace("EXPIRED: package {} is incomplete", packageRoot.getName());
       return true;
     }
     if (!npmProxyRepository.isItemAgingActive()) {
+      log.trace("EXPIRED: package {} owning repository item aging is inactive", packageRoot.getName());
       return true;
     }
     if (Boolean.TRUE.toString().equals(packageRoot.getProperties().get(PROP_EXPIRED))) {
+      log.trace("EXPIRED: package {} flagged as expired", packageRoot.getName());
       return true;
     }
     if (npmProxyRepository.getItemMaxAge() < 0) {
+      log.trace("NOT-EXPIRED: package {} owning repository {} has negative item max age", packageRoot.getName(), npmProxyRepository.getId());
       return false;
     }
     final long remoteCached = packageRoot.getProperties().containsKey(PROP_CACHED) ? Long
         .valueOf(packageRoot.getProperties().get(PROP_CACHED)) : now;
-    return ((now - remoteCached) > (npmProxyRepository.getItemMaxAge() * 60L * 1000L));
+    final boolean result = ((now - remoteCached) > (npmProxyRepository.getItemMaxAge() * 60L * 1000L));
+    if (result) {
+      log.trace("EXPIRED: package {} is too old", packageRoot.getName());
+    } else {
+      log.trace("NOT-EXPIRED: package {} is fresh", packageRoot.getName());
+    }
+    return result;
   }
 }

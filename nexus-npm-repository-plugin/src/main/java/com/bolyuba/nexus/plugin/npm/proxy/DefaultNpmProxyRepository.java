@@ -124,12 +124,15 @@ public class DefaultNpmProxyRepository
             if (packageRequest.isMetadata()) {
               ContentLocator contentLocator;
               if (packageRequest.isRegistryRoot()) {
+                log.debug("Serving registry root...");
                 contentLocator = proxyMetadataService.getProducer().produceRegistryRoot(packageRequest);
               }
               else if (packageRequest.isPackageRoot()) {
+                log.debug("Serving package {} root...", packageRequest.getName());
                 contentLocator = proxyMetadataService.getProducer().producePackageRoot(packageRequest);
               }
               else {
+                log.debug("Serving package {} version {}...", packageRequest.getName(), packageRequest.getVersion());
                 contentLocator = proxyMetadataService.getProducer().producePackageVersion(packageRequest);
               }
               if (contentLocator == null) {
@@ -137,12 +140,13 @@ public class DefaultNpmProxyRepository
                 throw new ItemNotFoundException(
                     reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
               }
-              return new DefaultStorageFileItem(this, storeRequest, true, true, contentLocator);
+              return createStorageFileItem(storeRequest, contentLocator);
             }
             else {
               // registry special
               if (packageRequest.isRegistrySpecial() && packageRequest.getPath().startsWith("/-/all")) {
-                return new DefaultStorageFileItem(this, storeRequest, true, true,
+                log.debug("Serving registry root from /-/all...");
+                return createStorageFileItem(storeRequest,
                     proxyMetadataService.getProducer().produceRegistryRoot(packageRequest));
               }
               throw new ItemNotFoundException(
@@ -153,6 +157,19 @@ public class DefaultNpmProxyRepository
         } catch (IOException e) {
           throw new LocalStorageException("Metadata service error", e);
         }
+    }
+
+    /**
+     * Prepares a file item. The "catch" is that this is proxy repository, and we don't want to have NX core aging
+     * interfere with proxying of NPM metadata service, so whatever we have here we mark as "fresh" to not have
+     * proxy logic of core kick in redoing all the generation again. To core, this file item looks like coming
+     * from local store (cache), hence "aging" will be applied.
+     */
+    private DefaultStorageFileItem createStorageFileItem(final ResourceStoreRequest storeRequest, final ContentLocator contentLocator) {
+      final DefaultStorageFileItem result = new DefaultStorageFileItem(this, storeRequest, true, true, contentLocator);
+      result.setRemoteChecked(Long.MAX_VALUE); // do not handle it as expired at any cost
+      result.setExpired(false); // do not handle it as expired at any cost
+      return result;
     }
 
     /**

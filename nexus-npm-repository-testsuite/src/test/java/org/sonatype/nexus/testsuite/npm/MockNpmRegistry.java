@@ -12,6 +12,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.sonatype.tests.http.server.api.Behaviour;
 import org.sonatype.tests.http.server.fluent.Server;
+import org.sonatype.tests.http.server.jetty.behaviour.PathRecorderBehaviour;
+import org.sonatype.tests.http.server.jetty.behaviour.Record;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
@@ -35,6 +37,8 @@ public class MockNpmRegistry
 
   private final File registryRoot;
 
+  private final PathRecorderBehaviour pathRecorderBehaviour;
+
   private Server server;
 
   /**
@@ -42,6 +46,7 @@ public class MockNpmRegistry
    */
   public MockNpmRegistry(final File registryRoot) {
     this.registryRoot = checkNotNull(registryRoot);
+    this.pathRecorderBehaviour = new PathRecorderBehaviour();
     checkArgument(registryRoot.isDirectory(),
         "The registry root must point to existing directory (does not exists or is not directory)");
   }
@@ -52,7 +57,7 @@ public class MockNpmRegistry
   public synchronized MockNpmRegistry start() {
     checkState(server == null, "Server already started");
     try {
-      server = Server.withPort(0).serve("/*").withBehaviours(new NpmGet(registryRoot)).start();
+      server = Server.withPort(0).serve("/*").withBehaviours(pathRecorderBehaviour, new NpmGet(registryRoot)).start();
       logger.info("Starting mock NPM registry with root {} at {}", registryRoot, getUrl());
       return this;
     }
@@ -84,6 +89,13 @@ public class MockNpmRegistry
   public synchronized String getUrl() {
     checkState(server != null, "Server not started");
     return "http://localhost:" + server.getPort();
+  }
+
+  /**
+   * Exposes path recorder to perform assertions.
+   */
+  public PathRecorderBehaviour getPathRecorder() {
+    return pathRecorderBehaviour;
   }
 
   // ==
