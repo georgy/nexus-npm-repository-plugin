@@ -129,7 +129,7 @@ public class PackageRoot
           wrappedVersions.put(versionsEntry.getKey(),
               new PackageVersion(getRepositoryId(), (Map<String, Object>) versionsEntry.getValue()));
         }
-        else if ("latest".equals(versionsEntry.getValue())) {
+        else if ("latest".equals(versionsEntry.getValue()) || "stable".equals(versionsEntry.getValue())) {
           // create an "incomplete" document
           final Map<String, Object> latestVersion = Maps.newHashMap();
           latestVersion.put("name", raw.get("name"));
