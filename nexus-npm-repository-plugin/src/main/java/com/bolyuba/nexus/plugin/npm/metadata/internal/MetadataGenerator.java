@@ -92,9 +92,8 @@ public class MetadataGenerator
 
   private void filterPackageVersion(final PackageVersion packageVersion) {
     packageVersion.setDistTarball(SimpleFormat
-        .format("%s/content/repositories/%s/%s/-/%s-%s.tgz", BaseUrlHolder.get(), npmRepository.getId(),
-            packageVersion.getName(), packageVersion.getName(),
-            packageVersion.getVersion()));
+        .format("%s/content/repositories/%s/%s/-/%s", BaseUrlHolder.get(), npmRepository.getId(),
+            packageVersion.getName(), packageVersion.getDistTarballFilename()));
     packageVersion.getRaw().remove("_id"); // TODO: why? Original code did this too
     packageVersion.getRaw().remove("_rev"); // TODO: why? Original code did this too
   }
