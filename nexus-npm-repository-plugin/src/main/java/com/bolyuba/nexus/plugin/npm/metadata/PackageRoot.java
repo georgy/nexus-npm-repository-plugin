@@ -39,17 +39,22 @@ public class PackageRoot
   public Map<String, PackageAttachment> getAttachments() { return attachments; }
 
   /**
-   * Reduces the document backing map to a "shrinked" version where only latest version is
-   * contained. This method and format is usable only in registry root metadata and nowhere else
-   * should be used.
+   * Reduces the document backing map to a "shrinked" form where versions map contains only version to tag (or version)
+   * mapping (basically dithching the package version object, making the versions map string-string map). This method
+   * and format is usable only in registry root metadata and nowhere else should be used. Document modified like this
+   * should NOT be persisted back into metadata store.
    */
-  public void shrinkToLatestVersionOnly() {
+  public void shrinkPackageVersions() {
     if (isUnpublished()) {
       return;
     }
-    final String latest = ((Map<String, String>) getRaw().get("dist-tags")).get("latest");
+    // replace versions map(versionString, packageVersionObject) with map(versionString, tagString)
+    final Map<String, String> shrinkedVersions = Maps.newHashMap();
+    for (Entry<String, PackageVersion> version : wrappedVersions.entrySet()) {
+      shrinkedVersions.put(version.getKey(), resolveVersionToTag(version.getKey()));
+    }
     ((Map<String, Object>) getRaw().get("versions")).clear();
-    ((Map<String, Object>) getRaw().get("versions")).put(latest, "latest");
+    ((Map<String, Object>) getRaw().get("versions")).putAll(shrinkedVersions);
     wrappedVersions.clear();
   }
 
@@ -120,7 +125,10 @@ public class PackageRoot
     }
   }
 
-  protected Map<String, PackageVersion> wrapVersions(final Map<String, Object> raw) {
+  /**
+   * Builds a map mapping versionString to {@link PackageVersion}. Always returns new instance of a map.
+   */
+  private Map<String, PackageVersion> wrapVersions(final Map<String, Object> raw) {
     final Map<String, PackageVersion> wrappedVersions = Maps.newHashMap();
     final Map<String, Object> versions = (Map<String, Object>) raw.get("versions");
     if (versions != null) {
@@ -129,8 +137,9 @@ public class PackageRoot
           wrappedVersions.put(versionsEntry.getKey(),
               new PackageVersion(getRepositoryId(), (Map<String, Object>) versionsEntry.getValue()));
         }
-        else if ("latest".equals(versionsEntry.getValue())) {
+        else if (versionsEntry.getValue() instanceof String) {
           // create an "incomplete" document
+          // we do not care about value that is either a tag or version, since key is always a version
           final Map<String, Object> latestVersion = Maps.newHashMap();
           latestVersion.put("name", raw.get("name"));
           if (raw.containsKey("description")) {
@@ -145,5 +154,21 @@ public class PackageRoot
       }
     }
     return wrappedVersions;
+  }
+
+  /**
+   * Resolves a version to "tag" using "dist-tags" entry in package root document. If no tag found or dist-tags
+   * section is completely missing, passed in version is returned as-is.
+   */
+  private String resolveVersionToTag(final String version) {
+    if (getRaw().containsKey("dist-tags")) {
+      final Map<String, String> distTags = (Map<String, String>) getRaw().get("dist-tags");
+      for (Entry<String, String> distTag : distTags.entrySet()) {
+        if (version.equals(distTag.getValue())) {
+          return distTag.getKey();
+        }
+      }
+    }
+    return version;
   }
 }

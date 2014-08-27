@@ -59,6 +59,7 @@ public class ProxyMetadataServiceImpl
       if (packageRoot == null) {
         return false;
       }
+      log.info("Expiring package root {} in repository {}", request.getName(), npmProxyRepository.getId());
       packageRoot.getProperties().put(PROP_EXPIRED, Boolean.TRUE.toString());
       metadataStore.updatePackage(npmProxyRepository, packageRoot);
       return true;
@@ -66,6 +67,7 @@ public class ProxyMetadataServiceImpl
     else {
       final PackageRoot registryRoot = metadataStore.getPackageByName(npmProxyRepository, REGISTRY_ROOT_PACKAGE_NAME);
       if (registryRoot != null) {
+        log.info("Expiring registry root of {}", npmProxyRepository.getId());
         registryRoot.getProperties().put(PROP_EXPIRED, Boolean.TRUE.toString());
         metadataStore.updatePackage(npmProxyRepository, registryRoot);
       }
