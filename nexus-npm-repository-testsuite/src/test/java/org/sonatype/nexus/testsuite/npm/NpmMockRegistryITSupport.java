@@ -69,7 +69,7 @@ public abstract class NpmMockRegistryITSupport
   }
 
   /**
-   * Exposes path recorder to perform assertions.
+   * Exposes path recorder to perform assertions. See {@link MockNpmRegistry#getPathRecorder()} for details.
    */
   protected PathRecorderBehaviour getPathRecorder() {
     return mockNpmRegistry.getPathRecorder();
