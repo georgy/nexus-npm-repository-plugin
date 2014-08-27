@@ -111,8 +111,8 @@ public class PackageCoordinatesTest {
         PackageCoordinates coordinates = PackageCoordinates.coordinatesFromUrl("/GoNoGO/1.42.Rc1");
 
         assertEquals(coordinates.getType(), PackageCoordinates.Type.PACKAGE_VERSION, "Expected package version coordinates type");
-        assertEquals(coordinates.getPackageName(), "gonogo");
-        assertEquals(coordinates.getPackageVersion(), "1.42.rc1");
-        assertEquals(coordinates.getPath(), "/gonogo/1.42.rc1");
+        assertEquals(coordinates.getPackageName(), "GoNoGO");
+        assertEquals(coordinates.getPackageVersion(), "1.42.Rc1");
+        assertEquals(coordinates.getPath(), "/GoNoGO/1.42.Rc1");
     }
 }
