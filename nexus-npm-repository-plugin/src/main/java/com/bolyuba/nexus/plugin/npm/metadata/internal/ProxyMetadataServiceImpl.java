@@ -28,6 +28,8 @@ public class ProxyMetadataServiceImpl
 
   private static final String PROP_EXPIRED = "remote.expired";
 
+  private final Object registryRootUpdateLock;
+
   private final NpmProxyRepository npmProxyRepository;
 
   private final MetadataStore metadataStore;
@@ -43,6 +45,7 @@ public class ProxyMetadataServiceImpl
                                   final MetadataParser metadataParser)
   {
     super(metadataParser);
+    this.registryRootUpdateLock = new Object();
     this.npmProxyRepository = checkNotNull(npmProxyRepository);
     this.metadataStore = checkNotNull(metadataStore);
     this.metadataGenerator = checkNotNull(metadataGenerator);
@@ -85,33 +88,44 @@ public class ProxyMetadataServiceImpl
       PackageRoot registryRoot = metadataStore.getPackageByName(npmProxyRepository, REGISTRY_ROOT_PACKAGE_NAME);
       final long now = System.currentTimeMillis();
       if (registryRoot == null || isExpired(registryRoot, now)) {
-        // fetch all from remote, this takes some time (currently 40MB JSON)
-        log.info("NPM Registry root update for {}", npmProxyRepository.getId());
-        try (final PackageRootIterator packageRootIterator = proxyMetadataTransport
-            .fetchRegistryRoot(npmProxyRepository)) {
-          int count = metadataStore.updatePackages(npmProxyRepository, packageRootIterator);
-          log.info("NPM Registry root updated {} packages for {}", count, npmProxyRepository.getId());
+        synchronized (registryRootUpdateLock) {
+          // double checked locking, let's see again did some other thread update while we were blocked
+          registryRoot = metadataStore.getPackageByName(npmProxyRepository, REGISTRY_ROOT_PACKAGE_NAME);
+          if (registryRoot == null || isExpired(registryRoot, now)) {
+            // fetch all from remote, this takes some time (currently 40MB JSON)
+            if (registryRoot == null) {
+              log.info("Initial NPM Registry root update for {}", npmProxyRepository.getId());
+            }
+            else {
+              log.info("Expired NPM Registry root update for {}", npmProxyRepository.getId());
+            }
+            try (final PackageRootIterator packageRootIterator = proxyMetadataTransport
+                .fetchRegistryRoot(npmProxyRepository)) {
+              int count = metadataStore.updatePackages(npmProxyRepository, packageRootIterator);
+              log.info("NPM Registry root updated {} packages for {}", count, npmProxyRepository.getId());
+            }
+            catch (Exception e) {
+              // TODO: salvage as much as possible? As store commits per document anyway
+              log.warn("NPM Registry root update failed for {}", npmProxyRepository.getId(), e);
+            }
+            if (registryRoot == null) {
+              // create a fluke package root
+              final Map<String, Object> versions = Maps.newHashMap();
+              versions.put("0.0.0", "latest");
+              final Map<String, Object> distTags = Maps.newHashMap();
+              distTags.put("latest", "0.0.0");
+              final Map<String, Object> raw = Maps.newHashMap();
+              raw.put("name", REGISTRY_ROOT_PACKAGE_NAME);
+              raw.put("description", "NX registry root package");
+              raw.put("versions", versions);
+              raw.put("dist-tags", distTags);
+              registryRoot = new PackageRoot(npmProxyRepository.getId(), raw);
+            }
+            registryRoot.getProperties().put(PROP_EXPIRED, Boolean.FALSE.toString());
+            registryRoot.getProperties().put(PROP_CACHED, Long.toString(now));
+            metadataStore.updatePackage(npmProxyRepository, registryRoot);
+          }
         }
-        catch (Exception e) {
-          // TODO: salvage as much as possible? As store commits per document anyway
-          log.warn("NPM Registry root update failed for {}", npmProxyRepository.getId(), e);
-        }
-        if (registryRoot == null) {
-          // create a fluke package root
-          final Map<String, Object> versions = Maps.newHashMap();
-          versions.put("0.0.0", "latest");
-          final Map<String, Object> distTags = Maps.newHashMap();
-          distTags.put("latest", "0.0.0");
-          final Map<String, Object> raw = Maps.newHashMap();
-          raw.put("name", REGISTRY_ROOT_PACKAGE_NAME);
-          raw.put("description", "NX registry root package");
-          raw.put("versions", versions);
-          raw.put("dist-tags", distTags);
-          registryRoot = new PackageRoot(npmProxyRepository.getId(), raw);
-        }
-        registryRoot.getProperties().put(PROP_EXPIRED, Boolean.FALSE.toString());
-        registryRoot.getProperties().put(PROP_CACHED, Long.toString(now));
-        metadataStore.updatePackage(npmProxyRepository, registryRoot);
       }
     }
     return metadataGenerator.generateRegistryRoot();
@@ -166,20 +180,33 @@ public class ProxyMetadataServiceImpl
    * version is required.
    */
   private boolean isExpired(final PackageRoot packageRoot, final long now) {
-    if (packageRoot.isIncomplete()) {
+    if (!REGISTRY_ROOT_PACKAGE_NAME.equals(packageRoot.getName()) && packageRoot.isIncomplete()) {
+      // registry root is made incomplete for simplicity's sake
+      log.trace("EXPIRED: package {} is incomplete", packageRoot.getName());
       return true;
     }
     if (!npmProxyRepository.isItemAgingActive()) {
+      log.trace("EXPIRED: package {} owning repository item aging is inactive", packageRoot.getName());
       return true;
     }
     if (Boolean.TRUE.toString().equals(packageRoot.getProperties().get(PROP_EXPIRED))) {
+      log.trace("EXPIRED: package {} flagged as expired", packageRoot.getName());
       return true;
     }
     if (npmProxyRepository.getItemMaxAge() < 0) {
+      log.trace("NOT-EXPIRED: package {} owning repository {} has negative item max age", packageRoot.getName(),
+          npmProxyRepository.getId());
       return false;
     }
     final long remoteCached = packageRoot.getProperties().containsKey(PROP_CACHED) ? Long
         .valueOf(packageRoot.getProperties().get(PROP_CACHED)) : now;
-    return ((now - remoteCached) > (npmProxyRepository.getItemMaxAge() * 60L * 1000L));
+    final boolean result = ((now - remoteCached) > (npmProxyRepository.getItemMaxAge() * 60L * 1000L));
+    if (result) {
+      log.trace("EXPIRED: package {} is too old", packageRoot.getName());
+    }
+    else {
+      log.trace("NOT-EXPIRED: package {} is fresh", packageRoot.getName());
+    }
+    return result;
   }
 }

@@ -5,6 +5,7 @@ import java.io.File;
 import javax.annotation.Nullable;
 
 import org.sonatype.sisu.litmus.testsupport.TestData;
+import org.sonatype.tests.http.server.jetty.behaviour.PathRecorderBehaviour;
 
 import com.bolyuba.nexus.plugin.npm.client.NpmProxyRepository;
 import org.junit.After;
@@ -65,6 +66,13 @@ public abstract class NpmMockRegistryITSupport
       return null;
     }
     return mockNpmRegistry.getUrl();
+  }
+
+  /**
+   * Exposes path recorder to perform assertions. See {@link MockNpmRegistry#getPathRecorder()} for details.
+   */
+  protected PathRecorderBehaviour getPathRecorder() {
+    return mockNpmRegistry.getPathRecorder();
   }
 
   /**
