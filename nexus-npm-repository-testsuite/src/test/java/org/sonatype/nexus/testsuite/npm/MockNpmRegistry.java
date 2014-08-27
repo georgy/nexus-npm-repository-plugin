@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.sonatype.tests.http.server.api.Behaviour;
 import org.sonatype.tests.http.server.fluent.Server;
+import org.sonatype.tests.http.server.jetty.behaviour.PathRecorderBehaviour;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
@@ -37,6 +38,8 @@ public class MockNpmRegistry
 
   private Server server;
 
+  private PathRecorderBehaviour pathRecorderBehaviour;
+
   /**
    * Constructor that access an existing directory as input.
    */
@@ -52,7 +55,8 @@ public class MockNpmRegistry
   public synchronized MockNpmRegistry start() {
     checkState(server == null, "Server already started");
     try {
-      server = Server.withPort(0).serve("/*").withBehaviours(new NpmGet(registryRoot)).start();
+      pathRecorderBehaviour = new PathRecorderBehaviour();
+      server = Server.withPort(0).serve("/*").withBehaviours(pathRecorderBehaviour, new NpmGet(registryRoot)).start();
       logger.info("Starting mock NPM registry with root {} at {}", registryRoot, getUrl());
       return this;
     }
@@ -84,6 +88,15 @@ public class MockNpmRegistry
   public synchronized String getUrl() {
     checkState(server != null, "Server not started");
     return "http://localhost:" + server.getPort();
+  }
+
+  /**
+   * Exposes path recorder to perform assertions. Returns {@code null} if mock registry never started. Is
+   * re-initialized at each start. Meaning, if you start and then stop registry, you can still inspect recorded requests
+   * from last run.
+   */
+  public PathRecorderBehaviour getPathRecorder() {
+    return pathRecorderBehaviour;
   }
 
   // ==

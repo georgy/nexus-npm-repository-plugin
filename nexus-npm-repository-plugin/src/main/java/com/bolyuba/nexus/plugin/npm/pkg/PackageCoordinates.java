@@ -58,23 +58,22 @@ class PackageCoordinates {
 
     public static PackageCoordinates coordinatesFromUrl(@Nonnull String requestPath) throws IllegalArgumentException {
         PackageCoordinates coordinates = new PackageCoordinates();
-        final String normalizedPath = requestPath.toLowerCase();
-        coordinates.path = normalizedPath;
+        coordinates.path = requestPath;
 
-        if (RepositoryItemUid.PATH_SEPARATOR.equals(normalizedPath)) {
+        if (RepositoryItemUid.PATH_SEPARATOR.equals(requestPath)) {
             coordinates.type = Type.REGISTRY_ROOT;
             return coordinates;
         }
 
-        if (normalizedPath.startsWith(RepositoryItemUid.PATH_SEPARATOR + NpmRepository.NPM_REGISTRY_SPECIAL + RepositoryItemUid.PATH_SEPARATOR)) {
+        if (requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR + NpmRepository.NPM_REGISTRY_SPECIAL + RepositoryItemUid.PATH_SEPARATOR)) {
             coordinates.type = Type.REGISTRY_SPECIAL;
             return coordinates;
         }
 
         String correctedPath =
-                normalizedPath.startsWith(RepositoryItemUid.PATH_SEPARATOR) ?
-                        normalizedPath.substring(1, normalizedPath.length()) :
-                        normalizedPath;
+            requestPath.startsWith(RepositoryItemUid.PATH_SEPARATOR) ?
+                requestPath.substring(1, requestPath.length()) :
+                requestPath;
         String[] explodedPath = correctedPath.split(RepositoryItemUid.PATH_SEPARATOR);
 
         if (explodedPath.length == 2) {
