@@ -39,13 +39,13 @@ email=my@email.com
 _auth=ZGVwbG95bWVudDpkZXBsb3ltZW50MTIz
 ```
 
-The `_auth` part is important, it should contain *valid Nexus username and password to authenticate
+The `_auth` part is important, it should contain *valid Nexus username and password* Base64 encoded to authenticate
 with. The value above contains the default "deployment" user that comes out of the box with new
 deployments of Nexus, so for testing purposes, you can copy just that.
 
 ## Recommended package setup
 To make your package land properly (erm, "be published") of your Nexus instance, you need to override
-the `publishConfig`. To do that, add the followingto `package.json`:
+the `publishConfig`. To do that, add the following to `package.json`:
 
 ```
   "publishConfig" : {
@@ -58,4 +58,4 @@ Having this setup, you can now fetch/install packages and also publish the packa
 to your Nexus instance.
 
 Have fun,  
-NPM Plugin 
+NPM Plugin Team
