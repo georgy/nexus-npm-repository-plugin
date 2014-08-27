@@ -51,7 +51,7 @@ public class PackageRoot
     // replace versions map(versionString, packageVersionObject) with map(versionString, tagString)
     final Map<String, String> shrinkedVersions = Maps.newHashMap();
     for (Entry<String, PackageVersion> version : wrappedVersions.entrySet()) {
-      shrinkedVersions.put(version.getKey(), resolveVersionToTag(getRaw(), version.getKey()));
+      shrinkedVersions.put(version.getKey(), resolveVersionToTag(version.getKey()));
     }
     ((Map<String, Object>) getRaw().get("versions")).clear();
     ((Map<String, Object>) getRaw().get("versions")).putAll(shrinkedVersions);
@@ -125,7 +125,10 @@ public class PackageRoot
     }
   }
 
-  protected Map<String, PackageVersion> wrapVersions(final Map<String, Object> raw) {
+  /**
+   * Builds a map mapping versionString to {@link PackageVersion}. Always returns new instance of a map.
+   */
+  private Map<String, PackageVersion> wrapVersions(final Map<String, Object> raw) {
     final Map<String, PackageVersion> wrappedVersions = Maps.newHashMap();
     final Map<String, Object> versions = (Map<String, Object>) raw.get("versions");
     if (versions != null) {
@@ -157,9 +160,9 @@ public class PackageRoot
    * Resolves a version to "tag" using "dist-tags" entry in package root document. If no tag found or dist-tags
    * section is completely missing, passed in version is returned as-is.
    */
-  private String resolveVersionToTag(final Map<String, Object> raw, final String version) {
-    if (raw.containsKey("dist-tags")) {
-      final Map<String, String> distTags = (Map<String, String>) raw.get("dist-tags");
+  private String resolveVersionToTag(final String version) {
+    if (getRaw().containsKey("dist-tags")) {
+      final Map<String, String> distTags = (Map<String, String>) getRaw().get("dist-tags");
       for (Entry<String, String> distTag : distTags.entrySet()) {
         if (version.equals(distTag.getValue())) {
           return distTag.getKey();
