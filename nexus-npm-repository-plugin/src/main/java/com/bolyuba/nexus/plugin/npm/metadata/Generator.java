@@ -21,7 +21,7 @@ public interface Generator
    * Returns registry root package iterator. Note: these package roots are "shrinked" and should not be used
    * in any other case. Never returns {@code null}, but iterator might be empty.
    *
-   * @see PackageRoot#shrinkToLatestVersionOnly()
+   * @see PackageRoot#shrinkPackageVersions()
    */
   PackageRootIterator generateRegistryRoot(PackageRequest request) throws IOException;
 

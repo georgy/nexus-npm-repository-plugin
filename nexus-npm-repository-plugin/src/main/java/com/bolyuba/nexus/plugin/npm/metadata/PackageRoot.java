@@ -39,22 +39,22 @@ public class PackageRoot
   public Map<String, PackageAttachment> getAttachments() { return attachments; }
 
   /**
-   * Reduces the document backing map to a "shrinked" version where only latest version is
-   * contained. This method and format is usable only in registry root metadata and nowhere else
-   * should be used.
+   * Reduces the document backing map to a "shrinked" form where versions map contains only version to tag (or version)
+   * mapping (basically dithching the package version object, making the versions map string-string map). This method
+   * and format is usable only in registry root metadata and nowhere else should be used. Document modified like this
+   * should NOT be persisted back into metadata store.
    */
-  public void shrinkToLatestVersionOnly() {
+  public void shrinkPackageVersions() {
     if (isUnpublished()) {
       return;
     }
-    final String latest = resolveTagToVersion (getRaw(), "latest");
-    if ("latest".equals(latest)) {
-      // TODO: WTF? Fix this, either using semver and sorting versions or whatnot
-      // but then we end up with same problem as in maven: what is latest? "Biggest" version or last deployed?
-      throw new IllegalStateException("Cannot resolve 'latest' from dist-tags!");
+    // replace versions map(versionString, packageVersionObject) with map(versionString, tagString)
+    final Map<String, String> shrinkedVersions = Maps.newHashMap();
+    for (Entry<String, PackageVersion> version : wrappedVersions.entrySet()) {
+      shrinkedVersions.put(version.getKey(), resolveVersionToTag(getRaw(), version.getKey()));
     }
     ((Map<String, Object>) getRaw().get("versions")).clear();
-    ((Map<String, Object>) getRaw().get("versions")).put(latest, "latest");
+    ((Map<String, Object>) getRaw().get("versions")).putAll(shrinkedVersions);
     wrappedVersions.clear();
   }
 
@@ -136,6 +136,7 @@ public class PackageRoot
         }
         else if (versionsEntry.getValue() instanceof String) {
           // create an "incomplete" document
+          // we do not care about value that is either a tag or version, since key is always a version
           final Map<String, Object> latestVersion = Maps.newHashMap();
           latestVersion.put("name", raw.get("name"));
           if (raw.containsKey("description")) {
@@ -153,16 +154,18 @@ public class PackageRoot
   }
 
   /**
-   * Resolves a "tag" to version using "dist-tags" entry in package root document. If no tag found or dist-tags
-   * section is completely missing, passed in tag is returned as-is.
+   * Resolves a version to "tag" using "dist-tags" entry in package root document. If no tag found or dist-tags
+   * section is completely missing, passed in version is returned as-is.
    */
-  private String resolveTagToVersion(final Map<String, Object> raw, final String tag) {
+  private String resolveVersionToTag(final Map<String, Object> raw, final String version) {
     if (raw.containsKey("dist-tags")) {
       final Map<String, String> distTags = (Map<String, String>) raw.get("dist-tags");
-      if (distTags.containsKey(tag)) {
-        return distTags.get(tag);
+      for (Entry<String, String> distTag : distTags.entrySet()) {
+        if (version.equals(distTag.getValue())) {
+          return distTag.getKey();
+        }
       }
     }
-    return tag;
+    return version;
   }
 }

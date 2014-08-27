@@ -94,4 +94,24 @@ public class PackageRootTest
     JSONObject onStore = new JSONObject(objectMapper.writeValueAsString(root.getRaw()));
     JSONAssert.assertEquals(onDisk, onStore, false);
   }
+
+  @Test
+  public void shrinking() throws Exception {
+    final Map<String, Object> commonjsRaw = objectMapper
+        .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_multiversion.json"), new TypeReference<Map<String, Object>>() {});
+    final PackageRoot commonjs = new PackageRoot("repo", commonjsRaw);
+
+    assertThat(commonjs.getVersions().entrySet(), hasSize(3));
+
+    commonjs.shrinkPackageVersions();
+
+    assertThat(commonjs.getVersions().entrySet(), hasSize(0));
+
+    // now test the shrinked map: it's a string-string map with version-tag mapping (where tag avail)
+    final Map<String, String> versions = (Map<String, String>)commonjs.getRaw().get("versions");
+    assertThat(versions.entrySet(), hasSize(3));
+    assertThat(versions, hasEntry("0.0.1", "0.0.1"));
+    assertThat(versions, hasEntry("0.0.2", "stable"));
+    assertThat(versions, hasEntry("0.0.3", "latest"));
+  }
 }
