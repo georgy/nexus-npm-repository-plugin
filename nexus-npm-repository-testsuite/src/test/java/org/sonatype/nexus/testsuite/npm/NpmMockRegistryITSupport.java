@@ -37,7 +37,7 @@ public abstract class NpmMockRegistryITSupport
   {
     final File registryRoot = testData().resolveFile("registry");
     if (registryRoot.isDirectory()) {
-      mockNpmRegistry = new MockNpmRegistry(registryRoot).start();
+      mockNpmRegistry = new MockNpmRegistry(registryRoot, null).start();
     }
   }
 

@@ -1,8 +1,7 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import com.bolyuba.nexus.plugin.npm.metadata.Generator;
-import com.bolyuba.nexus.plugin.npm.metadata.ProxyMetadataService;
+import com.bolyuba.nexus.plugin.npm.service.ProxyMetadataService;
 
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
 
