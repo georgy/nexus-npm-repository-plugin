@@ -21,7 +21,7 @@ public class NpmRepositoryTemplateProvider extends AbstractRepositoryTemplatePro
 
     private static final String NPM_GROUP = "npm_group";
 
-    public static final String NPM_PROVIDER = "NPM";
+    public static final String NPM_PROVIDER = "npm";
 
     @Override
     public TemplateSet getTemplates() {
