@@ -1,25 +1,79 @@
-nexus-npm-repository-plugin
-===========================
+# Nexus NPM Plugin
 
-Sonatype Nexus OSS plugin for npm (https://www.npmjs.org) repository support
+The plugin that adds NPM (https://www.npmjs.org) repository type support for Nexus 2.10+
 
-0.0.1 aka MVP aka dumb proxy:
- + Proxy requests to one registry
- + Parses JSON and replaces all tarball URLs with URLs pointing to itself (i.e. tarballs will be delivered via same proxy repo)
+The plugin is based/forked from this repository
+https://github.com/georgy/nexus-npm-repository-plugin
 
-Usage:
- * Install Nexus OSS (or Pro), add plugin to sonatype-work/nexus/plugin-repository (better to unpack the zip yourself)
- * Restart Nexus
- * Login as admin
+## Branches
+
+These are the relevant branches
+
+* "master" synced to upstream https://github.com/sonatype/nexus-npm-repository-plugin/tree/master
+* "sonatype-master", ahead of "master" (contains all our changes) https://github.com/sonatype/nexus-npm-repository-plugin/tree/sonatype-master
+* "nexus-2.10.x" local production, receives merges from sonatype-master (CI built, bundled with NX) https://github.com/sonatype/nexus-npm-repository-plugin/tree/nexus-2.10.x
+
+## Workflow
+
+Branch off "sonatype-master" for new work, and create PRs against it. This way, upstream can still pick
+up changes from us, even it's currently lagging behind.
+
+Do not touch/use branches "master" and "nexus-2.10.x" for now.
+
+## Features
+Current features covers complete "roundtrip" for development, by caching, hosting and publishing NPM packages.
+Current features include:
+* Hosted (aka "private registry") repository support
+* Proxy repository support (proxies and caches remote registries)
+* Group repository support (aggregates multiple NPM repositories and publishes via single URL)
+
+## Recommended Nexus setup
+Simplest and recommended setup covers the required cycle of consuming and publishing NPM packages.
+
+Steps:
+ * Install NPM plugin to OSS or Pro Nexus (this step will be not needed after Nexus 2.10 release)
  * Check Plugin console. NPM plugin should be activated:
  ![plugin console](https://github.com/georgy/nexus-npm-repository-plugin/raw/master/site/plugin-console.png)
- * Go to list of repositories and add new proxy repository
- * Set remote location to [https://registry.npmjs.org](https://registry.npmjs.org)
- * Set Provider to "Npm plugin"
+ * Create a Hosted repository (set provider to "NPM") to host packages you publish (below will call it "npmhosted")
+ * Create a Proxy repository to proxy NPM registry (set provider to "NPM" and remote location to https://registry.npmjs.org). This step can be repeated as many times as many registries you want to use.
  ![proxy config](https://github.com/georgy/nexus-npm-repository-plugin/raw/master/site/proxy-config.png)
- * Configure your npm:
+ * Create a Group repository to aggregate all the repositories you created above (let's call it "npmgroup").
 
-        $ npm config set registry http://localhost:8081/nexus/content/npm/registry.npmjs.org/
+## Recommended NPM CLI setup
+Now you need to point NPM at the URLs available from your Nexus. If the repositories created in
+Nexus setup above are called "npmhosted", "npmproxy" and "npmgroup" respectively, your setup would
+be following:
 
- Note: URL will depend on host/port of your nexus instance and ID of your proxy repo
+In `.npmrc` make sure following lines are present (fix the URL host part to point to real location in case you are not running
+Nexus on localhost):
 
+```
+config = 0
+registry = http://localhost:8081/nexus/content/groups/npmgroup/
+init.author.name = My Name
+init.author.email = my@email.com
+init.author.url = http://my.blog
+email=my@email.com
+_auth=ZGVwbG95bWVudDpkZXBsb3ltZW50MTIz
+```
+
+The `_auth` part is important, it should contain *valid Nexus username and password* Base64 encoded to authenticate
+with. The value above contains the default "deployment" user that comes out of the box with new
+deployments of Nexus, so for testing purposes, you can copy just that.
+
+## Recommended package setup
+To make your package land properly (erm, "be published") of your Nexus instance, you need to override
+the `publishConfig`. To do that, add the following to `package.json`:
+
+```
+  "publishConfig" : {
+    "registry" : "http://localhost:8081/nexus/content/repositories/npmhosted/"
+  },
+```
+
+## Hack away!
+Having this setup, you can now fetch/install packages and also publish the package you want
+to your Nexus instance.
+
+Have fun,  
+NPM Plugin Team
