@@ -279,7 +279,7 @@ public class DefaultNpmProxyRepository
               tarball.delete();
             } catch (IOException e) {
               // suppress it but warn
-              log.warn("Cannot delete temporary file:", e);
+              log.warn("Cannot delete temporary file: " + tarball.getFile().getAbsolutePath(), e);
             }
           }
         }

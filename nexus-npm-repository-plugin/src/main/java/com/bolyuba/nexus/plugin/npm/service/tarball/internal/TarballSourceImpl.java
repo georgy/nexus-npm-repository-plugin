@@ -56,25 +56,30 @@ public class TarballSourceImpl
         fetchRetries = settings.getRetrievalRetryCount();
       }
     }
+    final boolean debug = log.isDebugEnabled();
     final File tempFile = File
         .createTempFile(npmProxyRepository.getId() + "-tarball", "tgz",
             applicationDirectories.getTemporaryDirectory());
     for (int i = 0; i < fetchRetries; i++) {
-      log.debug("Retry {}/{} for {}@{} tarball...", i, fetchRetries, tarballRequest.getPackageVersion().getName(),
-          tarballRequest.getPackageVersion().getVersion());
+      if (debug) {
+        log.debug("Retry {}/{} for {}@{} tarball...", i, fetchRetries, tarballRequest.getPackageVersion().getName(),
+            tarballRequest.getPackageVersion().getVersion());
+      }
       try {
         Tarball tarball = tarballTransport
             .getTarballForVersion(npmProxyRepository, tempFile, tarballRequest.getPackageVersion());
         if (tarball == null) {
-          log.debug("Tarball for {}@{} not found on {}",
-              tarballRequest.getPackageVersion().getName(),
-              tarballRequest.getPackageVersion().getVersion(),
-              tarballRequest.getPackageVersion().getDistTarball());
+          if (debug) {
+            log.debug("Tarball for {}@{} not found on {}",
+                tarballRequest.getPackageVersion().getName(),
+                tarballRequest.getPackageVersion().getVersion(),
+                tarballRequest.getPackageVersion().getDistTarball());
+          }
           return null;
         }
         for (TarballValidator validator : validators.values()) {
           final Result result = validator.validate(tarballRequest, tarball);
-          if (log.isDebugEnabled()) { // lot of acrobatics, better guard it
+          if (debug) {
             log.debug("Validated tarball {}@{} :: {} found '{}' by validator {}",
                 tarballRequest.getPackageVersion().getName(),
                 tarballRequest.getPackageVersion().getVersion(),
@@ -95,7 +100,7 @@ public class TarballSourceImpl
             i, fetchRetries,
             tarballRequest.getPackageVersion().getName(),
             tarballRequest.getPackageVersion().getVersion(),
-            String.valueOf(e));
+            e.toString());
       }
     }
     return null;

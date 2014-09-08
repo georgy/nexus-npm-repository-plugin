@@ -2,6 +2,8 @@ package com.bolyuba.nexus.plugin.npm.service;
 
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Strings;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -43,6 +45,7 @@ public class PackageVersion
     return (String) ((Map) getRaw().get("dist")).get("tarball");
   }
 
+  @Nullable
   public String getDistShasum() {
     // TODO: shasum is not even mentioned by spec, but is mostly present?
     return (String) ((Map) getRaw().get("dist")).get("shasum");
