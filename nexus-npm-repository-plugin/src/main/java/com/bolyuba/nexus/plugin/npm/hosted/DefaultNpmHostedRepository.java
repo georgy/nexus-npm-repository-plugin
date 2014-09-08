@@ -5,7 +5,7 @@ import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.internal.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.service.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.service.MetadataServiceFactory;
-import com.bolyuba.nexus.plugin.npm.service.PackageAttachment;
+import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
 import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
@@ -223,7 +223,7 @@ public class DefaultNpmHostedRepository
                 packageRoot = hostedMetadataService.consumePackageRoot(packageRoot);
 
                 if (!packageRoot.getAttachments().isEmpty()) {
-                  for (PackageAttachment attachment : packageRoot.getAttachments().values()) {
+                  for (NpmBlob attachment : packageRoot.getAttachments().values()) {
                     try {
                       final ResourceStoreRequest attachmentRequest = new ResourceStoreRequest(request);
                       attachmentRequest.setRequestPath(

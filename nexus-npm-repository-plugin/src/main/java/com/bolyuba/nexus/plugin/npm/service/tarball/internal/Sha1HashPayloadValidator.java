@@ -5,7 +5,7 @@ import javax.inject.Singleton;
 
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
-import com.bolyuba.nexus.plugin.npm.service.tarball.Tarball;
+import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballRequest;
 
 /**
@@ -19,7 +19,7 @@ public class Sha1HashPayloadValidator
     implements TarballValidator
 {
   @Override
-  public Result validate(final TarballRequest request, final Tarball tarball) {
+  public Result validate(final TarballRequest request, final NpmBlob tarball) {
     // checksum validation: if present in metadata (usually is) as repo itself has no policy settings
     final String expectedShasum = request.getPackageVersion().getDistShasum();
     if (expectedShasum != null && !expectedShasum.equals(tarball.getSha1sum())) {

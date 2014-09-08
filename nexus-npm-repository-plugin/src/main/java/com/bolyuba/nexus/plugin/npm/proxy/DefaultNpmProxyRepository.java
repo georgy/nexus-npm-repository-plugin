@@ -6,10 +6,10 @@ import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.internal.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.service.MetadataServiceFactory;
+import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
 import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.service.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
-import com.bolyuba.nexus.plugin.npm.service.tarball.Tarball;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballRequest;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballSource;
 import com.google.common.base.Strings;
@@ -256,9 +256,9 @@ public class DefaultNpmProxyRepository
 
     @Override
     public AbstractStorageItem doCacheItem(AbstractStorageItem item) throws LocalStorageException {
-        Tarball tarball = null;
-        if (item instanceof StorageFileItem && ((StorageFileItem)item).getContentLocator() instanceof Tarball) {
-          tarball = (Tarball) ((StorageFileItem) item).getContentLocator();
+        NpmBlob tarball = null;
+        if (item instanceof StorageFileItem && ((StorageFileItem)item).getContentLocator() instanceof NpmBlob) {
+          tarball = (NpmBlob) ((StorageFileItem) item).getContentLocator();
         }
         try {
             ResourceStoreRequest storeRequest = item.getResourceStoreRequest();
@@ -310,7 +310,7 @@ public class DefaultNpmProxyRepository
         // get the stashed already created tarball request for resource store request
         final TarballRequest tarballRequest = (TarballRequest) request.getRequestContext().get(TARBALL_REQUEST, false);
         if (tarballRequest != null) {
-          final Tarball tarball = tarballSource.get(this, tarballRequest);
+          final NpmBlob tarball = tarballSource.get(this, tarballRequest);
           if (tarball != null) {
             // update the packageRoot document with version's known sha1 sum (this one is calculated by NX, is not the one from metadata)
             tarballRequest.getPackageRoot().getProperties().put(

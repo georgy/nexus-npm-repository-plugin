@@ -19,8 +19,8 @@ import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
+import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
 import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
-import com.bolyuba.nexus.plugin.npm.service.tarball.Tarball;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import org.apache.http.HttpResponse;
@@ -64,7 +64,7 @@ public class HttpTarballTransport
     this.hc4Provider = checkNotNull(hc4Provider);
   }
 
-  public Tarball getTarballForVersion(final NpmProxyRepository npmProxyRepository, final File target,
+  public NpmBlob getTarballForVersion(final NpmProxyRepository npmProxyRepository, final File target,
                                       final PackageVersion packageVersion)
       throws IOException
   {
@@ -85,7 +85,8 @@ public class HttpTarballTransport
           httpResponse.getEntity().writeTo(bos);
           bos.flush();
         }
-        return new Tarball(target, packageVersion.getDistTarballFilename(), get.getURI().toString(),
+        // TODO: Why are we sure about MIME type? Consult headers maybe?
+        return new NpmBlob(target, NpmRepository.TARBALL_MIME_TYPE, packageVersion.getDistTarballFilename(),
             DigesterUtils.getDigestAsString(md.digest()));
       }
       else {

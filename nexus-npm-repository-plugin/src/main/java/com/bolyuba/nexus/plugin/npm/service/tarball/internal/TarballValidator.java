@@ -1,6 +1,6 @@
 package com.bolyuba.nexus.plugin.npm.service.tarball.internal;
 
-import com.bolyuba.nexus.plugin.npm.service.tarball.Tarball;
+import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballRequest;
 
 /**
@@ -17,5 +17,5 @@ public interface TarballValidator
    * Validates tarball and cleanly returns if all found clean. Otherwise, preferred way to signal invalid content is to
    * throw {@link IllegalArgumentException}. Never returns {@code null}.
    */
-  Result validate(TarballRequest request, Tarball tarball);
+  Result validate(TarballRequest request, NpmBlob tarball);
 }

@@ -16,10 +16,11 @@ import org.sonatype.nexus.configuration.application.ApplicationDirectories;
 import org.sonatype.nexus.proxy.item.AbstractContentLocator;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.StringContentLocator;
+import org.sonatype.nexus.util.DigesterUtils;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import com.bolyuba.nexus.plugin.npm.service.PackageAttachment;
+import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
 import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
 import com.fasterxml.jackson.core.JsonParser;
@@ -133,7 +134,7 @@ public class MetadataParser
 
   private PackageRoot parsePackageRoot(final String repositoryId, final JsonParser parser) throws IOException {
     final Map<String, Object> raw = Maps.newHashMap();
-    final Map<String, PackageAttachment> attachments = Maps.newHashMap();
+    final Map<String, NpmBlob> attachments = Maps.newHashMap();
     checkArgument(parser.nextToken() == JsonToken.START_OBJECT, "Unexpected input %s, expected %s",
         parser.getCurrentToken(), JsonToken.START_OBJECT);
     while (parser.nextToken() == JsonToken.FIELD_NAME) {
@@ -190,20 +191,21 @@ public class MetadataParser
   }
 
   private void parsePackageAttachments(final JsonParser parser,
-                                       final Map<String, PackageAttachment> attachments) throws IOException
+                                       final Map<String, NpmBlob> attachments) throws IOException
   {
     checkArgument(parser.nextToken() == JsonToken.START_OBJECT, "Unexpected input %s, expected %s",
         parser.getCurrentToken(), JsonToken.START_OBJECT);
     while (parser.nextToken() == JsonToken.FIELD_NAME) {
-      final PackageAttachment attachment = parsePackageAttachment(parser);
+      final NpmBlob attachment = parsePackageAttachment(parser);
       attachments.put(attachment.getName(), attachment);
     }
   }
 
-  private PackageAttachment parsePackageAttachment(final JsonParser parser) throws IOException {
+  private NpmBlob parsePackageAttachment(final JsonParser parser) throws IOException {
     String name = parser.getCurrentName();
     String contentType = "application/octet-stream";
     long length = ContentLocator.UNKNOWN_LENGTH;
+    String sha1hash = null;
     File file = null;
     checkArgument(parser.nextToken() == JsonToken.START_OBJECT, "Unexpected input %s, expected %s",
         parser.getCurrentToken(), JsonToken.START_OBJECT);
@@ -218,12 +220,14 @@ public class MetadataParser
       }
       else if ("data".equals(fieldName)) {
         file = File.createTempFile("npm_attachment", "temp", temporaryDirectory);
+        final byte[] binaryValue = parser.getBinaryValue();
+        sha1hash = DigesterUtils.getSha1Digest(binaryValue);
         // TODO: can Jackson stream binary? I doubt...
         Files.write(parser.getBinaryValue(), file);
       }
     }
     checkArgument(file.length() == length, "Invalid content length!");
-    return new PackageAttachment(name, file, contentType);
+    return new NpmBlob(file, contentType, name, sha1hash);
   }
 
   // ==

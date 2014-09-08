@@ -3,6 +3,7 @@ package com.bolyuba.nexus.plugin.npm.service.tarball;
 import java.io.IOException;
 
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
+import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
 
 /**
  * Transport for getting NPM tarballs, that might be anywhere (the URL pointed by metadata should be used).
@@ -16,5 +17,5 @@ public interface TarballSource
    * method will make it's best to ensure that returned tarball is correct content (content validation and transport
    * consistency is checked).
    */
-  Tarball get(NpmProxyRepository npmProxyRepository, TarballRequest tarballRequest) throws IOException;
+  NpmBlob get(NpmProxyRepository npmProxyRepository, TarballRequest tarballRequest) throws IOException;
 }

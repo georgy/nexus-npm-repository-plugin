@@ -88,7 +88,7 @@ public class PackageRootTest
 
     assertThat(root.getAttachments().size(), is(1));
     assertThat(root.getAttachments(), hasKey("testproject-0.0.0.tgz"));
-    final PackageAttachment attachment = root.getAttachments().get("testproject-0.0.0.tgz");
+    final NpmBlob attachment = root.getAttachments().get("testproject-0.0.0.tgz");
     assertThat(attachment.getName(), is("testproject-0.0.0.tgz"));
     assertThat(attachment.getMimeType(), is("application/octet-stream"));
     assertThat(attachment.getLength(), is(276L));

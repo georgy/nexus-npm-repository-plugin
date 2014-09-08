@@ -15,7 +15,7 @@ public class PackageRoot
 
   private final Map<String, PackageVersion> wrappedVersions;
 
-  private final Map<String, PackageAttachment> attachments;
+  private final Map<String, NpmBlob> attachments;
 
   public PackageRoot(final String repositoryId, final Map<String, Object> raw) {
     super(repositoryId, raw);
@@ -41,7 +41,7 @@ public class PackageRoot
     return wrappedVersions;
   }
 
-  public Map<String, PackageAttachment> getAttachments() { return attachments; }
+  public Map<String, NpmBlob> getAttachments() { return attachments; }
 
   /**
    * Reduces the document backing map to a "shrinked" form where versions map contains only version to tag (or version)

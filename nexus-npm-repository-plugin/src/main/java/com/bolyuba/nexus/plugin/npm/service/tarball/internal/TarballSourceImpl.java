@@ -13,7 +13,7 @@ import org.sonatype.nexus.proxy.repository.RemoteConnectionSettings;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
-import com.bolyuba.nexus.plugin.npm.service.tarball.Tarball;
+import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballRequest;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballSource;
 import com.bolyuba.nexus.plugin.npm.service.tarball.internal.TarballValidator.Result;
@@ -46,7 +46,7 @@ public class TarballSourceImpl
   }
 
   @Override
-  public Tarball get(final NpmProxyRepository npmProxyRepository, final TarballRequest tarballRequest)
+  public NpmBlob get(final NpmProxyRepository npmProxyRepository, final TarballRequest tarballRequest)
       throws IOException
   {
     int fetchRetries = 1;
@@ -66,7 +66,7 @@ public class TarballSourceImpl
             tarballRequest.getPackageVersion().getVersion());
       }
       try {
-        Tarball tarball = tarballTransport
+        NpmBlob tarball = tarballTransport
             .getTarballForVersion(npmProxyRepository, tempFile, tarballRequest.getPackageVersion());
         if (tarball == null) {
           if (debug) {
@@ -83,7 +83,7 @@ public class TarballSourceImpl
             log.debug("Validated tarball {}@{} :: {} found '{}' by validator {}",
                 tarballRequest.getPackageVersion().getName(),
                 tarballRequest.getPackageVersion().getVersion(),
-                tarball.getOriginUrl(),
+                tarballRequest.getPackageVersion().getDistTarball(),
                 result.name(),
                 validator.getClass().getSimpleName());
           }

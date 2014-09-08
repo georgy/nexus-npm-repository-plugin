@@ -5,7 +5,7 @@ import javax.inject.Singleton;
 
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
-import com.bolyuba.nexus.plugin.npm.service.tarball.Tarball;
+import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballRequest;
 
 /**
@@ -18,7 +18,7 @@ public class SizePayloadValidator
     implements TarballValidator
 {
   @Override
-  public Result validate(final TarballRequest request, final Tarball tarball) {
+  public Result validate(final TarballRequest request, final NpmBlob tarball) {
     return tarball.getLength() > 0 ? Result.VALID : Result.INVALID;
   }
 }

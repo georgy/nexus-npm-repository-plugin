@@ -11,7 +11,7 @@ import org.sonatype.nexus.mime.MimeSupport;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import com.bolyuba.nexus.plugin.npm.service.tarball.Tarball;
+import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballRequest;
 import com.google.common.base.Throwables;
 
@@ -40,10 +40,10 @@ public class TikaPayloadValidator
   }
 
   @Override
-  public Result validate(final TarballRequest request, final Tarball tarball) {
+  public Result validate(final TarballRequest request, final NpmBlob tarball) {
     try {
       final List<String> detectedMimeTypes = mimeSupport.detectMimeTypesListFromContent(tarball);
-      log.trace("Tike detected content of {} as '{}'", tarball.getOriginUrl(), detectedMimeTypes);
+      log.trace("Tika detected content of {} as '{}'", tarball.getName(), detectedMimeTypes);
       for (String expectedMimeType : EXPECTED_MIME_TYPES) {
         if (detectedMimeTypes.contains(expectedMimeType)) {
           return Result.VALID;
