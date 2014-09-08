@@ -2,13 +2,13 @@ package com.bolyuba.nexus.plugin.npm.hosted;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
-import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
-import com.bolyuba.nexus.plugin.npm.metadata.HostedMetadataService;
-import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageAttachment;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageRoot;
-import com.bolyuba.nexus.plugin.npm.metadata.PackageVersion;
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
+import com.bolyuba.nexus.plugin.npm.internal.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.service.HostedMetadataService;
+import com.bolyuba.nexus.plugin.npm.service.MetadataServiceFactory;
+import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
+import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
+import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
+import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.sisu.Description;
 
@@ -220,14 +220,21 @@ public class DefaultNpmHostedRepository
                   throw new AccessDeniedException(request, e.getMessage());
                 }
 
-                packageRoot = hostedMetadataService.consumePackageRoot(packageRequest, packageRoot);
+                packageRoot = hostedMetadataService.consumePackageRoot(packageRoot);
 
                 if (!packageRoot.getAttachments().isEmpty()) {
-                  for (PackageAttachment attachment : packageRoot.getAttachments().values()) {
-                    final ResourceStoreRequest attachmentRequest = new ResourceStoreRequest(request);
-                    attachmentRequest.setRequestPath(packageRequest.getPath() + RepositoryItemUid.PATH_SEPARATOR + NPM_REGISTRY_SPECIAL +
-                        RepositoryItemUid.PATH_SEPARATOR + attachment.getName());
-                    super.storeItem(attachmentRequest, attachment.getContent(), userAttributes);
+                  for (NpmBlob attachment : packageRoot.getAttachments().values()) {
+                    try {
+                      final ResourceStoreRequest attachmentRequest = new ResourceStoreRequest(request);
+                      attachmentRequest.setRequestPath(
+                          packageRequest.getPath() + RepositoryItemUid.PATH_SEPARATOR + NPM_REGISTRY_SPECIAL +
+                              RepositoryItemUid.PATH_SEPARATOR + attachment.getName());
+                      super.storeItem(attachmentRequest, attachment.getContent(), userAttributes);
+                    }
+                    finally {
+                      // delete temporary files backing attachment
+                      attachment.delete();
+                    }
                   }
                 }
             } finally {

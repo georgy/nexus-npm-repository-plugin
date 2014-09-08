@@ -23,10 +23,10 @@ import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
-import com.bolyuba.nexus.plugin.npm.content.NpmMimeRulesSource;
-import com.bolyuba.nexus.plugin.npm.metadata.GroupMetadataService;
-import com.bolyuba.nexus.plugin.npm.metadata.MetadataServiceFactory;
-import com.bolyuba.nexus.plugin.npm.pkg.PackageRequest;
+import com.bolyuba.nexus.plugin.npm.internal.NpmMimeRulesSource;
+import com.bolyuba.nexus.plugin.npm.service.GroupMetadataService;
+import com.bolyuba.nexus.plugin.npm.service.MetadataServiceFactory;
+import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.sisu.Description;
 
