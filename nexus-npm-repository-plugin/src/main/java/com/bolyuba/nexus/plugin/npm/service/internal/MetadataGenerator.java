@@ -17,8 +17,9 @@ import com.google.common.base.Throwables;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Produces NPM metadata from underlying store, filtering it and applying other logic. Packages should be sent downstream
- * only by getting the over this component, as underlying store stores JSON documents as-is (as fetched from remote)!
+ * Produces NPM metadata from underlying store, filtering it and applying other logic. Packages should be sent
+ * downstream only by getting the over this component, as underlying store stores JSON documents as-is (as fetched from
+ * remote)!
  */
 public class MetadataGenerator
 {

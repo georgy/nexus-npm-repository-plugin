@@ -1,9 +1,9 @@
 package com.bolyuba.nexus.plugin.npm.hosted;
 
-import org.sonatype.nexus.proxy.repository.AbstractRepositoryConfigurator;
-
 import javax.inject.Named;
 import javax.inject.Singleton;
+
+import org.sonatype.nexus.proxy.repository.AbstractRepositoryConfigurator;
 
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
@@ -11,5 +11,6 @@ import javax.inject.Singleton;
 @Named
 @Singleton
 public class NpmHostedRepositoryConfigurator
-        extends AbstractRepositoryConfigurator {
+    extends AbstractRepositoryConfigurator
+{
 }

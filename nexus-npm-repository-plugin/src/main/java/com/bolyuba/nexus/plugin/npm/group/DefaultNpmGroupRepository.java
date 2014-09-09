@@ -40,95 +40,108 @@ import static org.sonatype.nexus.proxy.ItemNotFoundException.reasonFor;
 @Typed(GroupRepository.class)
 @Description("Npm registry group repo")
 public class DefaultNpmGroupRepository
-        extends AbstractGroupRepository
-        implements NpmGroupRepository, GroupRepository  {
+    extends AbstractGroupRepository
+    implements NpmGroupRepository, GroupRepository
+{
 
-    public static final String ROLE_HINT = "npm-group";
+  public static final String ROLE_HINT = "npm-group";
 
-    private final ContentClass contentClass;
+  private final ContentClass contentClass;
 
-    private final NpmGroupRepositoryConfigurator configurator;
+  private final NpmGroupRepositoryConfigurator configurator;
 
-    private final RepositoryKind repositoryKind;
+  private final RepositoryKind repositoryKind;
 
-    private final NpmMimeRulesSource mimeRulesSource;
+  private final NpmMimeRulesSource mimeRulesSource;
 
-    private final GroupMetadataService groupMetadataService;
+  private final GroupMetadataService groupMetadataService;
 
-    @Inject
-    public DefaultNpmGroupRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
-                                     final NpmGroupRepositoryConfigurator configurator,
-                                     final MetadataServiceFactory metadataServiceFactory) {
+  @Inject
+  public DefaultNpmGroupRepository(final @Named(NpmContentClass.ID) ContentClass contentClass,
+                                   final NpmGroupRepositoryConfigurator configurator,
+                                   final MetadataServiceFactory metadataServiceFactory)
+  {
 
-        this.groupMetadataService = metadataServiceFactory.createGroupMetadataService(this);
-        this.mimeRulesSource = new NpmMimeRulesSource();
-        this.contentClass = checkNotNull(contentClass);
-        this.configurator = checkNotNull(configurator);
-        this.repositoryKind = new DefaultRepositoryKind(NpmGroupRepository.class, null);
-    }
+    this.groupMetadataService = metadataServiceFactory.createGroupMetadataService(this);
+    this.mimeRulesSource = new NpmMimeRulesSource();
+    this.contentClass = checkNotNull(contentClass);
+    this.configurator = checkNotNull(configurator);
+    this.repositoryKind = new DefaultRepositoryKind(NpmGroupRepository.class, null);
+  }
 
-    @Override
-    public GroupMetadataService getMetadataService() { return groupMetadataService; }
+  @Override
+  public GroupMetadataService getMetadataService() { return groupMetadataService; }
 
-    @Override
-    protected Configurator getConfigurator() {
-        return this.configurator;
-    }
+  @Override
+  protected Configurator getConfigurator() {
+    return this.configurator;
+  }
 
-    @Override
-    public RepositoryKind getRepositoryKind() {
-        return this.repositoryKind;
-    }
+  @Override
+  public RepositoryKind getRepositoryKind() {
+    return this.repositoryKind;
+  }
 
-    @Override
-    public ContentClass getRepositoryContentClass() {
-        return this.contentClass;
-    }
+  @Override
+  public ContentClass getRepositoryContentClass() {
+    return this.contentClass;
+  }
 
-    @Override
-    public MimeRulesSource getMimeRulesSource() {
-        return mimeRulesSource;
-    }
+  @Override
+  public MimeRulesSource getMimeRulesSource() {
+    return mimeRulesSource;
+  }
 
-    @Override
-    protected CRepositoryExternalConfigurationHolderFactory<?> getExternalConfigurationHolderFactory() {
-        return new CRepositoryExternalConfigurationHolderFactory<NpmGroupRepositoryConfiguration>() {
-            @Override
-            public NpmGroupRepositoryConfiguration createExternalConfigurationHolder(final CRepository config) {
-                return new NpmGroupRepositoryConfiguration((Xpp3Dom) config.getExternalConfiguration());
-            }
-        };
-    }
+  @Override
+  protected CRepositoryExternalConfigurationHolderFactory<?> getExternalConfigurationHolderFactory() {
+    return new CRepositoryExternalConfigurationHolderFactory<NpmGroupRepositoryConfiguration>()
+    {
+      @Override
+      public NpmGroupRepositoryConfiguration createExternalConfigurationHolder(final CRepository config) {
+        return new NpmGroupRepositoryConfiguration((Xpp3Dom) config.getExternalConfiguration());
+      }
+    };
+  }
 
-   @Override
-    protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest) throws ItemNotFoundException, LocalStorageException {
-        try {
-            PackageRequest packageRequest = new PackageRequest(storeRequest);
-            if (packageRequest.isMetadata()) {
-              ContentLocator contentLocator;
-              if (packageRequest.isRegistryRoot()) {
-                contentLocator = groupMetadataService.getProducer().produceRegistryRoot(packageRequest);
-              } else if (packageRequest.isPackageRoot()) {
-                contentLocator = groupMetadataService.getProducer().producePackageRoot(packageRequest);
-              } else {
-                contentLocator = groupMetadataService.getProducer().producePackageVersion(packageRequest);
-              }
-              if (contentLocator == null) {
-                throw new ItemNotFoundException(reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
-              }
-              return new DefaultStorageFileItem(this, storeRequest, true, true, contentLocator);
-            } else {
-                // registry special
-                if (packageRequest.isRegistrySpecial() && packageRequest.getPath().startsWith("/-/all")) {
-                  return new DefaultStorageFileItem(this, storeRequest, true, true, groupMetadataService.getProducer().produceRegistryRoot(packageRequest));
-                }
-                throw new ItemNotFoundException(reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
-            }
-        } catch (IllegalArgumentException ignore) {
-            // something completely different
-            return super.doRetrieveLocalItem(storeRequest);
-        } catch (IOException e) {
-          throw new LocalStorageException("Metadata service error", e);
+  @Override
+  protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest)
+      throws ItemNotFoundException, LocalStorageException
+  {
+    try {
+      PackageRequest packageRequest = new PackageRequest(storeRequest);
+      if (packageRequest.isMetadata()) {
+        ContentLocator contentLocator;
+        if (packageRequest.isRegistryRoot()) {
+          contentLocator = groupMetadataService.getProducer().produceRegistryRoot(packageRequest);
         }
+        else if (packageRequest.isPackageRoot()) {
+          contentLocator = groupMetadataService.getProducer().producePackageRoot(packageRequest);
+        }
+        else {
+          contentLocator = groupMetadataService.getProducer().producePackageVersion(packageRequest);
+        }
+        if (contentLocator == null) {
+          throw new ItemNotFoundException(
+              reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
+        }
+        return new DefaultStorageFileItem(this, storeRequest, true, true, contentLocator);
+      }
+      else {
+        // registry special
+        if (packageRequest.isRegistrySpecial() && packageRequest.getPath().startsWith("/-/all")) {
+          return new DefaultStorageFileItem(this, storeRequest, true, true,
+              groupMetadataService.getProducer().produceRegistryRoot(packageRequest));
+        }
+        throw new ItemNotFoundException(
+            reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));
+      }
     }
+    catch (IllegalArgumentException ignore) {
+      // something completely different
+      return super.doRetrieveLocalItem(storeRequest);
+    }
+    catch (IOException e) {
+      throw new LocalStorageException("Metadata service error", e);
+    }
+  }
 }

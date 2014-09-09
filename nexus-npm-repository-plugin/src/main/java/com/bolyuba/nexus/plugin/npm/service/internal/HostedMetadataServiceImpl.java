@@ -8,9 +8,9 @@ import org.sonatype.nexus.proxy.item.ContentLocator;
 
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.service.HostedMetadataService;
+import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
-import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
 
 import static com.google.common.base.Preconditions.checkArgument;
 

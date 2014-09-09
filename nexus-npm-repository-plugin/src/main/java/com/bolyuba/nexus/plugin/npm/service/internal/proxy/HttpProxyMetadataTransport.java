@@ -16,11 +16,11 @@ import org.sonatype.nexus.proxy.storage.remote.httpclient.HttpClientManager;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.service.internal.MetadataParser;
 import com.bolyuba.nexus.plugin.npm.service.internal.PackageRootIterator;
 import com.bolyuba.nexus.plugin.npm.service.internal.ProxyMetadataTransport;
-import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;

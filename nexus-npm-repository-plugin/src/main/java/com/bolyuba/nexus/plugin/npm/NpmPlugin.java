@@ -13,13 +13,15 @@ import org.sonatype.nexus.plugin.PluginIdentity;
  */
 @Named
 @Singleton
-public class NpmPlugin extends PluginIdentity {
+public class NpmPlugin
+    extends PluginIdentity
+{
 
-    public static final String GROUP_ID = "org.sonatype.nexus.plugins";
+  public static final String GROUP_ID = "org.sonatype.nexus.plugins";
 
-    public static final String ARTIFACT_ID = "nexus-npm-repository-plugin";
+  public static final String ARTIFACT_ID = "nexus-npm-repository-plugin";
 
-    public NpmPlugin() throws Exception {
-        super(GROUP_ID, ARTIFACT_ID);
-    }
+  public NpmPlugin() throws Exception {
+    super(GROUP_ID, ARTIFACT_ID);
+  }
 }

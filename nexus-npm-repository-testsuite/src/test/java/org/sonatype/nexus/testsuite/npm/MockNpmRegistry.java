@@ -17,7 +17,6 @@ import org.sonatype.tests.http.server.fluent.Server;
 import org.sonatype.tests.http.server.jetty.behaviour.PathRecorderBehaviour;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
@@ -60,7 +59,8 @@ public class MockNpmRegistry
     }
     if (!this.properties.containsKey(TARBALL_BASE_URL)) {
       // default it to "us"
-      this.properties.put(TARBALL_BASE_URL, new Callable<String>() {
+      this.properties.put(TARBALL_BASE_URL, new Callable<String>()
+      {
         @Override
         public String call() throws Exception {
           return getUrl();
@@ -76,7 +76,8 @@ public class MockNpmRegistry
     checkState(server == null, "Server already started");
     try {
       pathRecorderBehaviour = new PathRecorderBehaviour();
-      server = Server.withPort(0).serve("/*").withBehaviours(pathRecorderBehaviour, new NpmGet(registryRoot, properties)).start();
+      server = Server.withPort(0).serve("/*")
+          .withBehaviours(pathRecorderBehaviour, new NpmGet(registryRoot, properties)).start();
       logger.info("Starting mock NPM registry with root {} at {}", registryRoot, getUrl());
       return this;
     }

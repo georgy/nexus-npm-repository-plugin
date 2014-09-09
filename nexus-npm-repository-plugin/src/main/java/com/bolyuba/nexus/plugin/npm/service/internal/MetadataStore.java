@@ -45,5 +45,6 @@ public interface MetadataStore
   /**
    * Massive update of packages, applying a function on them.
    */
-  int updatePackages(NpmRepository repository, Predicate<PackageRoot> predicate, Function<PackageRoot, PackageRoot> function);
+  int updatePackages(NpmRepository repository, Predicate<PackageRoot> predicate,
+                     Function<PackageRoot, PackageRoot> function);
 }

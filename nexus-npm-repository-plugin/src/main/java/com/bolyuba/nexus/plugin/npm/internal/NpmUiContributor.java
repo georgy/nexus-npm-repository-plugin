@@ -1,11 +1,12 @@
 package com.bolyuba.nexus.plugin.npm.internal;
 
-import com.bolyuba.nexus.plugin.npm.NpmPlugin;
-import org.sonatype.nexus.plugins.ui.contribution.UiContributorSupport;
-
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+
+import org.sonatype.nexus.plugins.ui.contribution.UiContributorSupport;
+
+import com.bolyuba.nexus.plugin.npm.NpmPlugin;
 
 /**
  * This tells Nexus that plugin has static resources (js and css)
@@ -15,11 +16,10 @@ import javax.inject.Singleton;
 @Named
 @Singleton
 public class NpmUiContributor
-        extends UiContributorSupport {
-
-    @Inject
-    public NpmUiContributor(NpmPlugin owner) {
-        super(owner);
-    }
-
+    extends UiContributorSupport
+{
+  @Inject
+  public NpmUiContributor(NpmPlugin owner) {
+    super(owner);
+  }
 }

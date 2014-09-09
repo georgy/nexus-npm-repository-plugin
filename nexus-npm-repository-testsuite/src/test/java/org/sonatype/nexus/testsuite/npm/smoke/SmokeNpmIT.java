@@ -9,8 +9,9 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import org.junit.Test;
 
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 /**
  * Smoke IT for NPM plugin. This IT just starts up NX with NPM plugin, creates a NPM proxy repo, and downloads

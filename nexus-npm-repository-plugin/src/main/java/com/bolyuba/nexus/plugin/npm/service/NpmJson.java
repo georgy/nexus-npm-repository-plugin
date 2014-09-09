@@ -6,6 +6,9 @@ import com.google.common.collect.Maps;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * Base class for "raw" JSON wrapper (represented as map of String-Object).
+ */
 abstract class NpmJson
 {
   private final String repositoryId;

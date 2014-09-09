@@ -10,7 +10,6 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 public class NpmHostedRepositoryConfiguration
     extends AbstractRepositoryConfiguration
 {
-
   public NpmHostedRepositoryConfiguration(Xpp3Dom configuration) {
     super(configuration);
   }

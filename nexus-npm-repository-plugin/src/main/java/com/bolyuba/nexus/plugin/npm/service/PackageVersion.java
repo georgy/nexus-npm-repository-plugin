@@ -56,7 +56,8 @@ public class PackageVersion
     int idx = tarballUrl.lastIndexOf("/");
     if (idx != -1) {
       return tarballUrl.substring(idx + 1);
-    } else {
+    }
+    else {
       //Unknown tarball, construct default
       return getName() + "-" + getVersion() + ".tgz";
     }

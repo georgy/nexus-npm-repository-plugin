@@ -1,9 +1,9 @@
 package com.bolyuba.nexus.plugin.npm.proxy;
 
+import org.sonatype.nexus.proxy.repository.ProxyRepository;
+
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.service.ProxyMetadataService;
-
-import org.sonatype.nexus.proxy.repository.ProxyRepository;
 
 /**
  * A full proxy of Npm registry (for example, https://registry.npmjs.org/).
@@ -11,9 +11,8 @@ import org.sonatype.nexus.proxy.repository.ProxyRepository;
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
 public interface NpmProxyRepository
-        extends NpmRepository, ProxyRepository {
-
+    extends NpmRepository, ProxyRepository
+{
   @Override
   ProxyMetadataService getMetadataService();
-
 }

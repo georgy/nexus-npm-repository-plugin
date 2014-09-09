@@ -7,10 +7,10 @@ import javax.annotation.Nullable;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.bolyuba.nexus.plugin.npm.service.Generator;
+import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.service.Producer;
-import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
 
 import static com.google.common.base.Preconditions.checkArgument;
 

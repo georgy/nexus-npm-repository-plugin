@@ -9,11 +9,11 @@ import org.sonatype.sisu.goodies.common.ComponentSupport;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
+import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.bolyuba.nexus.plugin.npm.service.GroupMetadataService;
 import com.bolyuba.nexus.plugin.npm.service.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.service.MetadataServiceFactory;
 import com.bolyuba.nexus.plugin.npm.service.ProxyMetadataService;
-import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
 import com.google.common.annotations.VisibleForTesting;
 
 import static com.google.common.base.Preconditions.checkNotNull;

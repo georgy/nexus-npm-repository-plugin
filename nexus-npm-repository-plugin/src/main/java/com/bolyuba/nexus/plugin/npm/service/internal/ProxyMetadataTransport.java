@@ -4,8 +4,8 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
-import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
+import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 
 /**
  * Transport for NPM Metadata.

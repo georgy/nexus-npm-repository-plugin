@@ -7,8 +7,8 @@ import javax.annotation.Nullable;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 
 import com.bolyuba.nexus.plugin.npm.service.Generator;
-import com.bolyuba.nexus.plugin.npm.service.Producer;
 import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
+import com.bolyuba.nexus.plugin.npm.service.Producer;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

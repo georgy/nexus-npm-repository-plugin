@@ -13,9 +13,9 @@ import org.sonatype.nexus.proxy.repository.Repository;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepository;
 import com.bolyuba.nexus.plugin.npm.service.GroupMetadataService;
+import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
-import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 

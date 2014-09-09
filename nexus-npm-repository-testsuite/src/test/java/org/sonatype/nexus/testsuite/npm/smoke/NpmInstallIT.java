@@ -3,15 +3,15 @@ package org.sonatype.nexus.testsuite.npm.smoke;
 import java.io.File;
 import java.io.InputStreamReader;
 
-import org.sonatype.nexus.testsuite.npm.NpmITSupport;
 import org.sonatype.nexus.testsuite.npm.NpmMockRegistryITSupport;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import org.junit.Test;
 
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * NPM CLI IT for NPM plugin with simple "install" invocation. The test required the "npm" command to be present on
@@ -35,9 +35,10 @@ public class NpmInstallIT
     createNpmProxyRepository(testMethodName());
 
     final File localDirectory = util.createTempDir();
-    final String cmd = String.format("npm install commonjs --registry %s --cache %s --prefix ./target/prefix --userconfig not-exists",
-        nexus().getUrl().toExternalForm() + "content/repositories/" + testMethodName(),
-        localDirectory.getAbsolutePath());
+    final String cmd = String
+        .format("npm install commonjs --registry %s --cache %s --prefix ./target/prefix --userconfig not-exists",
+            nexus().getUrl().toExternalForm() + "content/repositories/" + testMethodName(),
+            localDirectory.getAbsolutePath());
 
     log("CMD: {}", cmd);
     final Runtime rt = Runtime.getRuntime();
