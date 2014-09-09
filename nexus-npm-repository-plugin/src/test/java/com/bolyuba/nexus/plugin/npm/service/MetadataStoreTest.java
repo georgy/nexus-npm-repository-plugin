@@ -31,15 +31,15 @@ import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepositoryConfigurator;
 import com.bolyuba.nexus.plugin.npm.hosted.DefaultNpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepositoryConfigurator;
+import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
+import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
+import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepositoryConfigurator;
 import com.bolyuba.nexus.plugin.npm.service.internal.MetadataParser;
 import com.bolyuba.nexus.plugin.npm.service.internal.MetadataServiceFactoryImpl;
 import com.bolyuba.nexus.plugin.npm.service.internal.PackageRootIterator;
 import com.bolyuba.nexus.plugin.npm.service.internal.ProxyMetadataTransport;
 import com.bolyuba.nexus.plugin.npm.service.internal.orient.OrientMetadataStore;
 import com.bolyuba.nexus.plugin.npm.service.internal.proxy.HttpProxyMetadataTransport;
-import com.bolyuba.nexus.plugin.npm.proxy.DefaultNpmProxyRepository;
-import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
-import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepositoryConfigurator;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballSource;
 import com.bolyuba.nexus.plugin.npm.service.tarball.internal.HttpTarballTransport;
 import com.bolyuba.nexus.plugin.npm.service.tarball.internal.Sha1HashPayloadValidator;
@@ -61,8 +61,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.skyscreamer.jsonassert.JSONAssert;
 
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -126,7 +130,9 @@ public class MetadataStoreTest
 
     final HttpTarballTransport httpTarballTransport = new HttpTarballTransport(hc4Provider);
 
-    tarballSource = new TarballSourceImpl(applicationDirectories, httpTarballTransport, ImmutableMap.<String, TarballValidator>of("size", new SizePayloadValidator(), "sha1", new Sha1HashPayloadValidator()));
+    tarballSource = new TarballSourceImpl(applicationDirectories, httpTarballTransport,
+        ImmutableMap.<String, TarballValidator>of(
+            "size", new SizePayloadValidator(), "sha1", new Sha1HashPayloadValidator()));
 
     // dummy uid and uidLock
     final RepositoryItemUid uid = mock(RepositoryItemUid.class);

@@ -17,8 +17,15 @@ import org.json.JSONObject;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -104,7 +111,8 @@ public class PackageRootTest
   @Test
   public void shrinking() throws Exception {
     final Map<String, Object> commonjsRaw = objectMapper
-        .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_multiversion.json"), new TypeReference<Map<String, Object>>() {});
+        .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_multiversion.json"),
+            new TypeReference<Map<String, Object>>() {});
     final PackageRoot commonjs = new PackageRoot("repo", commonjsRaw);
 
     assertThat(commonjs.getVersions().entrySet(), hasSize(3));
@@ -114,7 +122,7 @@ public class PackageRootTest
     assertThat(commonjs.getVersions().entrySet(), hasSize(0));
 
     // now test the shrinked map: it's a string-string map with version-tag mapping (where tag avail)
-    final Map<String, String> versions = (Map<String, String>)commonjs.getRaw().get("versions");
+    final Map<String, String> versions = (Map<String, String>) commonjs.getRaw().get("versions");
     assertThat(versions.entrySet(), hasSize(3));
     assertThat(versions, hasEntry("0.0.1", "0.0.1"));
     assertThat(versions, hasEntry("0.0.2", "stable"));
