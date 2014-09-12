@@ -16,6 +16,7 @@ import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
+import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractGroupRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
@@ -23,6 +24,7 @@ import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 
 import com.bolyuba.nexus.plugin.npm.NpmContentClass;
+import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.internal.NpmMimeRulesSource;
 import com.bolyuba.nexus.plugin.npm.service.GroupMetadataService;
 import com.bolyuba.nexus.plugin.npm.service.MetadataServiceFactory;
@@ -107,6 +109,11 @@ public class DefaultNpmGroupRepository
   protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest)
       throws ItemNotFoundException, LocalStorageException
   {
+    if (RepositoryItemUid.PATH_ROOT.equals(storeRequest.getRequestPath())
+        || storeRequest.getRequestContext().containsKey(NpmRepository.NPM_METADATA_NO_SERVICE, false)) {
+      // shut down NPM MD+tarball service completely
+      return super.doRetrieveLocalItem(storeRequest);
+    }
     try {
       PackageRequest packageRequest = new PackageRequest(storeRequest);
       if (packageRequest.isMetadata()) {
