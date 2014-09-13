@@ -5,6 +5,7 @@ import java.util.Map;
 import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
@@ -33,7 +34,7 @@ public class PackageRootHandler
     clazz.createProperty("name", OType.STRING);
     clazz.createProperty("description", OType.STRING);
     clazz.createProperty("properties", OType.EMBEDDEDMAP, OType.STRING);
-    clazz.createProperty("raw", OType.STRING);
+    clazz.createProperty("raw", OType.BINARY);
     clazz.createIndex(clazz.getName() + ".componentId", INDEX_TYPE.UNIQUE_HASH_INDEX, "componentId");
   }
 
@@ -45,7 +46,7 @@ public class PackageRootHandler
       doc.field("name", entity.getName());
       doc.field("description", entity.getDescription());
       doc.field("properties", entity.getProperties());
-      doc.field("raw", objectMapper.writeValueAsString(entity.getRaw()));
+      doc.field("raw", objectMapper.writeValueAsString(entity.getRaw()).getBytes(Charsets.UTF_8));
       return doc;
     }
     catch (Exception e) {
@@ -57,7 +58,7 @@ public class PackageRootHandler
   public PackageRoot toEntity(final ODocument doc) {
     try {
       final String repositoryId = doc.field("repositoryId", OType.STRING);
-      final Map<String, Object> raw = objectMapper.readValue(doc.<String>field("raw", OType.STRING),
+      final Map<String, Object> raw = objectMapper.readValue(new String(doc.<byte[]>field("raw", OType.BINARY), Charsets.UTF_8),
           new TypeReference<Map<String, Object>>() {});
       final PackageRoot result = new PackageRoot(repositoryId, raw);
       final Map<String, String> properties = (Map<String, String>) doc.field("properties", OType.EMBEDDEDMAP);
