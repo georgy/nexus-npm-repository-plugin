@@ -92,7 +92,7 @@ public class ProxyMetadataServiceImpl
   @Override
   public PackageRoot generateRawPackageRoot(final String packageName) throws IOException {
     checkNotNull(packageName);
-    return mayUpdatePackageRoot(packageName);
+    return mayUpdatePackageRoot(packageName, true);
   }
 
   @Override
@@ -117,7 +117,7 @@ public class ProxyMetadataServiceImpl
     if (matcher.matches()) {
       final String packageName = matcher.group(1);
       final String tarballFilename = matcher.group(2);
-      final PackageRoot packageRoot = mayUpdatePackageRoot(packageName);
+      final PackageRoot packageRoot = mayUpdatePackageRoot(packageName, true);
       if (packageRoot != null) {
         log.debug("Looking up package {} version for tarball request: {}", packageRoot.getName(),
             request.getRequestPath());
@@ -190,23 +190,17 @@ public class ProxyMetadataServiceImpl
   @Nullable
   @Override
   protected PackageRoot doGeneratePackageRoot(final PackageRequest request) throws IOException {
-    if (!request.getStoreRequest().isRequestLocalOnly()) {
-      if (mayUpdatePackageRoot(request.getName()) == null) {
-        return null;
-      }
-    }
-    return metadataGenerator.generatePackageRoot(request.getName());
+    final PackageRoot packageRoot = mayUpdatePackageRoot(request.getName(),
+        request.getStoreRequest().isRequestLocalOnly());
+    return metadataGenerator.generatePackageRoot(packageRoot);
   }
 
   @Nullable
   @Override
   protected PackageVersion doGeneratePackageVersion(final PackageRequest request) throws IOException {
-    if (!request.getStoreRequest().isRequestLocalOnly()) {
-      if (mayUpdatePackageRoot(request.getName()) == null) {
-        return null;
-      }
-    }
-    return metadataGenerator.generatePackageVersion(request.getName(), request.getVersion());
+    final PackageRoot packageRoot = mayUpdatePackageRoot(request.getName(),
+        request.getStoreRequest().isRequestLocalOnly());
+    return metadataGenerator.generatePackageVersion(packageRoot, request.getVersion());
   }
 
   // ==
@@ -215,10 +209,10 @@ public class ProxyMetadataServiceImpl
    * May fetch package root from remote if not found locally, or is found but is expired. The package root returned
    * document is NOT filtered, so this method should not be used to source documents sent downstream.
    */
-  private PackageRoot mayUpdatePackageRoot(final String packageName) throws IOException {
+  private PackageRoot mayUpdatePackageRoot(final String packageName, final boolean localOnly) throws IOException {
     final long now = System.currentTimeMillis();
     PackageRoot packageRoot = metadataStore.getPackageByName(npmProxyRepository, packageName);
-    if (packageRoot == null || isExpired(packageRoot, now)) {
+    if (!localOnly && (packageRoot == null || isExpired(packageRoot, now))) {
       packageRoot = proxyMetadataTransport.fetchPackageRoot(npmProxyRepository, packageName, packageRoot);
       if (packageRoot == null) {
         return null;
