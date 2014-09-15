@@ -12,7 +12,6 @@ import org.sonatype.sisu.goodies.common.SimpleFormat;
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
-import com.google.common.base.Throwables;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -43,21 +42,13 @@ public class MetadataGenerator
   }
 
   @Nullable
-  public PackageRoot generateShrinkedPackageRoot(final String packageName) throws IOException {
+  public PackageRoot generatePackageRoot(final String packageName) {
     final PackageRoot root = metadataStore.getPackageByName(npmRepository, packageName);
-    if (root == null) {
-      return null;
-    }
-    if (!root.isUnpublished()) {
-      root.shrinkPackageVersions();
-    }
-    filterPackageRoot(root);
-    return root;
+    return generatePackageRoot(root);
   }
 
   @Nullable
-  public PackageRoot generatePackageRoot(final String packageName) throws IOException {
-    final PackageRoot root = metadataStore.getPackageByName(npmRepository, packageName);
+  public PackageRoot generatePackageRoot(final PackageRoot root) {
     if (root == null || root.isIncomplete()) {
       return null;
     }
@@ -66,10 +57,7 @@ public class MetadataGenerator
   }
 
   @Nullable
-  public PackageVersion generatePackageVersion(final String packageName, final String packageVersion)
-      throws IOException
-  {
-    final PackageRoot root = metadataStore.getPackageByName(npmRepository, packageName);
+  public PackageVersion generatePackageVersion(final PackageRoot root, final String packageVersion) {
     if (root == null || root.isUnpublished()) {
       return null;
     }
@@ -127,12 +115,15 @@ public class MetadataGenerator
 
     @Override
     public PackageRoot next() {
-      try {
-        return generateShrinkedPackageRoot(packageNames.next());
+      final PackageRoot root = metadataStore.getPackageByName(npmRepository, packageNames.next());
+      if (root == null) {
+        return null; // TODO: This is error actually, as iterator should not return null
       }
-      catch (IOException e) {
-        throw Throwables.propagate(e);
+      if (!root.isUnpublished()) {
+        root.shrinkPackageVersions();
       }
+      filterPackageRoot(root);
+      return root;
     }
 
     @Override

@@ -71,7 +71,7 @@ public class HostedMetadataServiceImpl
   @Nullable
   @Override
   protected PackageVersion doGeneratePackageVersion(final PackageRequest request) throws IOException {
-    return metadataGenerator.generatePackageVersion(request.getName(),
-        request.getVersion());
+    final PackageRoot root = metadataGenerator.generatePackageRoot(request.getName());
+    return metadataGenerator.generatePackageVersion(root, request.getVersion());
   }
 }
