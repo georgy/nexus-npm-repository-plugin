@@ -1,39 +1,34 @@
 package com.bolyuba.nexus.plugin.npm.service;
 
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
+import org.sonatype.sisu.litmus.testsupport.TestSupport;
 
+import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.fail;
 
 /**
  * @author Georgy Bolyuba (georgy@bolyuba.com)
  */
 public class PackageRequestTest
+    extends TestSupport
 {
 
   @Mock
   ResourceStoreRequest mockRequest;
-
-  @BeforeMethod
-  void setup() {
-    MockitoAnnotations.initMocks(this);
-  }
 
   @Test
   public void sameRequestReturned() throws IllegalArgumentException {
     Mockito.when(mockRequest.getRequestPath()).thenReturn("/");
     PackageRequest packageRequest = new PackageRequest(mockRequest);
 
-    assertSame(packageRequest.getStoreRequest(), mockRequest, "Expected to get same store request beginObj back");
+    assertThat("Expected to get same store request beginObj back", packageRequest.getStoreRequest(),
+        equalTo(mockRequest));
   }
 
   @Test
@@ -41,7 +36,7 @@ public class PackageRequestTest
     Mockito.when(mockRequest.getRequestPath()).thenReturn("/-/all");
     PackageRequest packageRequest = new PackageRequest(mockRequest);
 
-    assertEquals(packageRequest.getPath(), "/-/all");
+    assertThat(packageRequest.getPath(), equalTo("/-/all"));
   }
 
   @Test
@@ -49,10 +44,11 @@ public class PackageRequestTest
     Mockito.when(mockRequest.getRequestPath()).thenReturn("/");
     PackageRequest packageRequest = new PackageRequest(mockRequest);
 
-    assertFalse(packageRequest.isPackage());
-    assertFalse(packageRequest.isPackageRoot());
-    assertFalse(packageRequest.isPackageVersion());
-    assertFalse(packageRequest.isRegistrySpecial());
+    assertThat(packageRequest.isPackage(), is(false));
+    assertThat(packageRequest.isPackageRoot(), is(false));
+    assertThat(packageRequest.isPackageVersion(), is(false));
+    assertThat(packageRequest.isRegistrySpecial(), is(false));
+    assertThat(packageRequest.isRegistryRoot(), is(true));
   }
 
   @Test
@@ -60,10 +56,11 @@ public class PackageRequestTest
     Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem");
     PackageRequest packageRequest = new PackageRequest(mockRequest);
 
-    assertTrue(packageRequest.isPackage());
-    assertTrue(packageRequest.isPackageRoot());
-    assertFalse(packageRequest.isPackageVersion());
-    assertFalse(packageRequest.isRegistrySpecial());
+    assertThat(packageRequest.isPackage(), is(true));
+    assertThat(packageRequest.isPackageRoot(), is(true));
+    assertThat(packageRequest.isPackageVersion(), is(false));
+    assertThat(packageRequest.isRegistrySpecial(), is(false));
+    assertThat(packageRequest.isRegistryRoot(), is(false));
   }
 
   @Test
@@ -71,10 +68,10 @@ public class PackageRequestTest
     Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem/139.16");
     PackageRequest packageRequest = new PackageRequest(mockRequest);
 
-    assertTrue(packageRequest.isPackage());
-    assertFalse(packageRequest.isPackageRoot());
-    assertTrue(packageRequest.isPackageVersion());
-    assertFalse(packageRequest.isRegistrySpecial());
+    assertThat(packageRequest.isPackage(), is(true));
+    assertThat(packageRequest.isPackageRoot(), is(false));
+    assertThat(packageRequest.isPackageVersion(), is(true));
+    assertThat(packageRequest.isRegistrySpecial(), is(false));
   }
 
   @Test
@@ -82,24 +79,22 @@ public class PackageRequestTest
     Mockito.when(mockRequest.getRequestPath()).thenReturn("/-/all");
     PackageRequest packageRequest = new PackageRequest(mockRequest);
 
-    assertFalse(packageRequest.isPackage());
-    assertFalse(packageRequest.isPackageRoot());
-    assertFalse(packageRequest.isPackageVersion());
-    assertTrue(packageRequest.isRegistrySpecial());
+    assertThat(packageRequest.isPackage(), is(false));
+    assertThat(packageRequest.isPackageRoot(), is(false));
+    assertThat(packageRequest.isPackageVersion(), is(false));
+    assertThat(packageRequest.isRegistrySpecial(), is(true));
   }
 
 
   // Check that content cache escapes registry namespace
-  @Test(expectedExceptions = IllegalArgumentException.class,
-      expectedExceptionsMessageRegExp = "Invalid package version: -content.json")
+  @Test(expected = IllegalArgumentException.class)
   public void packageRootContentCache_InvalidPackageRequest() throws IllegalArgumentException {
     Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem/-content.json");
     new PackageRequest(mockRequest);
     fail("Expected InvalidPackageRequestException");
   }
 
-  @Test(expectedExceptions = IllegalArgumentException.class,
-      expectedExceptionsMessageRegExp = "Path /golem/1.42.0/-content.json cannot be turned into PackageCoordinates")
+  @Test(expected = IllegalArgumentException.class)
   public void packageVersionContentCache_InvalidPackageRequest() throws IllegalArgumentException {
     Mockito.when(mockRequest.getRequestPath()).thenReturn("/golem/1.42.0/-content.json");
     new PackageRequest(mockRequest);

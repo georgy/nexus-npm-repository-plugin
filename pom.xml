@@ -53,12 +53,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.testng</groupId>
-        <artifactId>testng</artifactId>
-        <version>6.8.8</version>
-      </dependency>
-
-      <dependency>
         <groupId>com.orientechnologies</groupId>
         <artifactId>orient-commons</artifactId>
         <version>${orientdb.version}</version>
