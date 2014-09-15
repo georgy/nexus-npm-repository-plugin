@@ -6,6 +6,7 @@ import java.util.List;
 import org.sonatype.nexus.client.core.subsystem.content.Location;
 import org.sonatype.nexus.testsuite.npm.NpmMockRegistryITSupport;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,6 +55,7 @@ public class SearchKeepsCachedRootIT
    * Verifies that using path "/" results in registry root being properly cached.
    */
   @Test
+  @Ignore("Serving metadata from path '/' is currently disabled")
   public void rootRemainsCached() throws Exception {
     assertRootRemainsCached("/");
   }

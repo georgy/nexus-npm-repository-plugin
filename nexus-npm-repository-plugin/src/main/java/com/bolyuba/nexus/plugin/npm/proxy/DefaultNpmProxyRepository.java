@@ -147,7 +147,8 @@ public class DefaultNpmProxyRepository
       throws ItemNotFoundException, LocalStorageException
   {
     try {
-      if (storeRequest.getRequestContext().containsKey(NpmRepository.NPM_METADATA_NO_SERVICE, false)) {
+      if (RepositoryItemUid.PATH_ROOT.equals(storeRequest.getRequestPath())
+          || storeRequest.getRequestContext().containsKey(NpmRepository.NPM_METADATA_NO_SERVICE, false)) {
         // shut down NPM MD+tarball service completely
         return delegateDoRetrieveLocalItem(storeRequest);
       }
