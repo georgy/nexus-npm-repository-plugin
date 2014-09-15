@@ -14,6 +14,7 @@ import com.orientechnologies.orient.core.metadata.schema.OClass.INDEX_TYPE;
 import com.orientechnologies.orient.core.metadata.schema.OSchema;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.impl.ODocument;
+import com.orientechnologies.orient.core.record.impl.ORecordBytes;
 
 /**
  * {@link EntityHandler} for {@link PackageRoot} entity.
@@ -35,7 +36,8 @@ public class PackageRootHandler
     clazz.createProperty("name", OType.STRING);
     clazz.createProperty("description", OType.STRING);
     clazz.createProperty("properties", OType.EMBEDDEDMAP, OType.STRING);
-    clazz.createProperty("raw", OType.BINARY);
+    // TODO: sort out schema for raw?
+    clazz.createProperty("raw", OType.LINK); // Using linked "blob" record
     clazz.createIndex(clazz.getName() + ".componentId", INDEX_TYPE.UNIQUE_HASH_INDEX, "componentId");
   }
 
@@ -47,7 +49,7 @@ public class PackageRootHandler
       doc.field("name", entity.getName());
       doc.field("description", entity.getDescription());
       doc.field("properties", entity.getProperties());
-      doc.field("raw", objectMapper.writeValueAsBytes(entity.getRaw()));
+      doc.field("raw", new ORecordBytes(objectMapper.writeValueAsBytes(entity.getRaw())));
       return doc;
     }
     catch (Exception e) {
@@ -59,7 +61,8 @@ public class PackageRootHandler
   public PackageRoot toEntity(final ODocument doc) {
     try {
       final String repositoryId = doc.field("repositoryId", OType.STRING);
-      final Map<String, Object> raw = objectMapper.readValue(doc.<byte[]>field("raw", OType.BINARY),
+      final ORecordBytes rawBytes = doc.field("raw");
+      final Map<String, Object> raw = objectMapper.readValue(rawBytes.toStream(),
           new TypeReference<Map<String, Object>>() {});
       final PackageRoot result = new PackageRoot(repositoryId, raw);
       final Map<String, String> properties = doc.field("properties", OType.EMBEDDEDMAP);
