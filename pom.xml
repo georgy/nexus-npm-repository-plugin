@@ -68,6 +68,12 @@
         <groupId>com.orientechnologies</groupId>
         <artifactId>orientdb-core</artifactId>
         <version>${orientdb.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <!-- INTERNAL -->

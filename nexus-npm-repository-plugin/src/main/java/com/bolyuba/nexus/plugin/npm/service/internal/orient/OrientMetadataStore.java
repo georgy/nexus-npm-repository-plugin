@@ -22,6 +22,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentPool;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.id.ORID;
@@ -63,6 +64,9 @@ public class OrientMetadataStore
     final String dbUri = "plocal:" + databaseDirectory.getAbsolutePath();
     try (ODatabaseDocumentTx db = new ODatabaseDocumentTx(dbUri)) {
       if (!db.exists()) {
+        // latest advice is to disable DB compression as it doesn't buy much,
+        // also snappy has issues with use of native lib (unpacked under tmp)
+        OGlobalConfiguration.STORAGE_COMPRESSION_METHOD.setValue("nothing");
         db.create();
         log.info("Created database: {}", databaseDirectory);
       }
