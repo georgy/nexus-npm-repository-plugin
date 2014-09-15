@@ -5,6 +5,7 @@ import java.util.Map;
 import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
@@ -24,7 +25,7 @@ public class PackageRootHandler
 
   public PackageRootHandler(final ODatabaseDocumentTx db) {
     super(PackageRoot.class, db);
-    this.objectMapper = new ObjectMapper(); // TODO: consider compact binary SMILE format for "raw"
+    this.objectMapper = new ObjectMapper(new SmileFactory());
   }
 
   @Override
@@ -46,7 +47,7 @@ public class PackageRootHandler
       doc.field("name", entity.getName());
       doc.field("description", entity.getDescription());
       doc.field("properties", entity.getProperties());
-      doc.field("raw", objectMapper.writeValueAsString(entity.getRaw()).getBytes(Charsets.UTF_8));
+      doc.field("raw", objectMapper.writeValueAsBytes(entity.getRaw()));
       return doc;
     }
     catch (Exception e) {
@@ -58,10 +59,10 @@ public class PackageRootHandler
   public PackageRoot toEntity(final ODocument doc) {
     try {
       final String repositoryId = doc.field("repositoryId", OType.STRING);
-      final Map<String, Object> raw = objectMapper.readValue(new String(doc.<byte[]>field("raw", OType.BINARY), Charsets.UTF_8),
+      final Map<String, Object> raw = objectMapper.readValue(doc.<byte[]>field("raw", OType.BINARY),
           new TypeReference<Map<String, Object>>() {});
       final PackageRoot result = new PackageRoot(repositoryId, raw);
-      final Map<String, String> properties = (Map<String, String>) doc.field("properties", OType.EMBEDDEDMAP);
+      final Map<String, String> properties = doc.field("properties", OType.EMBEDDEDMAP);
       result.getProperties().putAll(properties);
       return result;
     }
