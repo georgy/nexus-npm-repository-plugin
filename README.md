@@ -2,23 +2,24 @@
 
 The plugin that adds NPM (https://www.npmjs.org) repository type support for Nexus 2.10+
 
-The plugin is based/forked from this repository
+The plugin is based on original work from this repository
 https://github.com/georgy/nexus-npm-repository-plugin
 
 ## Branches
 
 These are the relevant branches
 
-* "master" synced to upstream https://github.com/sonatype/nexus-npm-repository-plugin/tree/master
-* "sonatype-master", ahead of "master" (contains all our changes) https://github.com/sonatype/nexus-npm-repository-plugin/tree/sonatype-master
 * "nexus-2.10.x" local production, receives merges from sonatype-master (CI built, bundled with NX) https://github.com/sonatype/nexus-npm-repository-plugin/tree/nexus-2.10.x
+
+Other branches:
+
+* "master" synced to upstream https://github.com/sonatype/nexus-npm-repository-plugin/tree/master
 
 ## Workflow
 
-Branch off "sonatype-master" for new work, and create PRs against it. This way, upstream can still pick
-up changes from us, even it's currently lagging behind.
+Branch off "nexus-2.10.x" for new work, and create PRs against same.
 
-Do not touch/use branches "master" and "nexus-2.10.x" for now.
+Do not touch/use branches "master" and other branches.
 
 ## Features
 Current features covers complete "roundtrip" for development, by caching, hosting and publishing NPM packages.
