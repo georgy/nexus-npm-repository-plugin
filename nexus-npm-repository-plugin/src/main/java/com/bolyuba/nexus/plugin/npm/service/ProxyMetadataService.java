@@ -22,13 +22,6 @@ public interface ProxyMetadataService
   boolean expireMetadataCaches(PackageRequest request);
 
   /**
-   * Returns corresponding package root for given package name in <strong>raw form</strong>, as it was sent to us by
-   * the proxied registry, or {@link null} if no such package.
-   */
-  @Nullable
-  PackageRoot generateRawPackageRoot(String packageName) throws IOException;
-
-  /**
    * Updates package root in metadata store. To be used mostly by proxy mechanism to store some extra properties,
    * not to modify actual metadata.
    */

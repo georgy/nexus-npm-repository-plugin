@@ -221,7 +221,7 @@ public class MetadataServiceIT
     log(commonjs.getName() + " || " + commonjs.getVersions().keySet() + "unpublished=" + commonjs.isUnpublished() +
         " incomplete=" + commonjs.isIncomplete());
 
-    final ContentLocator output = npmProxyRepository.getMetadataService().getProducer().produceRegistryRoot(
+    final ContentLocator output = npmProxyRepository.getMetadataService().produceRegistryRoot(
         new PackageRequest(new ResourceStoreRequest("/", true, false)));
     try (InputStream is = output.getContent()) {
       java.nio.file.Files.copy(is, new File(tmpDir, "root.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -232,7 +232,7 @@ public class MetadataServiceIT
   public void proxyPackageRootRoundtrip() throws Exception {
     // this call will get it from remote, store, and return it as raw stream
     final StringContentLocator contentLocator = (StringContentLocator) npmProxyRepository.getMetadataService()
-        .getProducer().producePackageVersion(new PackageRequest(new ResourceStoreRequest("/commonjs/0.0.1")));
+        .producePackageVersion(new PackageRequest(new ResourceStoreRequest("/commonjs/0.0.1")));
     JSONObject proxiedV001 = new JSONObject(
         ByteSource.wrap(contentLocator.getByteArray()).asCharSource(Charsets.UTF_8).read());
 
@@ -287,7 +287,7 @@ public class MetadataServiceIT
     onDisk.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist")
         .put("tarball", "http://localhost:8081/nexus/content/repositories/hosted/commonjs/-/commonjs-0.0.1.tgz");
     final StringContentLocator contentLocator = (StringContentLocator) npmHostedRepository.getMetadataService()
-        .getProducer().producePackageRoot(new PackageRequest(new ResourceStoreRequest("/commonjs")));
+        .producePackageRoot(new PackageRequest(new ResourceStoreRequest("/commonjs")));
     JSONObject onStore = new JSONObject(
         ByteSource.wrap(contentLocator.getByteArray()).asCharSource(Charsets.UTF_8).read());
 

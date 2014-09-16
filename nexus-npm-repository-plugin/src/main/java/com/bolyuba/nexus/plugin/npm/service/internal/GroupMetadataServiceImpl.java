@@ -19,6 +19,8 @@ import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * {@link GroupMetadataService} implementation.
  */
@@ -31,8 +33,8 @@ public class GroupMetadataServiceImpl
   public GroupMetadataServiceImpl(final NpmGroupRepository npmGroupRepository,
                                   final MetadataParser metadataParser)
   {
-    super(metadataParser);
-    this.npmGroupRepository = npmGroupRepository;
+    super(npmGroupRepository, metadataParser);
+    this.npmGroupRepository = checkNotNull(npmGroupRepository);
   }
 
   @Override

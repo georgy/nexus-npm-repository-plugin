@@ -119,13 +119,13 @@ public class DefaultNpmGroupRepository
       if (packageRequest.isMetadata()) {
         ContentLocator contentLocator;
         if (packageRequest.isRegistryRoot()) {
-          contentLocator = groupMetadataService.getProducer().produceRegistryRoot(packageRequest);
+          contentLocator = groupMetadataService.produceRegistryRoot(packageRequest);
         }
         else if (packageRequest.isPackageRoot()) {
-          contentLocator = groupMetadataService.getProducer().producePackageRoot(packageRequest);
+          contentLocator = groupMetadataService.producePackageRoot(packageRequest);
         }
         else {
-          contentLocator = groupMetadataService.getProducer().producePackageVersion(packageRequest);
+          contentLocator = groupMetadataService.producePackageVersion(packageRequest);
         }
         if (contentLocator == null) {
           throw new ItemNotFoundException(
@@ -137,7 +137,7 @@ public class DefaultNpmGroupRepository
         // registry special
         if (packageRequest.isRegistrySpecial() && packageRequest.getPath().startsWith("/-/all")) {
           return new DefaultStorageFileItem(this, storeRequest, true, true,
-              groupMetadataService.getProducer().produceRegistryRoot(packageRequest));
+              groupMetadataService.produceRegistryRoot(packageRequest));
         }
         throw new ItemNotFoundException(
             reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));

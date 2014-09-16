@@ -4,6 +4,8 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
+import org.sonatype.nexus.proxy.item.ContentLocator;
+
 import com.bolyuba.nexus.plugin.npm.service.internal.PackageRootIterator;
 
 /**
@@ -12,9 +14,22 @@ import com.bolyuba.nexus.plugin.npm.service.internal.PackageRootIterator;
 public interface Generator
 {
   /**
-   * Returns {@link Producer} backed by this generator.
+   * Produces "raw" downstream content of registry root.
    */
-  Producer getProducer();
+  ContentLocator produceRegistryRoot(PackageRequest request) throws IOException;
+
+  /**
+   * Produces "raw" downstream content of package root, or {@code null} if no given package found.
+   */
+  @Nullable
+  ContentLocator producePackageRoot(PackageRequest request) throws IOException;
+
+  /**
+   * Produces "raw" downstream content of package version, or {@code null} if no given version of package or containing
+   * package not found.
+   */
+  @Nullable
+  ContentLocator producePackageVersion(PackageRequest request) throws IOException;
 
   /**
    * Returns registry root package iterator. Note: these package roots are "shrinked" and should not be used

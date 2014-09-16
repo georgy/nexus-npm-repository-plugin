@@ -125,13 +125,13 @@ public class DefaultNpmHostedRepository
       if (packageRequest.isMetadata()) {
         ContentLocator contentLocator;
         if (packageRequest.isRegistryRoot()) {
-          contentLocator = hostedMetadataService.getProducer().produceRegistryRoot(packageRequest);
+          contentLocator = hostedMetadataService.produceRegistryRoot(packageRequest);
         }
         else if (packageRequest.isPackageRoot()) {
-          contentLocator = hostedMetadataService.getProducer().producePackageRoot(packageRequest);
+          contentLocator = hostedMetadataService.producePackageRoot(packageRequest);
         }
         else {
-          contentLocator = hostedMetadataService.getProducer().producePackageVersion(packageRequest);
+          contentLocator = hostedMetadataService.producePackageVersion(packageRequest);
         }
         if (contentLocator == null) {
           throw new ItemNotFoundException(
@@ -143,7 +143,7 @@ public class DefaultNpmHostedRepository
         // registry special
         if (packageRequest.isRegistrySpecial() && packageRequest.getPath().startsWith("/-/all")) {
           return new DefaultStorageFileItem(this, storeRequest, true, true,
-              hostedMetadataService.getProducer().produceRegistryRoot(
+              hostedMetadataService.produceRegistryRoot(
                   packageRequest));
         }
         throw new ItemNotFoundException(

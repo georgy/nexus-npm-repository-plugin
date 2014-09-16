@@ -25,9 +25,14 @@ public class PackageVersion
     return TARBALL_NX_SHASUM + "@" + version;
   }
 
-  public PackageVersion(final String repositoryId, final Map<String, Object> raw) {
+  private final PackageRoot root;
+
+  public PackageVersion(final PackageRoot root, final String repositoryId, final Map<String, Object> raw) {
     super(repositoryId, raw);
+    this.root = checkNotNull(root);
   }
+
+  public PackageRoot getRoot() { return root; }
 
   public String getName() {
     return (String) getRaw().get("name");

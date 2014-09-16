@@ -4,32 +4,68 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
+import org.sonatype.nexus.proxy.item.ContentLocator;
+import org.sonatype.nexus.web.BaseUrlHolder;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
+import org.sonatype.sisu.goodies.common.SimpleFormat;
 
+import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.service.Generator;
 import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
-import com.bolyuba.nexus.plugin.npm.service.Producer;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * {@link Generator} support class.
  */
-public abstract class GeneratorSupport
+public abstract class GeneratorSupport<R extends NpmRepository>
     extends ComponentSupport
     implements Generator
 {
-  private final Producer producer;
+  private final R npmRepository;
 
-  protected GeneratorSupport(final MetadataParser metadataParser) {
-    this.producer = new ProducerImpl(this, metadataParser);
+  protected final MetadataParser metadataParser;
+
+  protected GeneratorSupport(final R npmRepository,
+                             final MetadataParser metadataParser)
+  {
+    this.npmRepository = checkNotNull(npmRepository);
+    this.metadataParser = checkNotNull(metadataParser);
+  }
+
+  protected R getNpmRepository() {
+    return npmRepository;
   }
 
   @Override
-  public Producer getProducer() {
-    return producer;
+  public ContentLocator produceRegistryRoot(final PackageRequest request) throws IOException {
+    return metadataParser.produceRegistryRoot(generateRegistryRoot(request));
+  }
+
+  @Nullable
+  @Override
+  public ContentLocator producePackageRoot(final PackageRequest request) throws IOException {
+    final PackageRoot root = generatePackageRoot(request);
+    if (root == null || root.isIncomplete()) {
+      return null;
+    }
+    filterPackageRoot(root);
+    return metadataParser.producePackageRoot(root);
+
+  }
+
+  @Nullable
+  @Override
+  public ContentLocator producePackageVersion(final PackageRequest request) throws IOException {
+    final PackageVersion version = generatePackageVersion(request);
+    if (version == null || version.isIncomplete()) {
+      return null;
+    }
+    filterPackageVersion(version);
+    return metadataParser.producePackageVersion(version);
   }
 
   @Override
@@ -44,7 +80,11 @@ public abstract class GeneratorSupport
   public PackageRoot generatePackageRoot(final PackageRequest request) throws IOException {
     checkArgument(request.isPackageRoot(), "Package root request expected, but got %s",
         request.getPath());
-    return doGeneratePackageRoot(request);
+    final PackageRoot root = doGeneratePackageRoot(request);
+    if (root == null || root.isIncomplete()) {
+      return null;
+    }
+    return root;
   }
 
   @Nullable
@@ -59,5 +99,40 @@ public abstract class GeneratorSupport
   }
 
   @Nullable
-  protected abstract PackageVersion doGeneratePackageVersion(final PackageRequest request) throws IOException;
+  protected PackageVersion doGeneratePackageVersion(final PackageRequest request) throws IOException {
+    checkArgument(request.isPackageVersion(), "Package version request expected, but got %s",
+        request.getPath());
+    final PackageRoot root = doGeneratePackageRoot(request);
+    if (root == null || root.isUnpublished()) {
+      return null;
+    }
+    final PackageVersion version = root.getVersions().get(request.getVersion());
+    if (version == null || version.isIncomplete()) {
+      return null;
+    }
+    return version;
+  }
+
+  // ==
+
+  protected void filterPackageRoot(final PackageRoot packageRoot) {
+    packageRoot.getRaw().remove("_id"); // TODO: why? Original code did this too
+    packageRoot.getRaw().remove("_rev"); // TODO: why? Original code did this too
+    for (PackageVersion packageVersion : packageRoot.getVersions().values()) {
+      filterPackageVersion(packageVersion);
+    }
+  }
+
+  protected void filterPackageVersion(final PackageVersion packageVersion) {
+    packageVersion.setDistTarball(SimpleFormat
+        .format("%s/content/repositories/%s/%s/-/%s", BaseUrlHolder.get(), npmRepository.getId(),
+            packageVersion.getName(), packageVersion.getDistTarballFilename()));
+    packageVersion.getRaw().remove("_id"); // TODO: why? Original code did this too
+    packageVersion.getRaw().remove("_rev"); // TODO: why? Original code did this too
+    final String versionTarballShasum = PackageVersion.createShasumVersionKey(packageVersion.getVersion());
+    if (packageVersion.getRoot().getProperties().containsKey(versionTarballShasum)) {
+      // this publishes proper SHA1 for ALL packages already proxies by NX
+      packageVersion.setDistShasum(packageVersion.getRoot().getProperties().get(versionTarballShasum));
+    }
+  }
 }

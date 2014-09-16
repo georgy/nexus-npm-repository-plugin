@@ -141,7 +141,7 @@ public class PackageRoot
       for (Entry<String, Object> versionsEntry : versions.entrySet()) {
         if (versionsEntry.getValue() instanceof Map) {
           wrappedVersions.put(versionsEntry.getKey(),
-              new PackageVersion(getRepositoryId(), (Map<String, Object>) versionsEntry.getValue()));
+              new PackageVersion(this, getRepositoryId(), (Map<String, Object>) versionsEntry.getValue()));
         }
         else if (versionsEntry.getValue() instanceof String) {
           // create an "incomplete" document
@@ -155,7 +155,7 @@ public class PackageRoot
           final Map<String, String> dist = Maps.newHashMap();
           dist.put("tarball", "unknown");
           latestVersion.put("dist", dist);
-          wrappedVersions.put(versionsEntry.getKey(), new PackageVersion(getRepositoryId(), latestVersion));
+          wrappedVersions.put(versionsEntry.getKey(), new PackageVersion(this, getRepositoryId(), latestVersion));
         }
       }
     }

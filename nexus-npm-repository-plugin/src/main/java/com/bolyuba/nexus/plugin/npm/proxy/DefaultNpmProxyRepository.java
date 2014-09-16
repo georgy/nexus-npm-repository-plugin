@@ -159,15 +159,15 @@ public class DefaultNpmProxyRepository
           ContentLocator contentLocator;
           if (packageRequest.isRegistryRoot()) {
             log.debug("Serving registry root...");
-            contentLocator = proxyMetadataService.getProducer().produceRegistryRoot(packageRequest);
+            contentLocator = proxyMetadataService.produceRegistryRoot(packageRequest);
           }
           else if (packageRequest.isPackageRoot()) {
             log.debug("Serving package {} root...", packageRequest.getName());
-            contentLocator = proxyMetadataService.getProducer().producePackageRoot(packageRequest);
+            contentLocator = proxyMetadataService.producePackageRoot(packageRequest);
           }
           else {
             log.debug("Serving package {} version {}...", packageRequest.getName(), packageRequest.getVersion());
-            contentLocator = proxyMetadataService.getProducer().producePackageVersion(packageRequest);
+            contentLocator = proxyMetadataService.producePackageVersion(packageRequest);
           }
           if (contentLocator == null) {
             log.debug("No NPM metadata for path {}", storeRequest.getRequestPath());
@@ -181,7 +181,7 @@ public class DefaultNpmProxyRepository
           if (packageRequest.isRegistrySpecial() && packageRequest.getPath().startsWith("/-/all")) {
             log.debug("Serving registry root from /-/all...");
             return createStorageFileItem(storeRequest,
-                proxyMetadataService.getProducer().produceRegistryRoot(packageRequest));
+                proxyMetadataService.produceRegistryRoot(packageRequest));
           }
           throw new ItemNotFoundException(
               reasonFor(storeRequest, this, "No content for path %s", storeRequest.getRequestPath()));

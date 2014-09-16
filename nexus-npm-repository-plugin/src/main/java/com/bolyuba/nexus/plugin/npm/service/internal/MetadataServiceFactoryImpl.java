@@ -6,7 +6,6 @@ import javax.inject.Singleton;
 
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
-import com.bolyuba.nexus.plugin.npm.NpmRepository;
 import com.bolyuba.nexus.plugin.npm.group.NpmGroupRepository;
 import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmProxyRepository;
@@ -48,20 +47,15 @@ public class MetadataServiceFactoryImpl
     return proxyMetadataTransport;
   }
 
-  @VisibleForTesting
-  public MetadataGenerator createGenerator(final NpmRepository npmRepository) {
-    return new MetadataGenerator(npmRepository, metadataStore);
-  }
-
   @Override
   public HostedMetadataService createHostedMetadataService(final NpmHostedRepository npmHostedRepository) {
-    return new HostedMetadataServiceImpl(npmHostedRepository, createGenerator(npmHostedRepository), metadataParser);
+    return new HostedMetadataServiceImpl(npmHostedRepository, metadataStore, metadataParser);
   }
 
   @Override
   public ProxyMetadataService createProxyMetadataService(final NpmProxyRepository npmProxyRepository) {
     return new ProxyMetadataServiceImpl(npmProxyRepository, metadataStore,
-        createGenerator(npmProxyRepository), getProxyMetadataTransport(), metadataParser);
+        getProxyMetadataTransport(), metadataParser);
   }
 
   @Override

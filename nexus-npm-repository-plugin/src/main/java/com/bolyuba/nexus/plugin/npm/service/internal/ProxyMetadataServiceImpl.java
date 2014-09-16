@@ -24,7 +24,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * {@link ProxyMetadataService} implementation.
  */
 public class ProxyMetadataServiceImpl
-    extends GeneratorSupport
+    extends GeneratorWithStoreSupport<NpmProxyRepository>
     implements ProxyMetadataService
 {
   private static final String REGISTRY_ROOT_PACKAGE_NAME = "-";
@@ -35,25 +35,15 @@ public class ProxyMetadataServiceImpl
 
   private final Object registryRootUpdateLock;
 
-  private final NpmProxyRepository npmProxyRepository;
-
-  private final MetadataStore metadataStore;
-
-  private final MetadataGenerator metadataGenerator;
-
   private final ProxyMetadataTransport proxyMetadataTransport;
 
   public ProxyMetadataServiceImpl(final NpmProxyRepository npmProxyRepository,
                                   final MetadataStore metadataStore,
-                                  final MetadataGenerator metadataGenerator,
                                   final ProxyMetadataTransport proxyMetadataTransport,
                                   final MetadataParser metadataParser)
   {
-    super(metadataParser);
+    super(npmProxyRepository, metadataParser, metadataStore);
     this.registryRootUpdateLock = new Object();
-    this.npmProxyRepository = checkNotNull(npmProxyRepository);
-    this.metadataStore = checkNotNull(metadataStore);
-    this.metadataGenerator = checkNotNull(metadataGenerator);
     this.proxyMetadataTransport = checkNotNull(proxyMetadataTransport);
   }
 
@@ -61,23 +51,23 @@ public class ProxyMetadataServiceImpl
   public boolean expireMetadataCaches(final PackageRequest request) {
     checkNotNull(request);
     if (request.isPackage()) {
-      final PackageRoot packageRoot = metadataStore.getPackageByName(npmProxyRepository, request.getName());
+      final PackageRoot packageRoot = metadataStore.getPackageByName(getNpmRepository(), request.getName());
       if (packageRoot == null) {
         return false;
       }
-      log.info("Expiring package root {} in repository {}", request.getName(), npmProxyRepository.getId());
+      log.info("Expiring package root {} in repository {}", request.getName(), getNpmRepository().getId());
       packageRoot.getProperties().put(PROP_EXPIRED, Boolean.TRUE.toString());
-      metadataStore.updatePackage(npmProxyRepository, packageRoot);
+      metadataStore.updatePackage(getNpmRepository(), packageRoot);
       return true;
     }
     else {
-      final PackageRoot registryRoot = metadataStore.getPackageByName(npmProxyRepository, REGISTRY_ROOT_PACKAGE_NAME);
+      final PackageRoot registryRoot = metadataStore.getPackageByName(getNpmRepository(), REGISTRY_ROOT_PACKAGE_NAME);
       if (registryRoot != null) {
-        log.info("Expiring registry root of {}", npmProxyRepository.getId());
+        log.info("Expiring registry root of {}", getNpmRepository().getId());
         registryRoot.getProperties().put(PROP_EXPIRED, Boolean.TRUE.toString());
-        metadataStore.updatePackage(npmProxyRepository, registryRoot);
+        metadataStore.updatePackage(getNpmRepository(), registryRoot);
       }
-      return 0 < metadataStore.updatePackages(npmProxyRepository, null, new Function<PackageRoot, PackageRoot>()
+      return 0 < metadataStore.updatePackages(getNpmRepository(), null, new Function<PackageRoot, PackageRoot>()
       {
         @Override
         public PackageRoot apply(@Nullable final PackageRoot input) {
@@ -88,17 +78,10 @@ public class ProxyMetadataServiceImpl
     }
   }
 
-  @Nullable
-  @Override
-  public PackageRoot generateRawPackageRoot(final String packageName) throws IOException {
-    checkNotNull(packageName);
-    return mayUpdatePackageRoot(packageName, true);
-  }
-
   @Override
   public PackageRoot consumeRawPackageRoot(final PackageRoot packageRoot) {
     checkNotNull(packageRoot);
-    return metadataStore.updatePackage(npmProxyRepository, packageRoot);
+    return metadataStore.updatePackage(getNpmRepository(), packageRoot);
   }
 
   /**
@@ -141,28 +124,28 @@ public class ProxyMetadataServiceImpl
     // TODO: ContentServlet sets isLocal to paths ending with "/", so registry root will be local!
     if (request.getPath().endsWith("/") || !request.getStoreRequest().isRequestLocalOnly()) {
       // doing what NPM CLI does it's in own cache, using an invalid document (name "-" is invalid)
-      PackageRoot registryRoot = metadataStore.getPackageByName(npmProxyRepository, REGISTRY_ROOT_PACKAGE_NAME);
+      PackageRoot registryRoot = metadataStore.getPackageByName(getNpmRepository(), REGISTRY_ROOT_PACKAGE_NAME);
       final long now = System.currentTimeMillis();
       if (registryRoot == null || isExpired(registryRoot, now)) {
         synchronized (registryRootUpdateLock) {
           // double checked locking, let's see again did some other thread update while we were blocked
-          registryRoot = metadataStore.getPackageByName(npmProxyRepository, REGISTRY_ROOT_PACKAGE_NAME);
+          registryRoot = metadataStore.getPackageByName(getNpmRepository(), REGISTRY_ROOT_PACKAGE_NAME);
           if (registryRoot == null || isExpired(registryRoot, now)) {
             // fetch all from remote, this takes some time (currently 40MB JSON)
             if (registryRoot == null) {
-              log.info("Initial NPM Registry root update for {}", npmProxyRepository.getId());
+              log.info("Initial NPM Registry root update for {}", getNpmRepository().getId());
             }
             else {
-              log.info("Expired NPM Registry root update for {}", npmProxyRepository.getId());
+              log.info("Expired NPM Registry root update for {}", getNpmRepository().getId());
             }
             try (final PackageRootIterator packageRootIterator = proxyMetadataTransport
-                .fetchRegistryRoot(npmProxyRepository)) {
-              int count = metadataStore.updatePackages(npmProxyRepository, packageRootIterator);
-              log.info("NPM Registry root updated {} packages for {}", count, npmProxyRepository.getId());
+                .fetchRegistryRoot(getNpmRepository())) {
+              int count = metadataStore.updatePackages(getNpmRepository(), packageRootIterator);
+              log.info("NPM Registry root updated {} packages for {}", count, getNpmRepository().getId());
             }
             catch (Exception e) {
               // TODO: salvage as much as possible? As store commits per document anyway
-              log.warn("NPM Registry root update failed for {}", npmProxyRepository.getId(), e);
+              log.warn("NPM Registry root update failed for {}", getNpmRepository().getId(), e);
             }
             if (registryRoot == null) {
               // create a fluke package root
@@ -175,32 +158,23 @@ public class ProxyMetadataServiceImpl
               raw.put("description", "NX registry root package");
               raw.put("versions", versions);
               raw.put("dist-tags", distTags);
-              registryRoot = new PackageRoot(npmProxyRepository.getId(), raw);
+              registryRoot = new PackageRoot(getNpmRepository().getId(), raw);
             }
             registryRoot.getProperties().put(PROP_EXPIRED, Boolean.FALSE.toString());
             registryRoot.getProperties().put(PROP_CACHED, Long.toString(now));
-            metadataStore.updatePackage(npmProxyRepository, registryRoot);
+            metadataStore.updatePackage(getNpmRepository(), registryRoot);
           }
         }
       }
     }
-    return metadataGenerator.generateRegistryRoot();
+    return super.doGenerateRegistryRoot(request);
   }
 
   @Nullable
   @Override
   protected PackageRoot doGeneratePackageRoot(final PackageRequest request) throws IOException {
-    final PackageRoot packageRoot = mayUpdatePackageRoot(request.getName(),
+    return mayUpdatePackageRoot(request.getName(),
         request.getStoreRequest().isRequestLocalOnly());
-    return metadataGenerator.generatePackageRoot(packageRoot);
-  }
-
-  @Nullable
-  @Override
-  protected PackageVersion doGeneratePackageVersion(final PackageRequest request) throws IOException {
-    final PackageRoot packageRoot = mayUpdatePackageRoot(request.getName(),
-        request.getStoreRequest().isRequestLocalOnly());
-    return metadataGenerator.generatePackageVersion(packageRoot, request.getVersion());
   }
 
   // ==
@@ -211,15 +185,15 @@ public class ProxyMetadataServiceImpl
    */
   private PackageRoot mayUpdatePackageRoot(final String packageName, final boolean localOnly) throws IOException {
     final long now = System.currentTimeMillis();
-    PackageRoot packageRoot = metadataStore.getPackageByName(npmProxyRepository, packageName);
+    PackageRoot packageRoot = metadataStore.getPackageByName(getNpmRepository(), packageName);
     if (!localOnly && (packageRoot == null || isExpired(packageRoot, now))) {
-      packageRoot = proxyMetadataTransport.fetchPackageRoot(npmProxyRepository, packageName, packageRoot);
+      packageRoot = proxyMetadataTransport.fetchPackageRoot(getNpmRepository(), packageName, packageRoot);
       if (packageRoot == null) {
         return null;
       }
       packageRoot.getProperties().put(PROP_EXPIRED, Boolean.FALSE.toString());
       packageRoot.getProperties().put(PROP_CACHED, Long.toString(now));
-      return metadataStore.updatePackage(npmProxyRepository, packageRoot);
+      return metadataStore.updatePackage(getNpmRepository(), packageRoot);
     }
     else {
       return packageRoot;
@@ -236,7 +210,7 @@ public class ProxyMetadataServiceImpl
       log.trace("EXPIRED: package {} is incomplete", packageRoot.getName());
       return true;
     }
-    if (!npmProxyRepository.isItemAgingActive()) {
+    if (!getNpmRepository().isItemAgingActive()) {
       log.trace("EXPIRED: package {} owning repository item aging is inactive", packageRoot.getName());
       return true;
     }
@@ -244,14 +218,14 @@ public class ProxyMetadataServiceImpl
       log.trace("EXPIRED: package {} flagged as expired", packageRoot.getName());
       return true;
     }
-    if (npmProxyRepository.getItemMaxAge() < 0) {
+    if (getNpmRepository().getItemMaxAge() < 0) {
       log.trace("NOT-EXPIRED: package {} owning repository {} has negative item max age", packageRoot.getName(),
-          npmProxyRepository.getId());
+          getNpmRepository().getId());
       return false;
     }
     final long remoteCached = packageRoot.getProperties().containsKey(PROP_CACHED) ? Long
         .valueOf(packageRoot.getProperties().get(PROP_CACHED)) : now;
-    final boolean result = ((now - remoteCached) > (npmProxyRepository.getItemMaxAge() * 60L * 1000L));
+    final boolean result = ((now - remoteCached) > (getNpmRepository().getItemMaxAge() * 60L * 1000L));
     if (result) {
       log.trace("EXPIRED: package {} is too old", packageRoot.getName());
     }

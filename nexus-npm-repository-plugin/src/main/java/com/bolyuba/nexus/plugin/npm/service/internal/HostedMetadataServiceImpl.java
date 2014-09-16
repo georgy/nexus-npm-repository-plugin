@@ -10,7 +10,6 @@ import com.bolyuba.nexus.plugin.npm.hosted.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.service.HostedMetadataService;
 import com.bolyuba.nexus.plugin.npm.service.PackageRequest;
 import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
-import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -18,23 +17,14 @@ import static com.google.common.base.Preconditions.checkArgument;
  * {@link HostedMetadataService} implementation.
  */
 public class HostedMetadataServiceImpl
-    extends GeneratorSupport
+    extends GeneratorWithStoreSupport<NpmHostedRepository>
     implements HostedMetadataService
 {
-  private final NpmHostedRepository npmHostedRepository;
-
-  private final MetadataGenerator metadataGenerator;
-
-  private final MetadataParser metadataParser;
-
   public HostedMetadataServiceImpl(final NpmHostedRepository npmHostedRepository,
-                                   final MetadataGenerator metadataGenerator,
+                                   final MetadataStore metadataStore,
                                    final MetadataParser metadataParser)
   {
-    super(metadataParser);
-    this.npmHostedRepository = npmHostedRepository;
-    this.metadataGenerator = metadataGenerator;
-    this.metadataParser = metadataParser;
+    super(npmHostedRepository, metadataParser, metadataStore);
   }
 
   @Override
@@ -43,7 +33,7 @@ public class HostedMetadataServiceImpl
   {
     checkArgument(request.isPackageRoot(), "Package root request expected, but got %s",
         request.getPath());
-    final PackageRoot packageRoot = metadataParser.parsePackageRoot(npmHostedRepository.getId(), contentLocator);
+    final PackageRoot packageRoot = metadataParser.parsePackageRoot(getNpmRepository().getId(), contentLocator);
     checkArgument(request.getName().equals(packageRoot.getName()),
         "Package root name '%s' and parsed content name '%s' mismatch", request.getName(), packageRoot.getName());
     checkArgument(!packageRoot.isIncomplete(), "Incomplete package root parsed");
@@ -54,24 +44,12 @@ public class HostedMetadataServiceImpl
   public PackageRoot consumePackageRoot(final PackageRoot packageRoot)
       throws IOException
   {
-    return metadataGenerator.consumePackageRoot(packageRoot);
-  }
-
-  @Override
-  protected PackageRootIterator doGenerateRegistryRoot(final PackageRequest request) throws IOException {
-    return metadataGenerator.generateRegistryRoot();
+    return metadataStore.updatePackage(getNpmRepository(), packageRoot);
   }
 
   @Nullable
   @Override
   protected PackageRoot doGeneratePackageRoot(final PackageRequest request) throws IOException {
-    return metadataGenerator.generatePackageRoot(request.getName());
-  }
-
-  @Nullable
-  @Override
-  protected PackageVersion doGeneratePackageVersion(final PackageRequest request) throws IOException {
-    final PackageRoot root = metadataGenerator.generatePackageRoot(request.getName());
-    return metadataGenerator.generatePackageVersion(root, request.getVersion());
+    return metadataStore.getPackageByName(getNpmRepository(), request.getName());
   }
 }
