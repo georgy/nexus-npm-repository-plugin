@@ -54,7 +54,6 @@ public abstract class GeneratorSupport<R extends NpmRepository>
     }
     filterPackageRoot(root);
     return metadataParser.producePackageRoot(root);
-
   }
 
   @Nullable
@@ -84,6 +83,7 @@ public abstract class GeneratorSupport<R extends NpmRepository>
     if (root == null || root.isIncomplete()) {
       return null;
     }
+    filterPackageRootDist(request, root);
     return root;
   }
 
@@ -95,7 +95,9 @@ public abstract class GeneratorSupport<R extends NpmRepository>
   public PackageVersion generatePackageVersion(final PackageRequest request) throws IOException {
     checkArgument(request.isPackageVersion(), "Package version request expected, but got %s",
         request.getPath());
-    return doGeneratePackageVersion(request);
+    final PackageVersion version = doGeneratePackageVersion(request);
+    filterPackageVersionDist(request, version);
+    return version;
   }
 
   @Nullable
@@ -115,6 +117,10 @@ public abstract class GeneratorSupport<R extends NpmRepository>
 
   // ==
 
+  /**
+   * Removes unwanted fields from JSON document and invokes {@link #filterPackageVersion(PackageVersion)} on each
+   * version of the passed in package root.
+   */
   protected void filterPackageRoot(final PackageRoot packageRoot) {
     packageRoot.getRaw().remove("_id"); // TODO: why? Original code did this too
     packageRoot.getRaw().remove("_rev"); // TODO: why? Original code did this too
@@ -123,12 +129,33 @@ public abstract class GeneratorSupport<R extends NpmRepository>
     }
   }
 
+  /**
+   * Removes unwanted fields from JSON document.
+   */
   protected void filterPackageVersion(final PackageVersion packageVersion) {
+    packageVersion.getRaw().remove("_id"); // TODO: why? Original code did this too
+    packageVersion.getRaw().remove("_rev"); // TODO: why? Original code did this too
+  }
+
+  /**
+   * Invokes {@link #filterPackageVersionDist(PackageRequest, PackageVersion)} on each version of the passed in package
+   * root.
+   */
+  protected void filterPackageRootDist(final PackageRequest packageRequest, final PackageRoot packageRoot) {
+    for (PackageVersion packageVersion : packageRoot.getVersions().values()) {
+      filterPackageVersionDist(packageRequest, packageVersion);
+    }
+  }
+
+  /**
+   * Overwrites, hence, modifies the package version document by setting the tarball URL and shasums to expected
+   * values. Package version document modified with this method should NOT be saved back into store, they should be
+   * sent for downstream consumption only!
+   */
+  protected void filterPackageVersionDist(final PackageRequest packageRequest, final PackageVersion packageVersion) {
     packageVersion.setDistTarball(SimpleFormat
         .format("%s/content/repositories/%s/%s/-/%s", BaseUrlHolder.get(), npmRepository.getId(),
             packageVersion.getName(), packageVersion.getDistTarballFilename()));
-    packageVersion.getRaw().remove("_id"); // TODO: why? Original code did this too
-    packageVersion.getRaw().remove("_rev"); // TODO: why? Original code did this too
     final String versionTarballShasum = PackageVersion.createShasumVersionKey(packageVersion.getVersion());
     if (packageVersion.getRoot().getProperties().containsKey(versionTarballShasum)) {
       // this publishes proper SHA1 for ALL packages already proxies by NX

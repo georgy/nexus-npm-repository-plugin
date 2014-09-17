@@ -8,6 +8,8 @@ import org.sonatype.nexus.client.core.subsystem.repository.Repositories;
 import org.sonatype.nexus.testsuite.support.NexusRunningParametrizedITSupport;
 import org.sonatype.nexus.testsuite.support.NexusStartAndStopStrategy;
 
+import com.bolyuba.nexus.plugin.npm.client.NpmGroupRepository;
+import com.bolyuba.nexus.plugin.npm.client.NpmHostedRepository;
 import com.bolyuba.nexus.plugin.npm.client.NpmProxyRepository;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -51,13 +53,29 @@ public abstract class NpmITSupport
   }
 
   /**
+   * Creates a NPM hosted repository in NX instance.
+   */
+  public NpmHostedRepository createNpmHostedRepository(final String id) {
+    checkNotNull(id);
+    return repositories().create(NpmHostedRepository.class, id).withName(id).save();
+  }
+
+  /**
    * Creates a NPM Proxy repository in NX instance.
    */
   public NpmProxyRepository createNpmProxyRepository(final String id, final String registryUrl) {
     checkNotNull(id);
     checkNotNull(registryUrl);
     return repositories().create(NpmProxyRepository.class, id)
-        .asProxyOf(registryUrl).withName("id").save();
+        .asProxyOf(registryUrl).withName(id).save();
+  }
+
+  /**
+   * Creates a NPM Group repository in NX instance.
+   */
+  public NpmGroupRepository createNpmGroupRepository(final String id, String... members) {
+    checkNotNull(id);
+    return repositories().create(NpmGroupRepository.class, id).withName(id).addMember(members).save();
   }
 
   /**

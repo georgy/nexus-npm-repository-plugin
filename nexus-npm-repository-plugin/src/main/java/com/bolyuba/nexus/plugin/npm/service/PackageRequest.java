@@ -6,6 +6,7 @@ import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 
 import com.bolyuba.nexus.plugin.npm.NpmRepository;
+import com.google.common.base.Strings;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -54,8 +55,14 @@ public class PackageRequest
     return isRegistryRoot() || isPackageRoot() || isPackageVersion();
   }
 
+  public boolean isScoped() { return !Strings.isNullOrEmpty(coordinates.getScope()); }
+
   public String getPath() {
     return coordinates.getPath();
+  }
+
+  public String getScope() {
+    return coordinates.getScope();
   }
 
   public String getName() {
@@ -90,11 +97,23 @@ public class PackageRequest
 
     private Type type;
 
+    private String scope;
+
     private String packageName;
 
     private String packageVersion;
 
     private String path;
+
+    public String getName() {
+      if (Strings.isNullOrEmpty(getScope())) {
+        return getPackageName();
+      } else {
+        return "@" + getScope() + "/" + getPackageName();
+      }
+    }
+
+    public String getScope() { return scope; }
 
     public String getPackageName() {
       return packageName;
@@ -116,6 +135,7 @@ public class PackageRequest
     public String toString() {
       return "PackageCoordinates{" +
           "type=" + type +
+          ", scope='" + scope + '\'' +
           ", packageName='" + packageName + '\'' +
           ", packageVersion='" + packageVersion + '\'' +
           ", path='" + path + '\'' +
@@ -144,10 +164,17 @@ public class PackageRequest
       String[] explodedPath = correctedPath.split(RepositoryItemUid.PATH_SEPARATOR);
 
       if (explodedPath.length == 2) {
-        coordinates.type = Type.PACKAGE_VERSION;
-        coordinates.packageName = validate(explodedPath[0], "Invalid package name: ");
-        coordinates.packageVersion = validate(explodedPath[1], "Invalid package version: ");
-        return coordinates;
+        if (explodedPath[0].startsWith("@")) {
+          coordinates.type = Type.PACKAGE_ROOT;
+          coordinates.scope = validate(explodedPath[0].substring(1), "Invalid package scope: ");
+          coordinates.packageName = validate(explodedPath[1], "Invalid package name: ");
+          return coordinates;
+        } else {
+          coordinates.type = Type.PACKAGE_VERSION;
+          coordinates.packageName = validate(explodedPath[0], "Invalid package name: ");
+          coordinates.packageVersion = validate(explodedPath[1], "Invalid package version: ");
+          return coordinates;
+        }
       }
       if (explodedPath.length == 1) {
         coordinates.type = Type.PACKAGE_ROOT;
