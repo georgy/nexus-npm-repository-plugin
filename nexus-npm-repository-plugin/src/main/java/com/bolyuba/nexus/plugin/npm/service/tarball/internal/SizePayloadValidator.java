@@ -9,7 +9,7 @@ import com.bolyuba.nexus.plugin.npm.service.NpmBlob;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballRequest;
 
 /**
- * Basic validator that refuses tarballs having zero or less length.
+ * Basic validator that refuses tarballs having zero length.
  */
 @Singleton
 @Named

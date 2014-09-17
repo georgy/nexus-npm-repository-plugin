@@ -14,19 +14,21 @@ import com.bolyuba.nexus.plugin.npm.service.internal.PackageRootIterator;
 public interface Generator
 {
   /**
-   * Produces "raw" downstream content of registry root.
+   * Produces "raw" downstream content of registry root. Meant for downstream consumption, as package JSON document is
+   * properly altered (ie. tarball URLs).
    */
   ContentLocator produceRegistryRoot(PackageRequest request) throws IOException;
 
   /**
-   * Produces "raw" downstream content of package root, or {@code null} if no given package found.
+   * Produces "raw" downstream content of package root. Meant for downstream consumption, as package JSON document is
+   * properly altered (ie. tarball URLs). If no package found for request, returns {@code null}.
    */
   @Nullable
   ContentLocator producePackageRoot(PackageRequest request) throws IOException;
 
   /**
-   * Produces "raw" downstream content of package version, or {@code null} if no given version of package or containing
-   * package not found.
+   * Produces "raw" downstream content of package root. Meant for downstream consumption, as package JSON document is
+   * properly altered (ie. tarball URLs). If no package found or package has no given version, returns {@code null}.
    */
   @Nullable
   ContentLocator producePackageVersion(PackageRequest request) throws IOException;

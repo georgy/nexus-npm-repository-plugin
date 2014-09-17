@@ -6,7 +6,6 @@ import java.util.List;
 import org.sonatype.nexus.client.core.subsystem.content.Location;
 import org.sonatype.nexus.testsuite.npm.MockNpmRegistry;
 import org.sonatype.nexus.testsuite.npm.NpmITSupport;
-import org.sonatype.nexus.testsuite.npm.smoke.NpmInstallIT;
 import org.sonatype.sisu.litmus.testsupport.TestData;
 
 import com.bolyuba.nexus.plugin.npm.client.NpmGroupRepository;
@@ -23,14 +22,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
 /**
- * IT for scoped packages, ensuring that NX will pull tarballs for URL metadata says, and not from proxy registry's
- * remoteUrl + tarball path. This IT manages two mock registries, needs some handwork to make it working so
- * is not extending the NpmMockRegistryITSupport. This IT is basically doing very similar thing like the {@link
- * NpmInstallIT} except that here registry1 is being proxied, but all the tarballs are in registry2.
+ * IT for scoped packages, ensuring that NX will obey "scoped" package requests. In this IT we have two proxies that
+ * has same named packages (hence the one being member before the other shades the other). Still, the "scope" allows
+ * npm to get the proper package by specifying a scope of the package, whereis using "normal" (flat) package
+ * name (as in npm 1.x) getting the package would become impossible,
  */
 public class ScopedPackagesIT
     extends NpmITSupport
@@ -105,7 +103,8 @@ public class ScopedPackagesIT
         (String) registryPlainDoc.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").get("tarball"),
         endsWith("/nexus/content/repositories/npmgroup/testproject/-/testproject-0.0.1.tgz"));
     assertThat(
-        (String) registryScopedDoc.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").get("tarball"),
+        (String) registryScopedDoc.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist")
+            .get("tarball"),
         endsWith("/nexus/content/repositories/registry2/testproject/-/testproject-0.0.1.tgz"));
 
     // registry1 should been asked for metadata

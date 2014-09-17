@@ -17,7 +17,7 @@ public interface ProxyMetadataService
     extends Generator
 {
   /**
-   * Expires proxy metadata cache. On next request of an expired metadata, refetch will be done from registry.
+   * Expires proxy metadata cache. On next request of an expired metadata, re-fetch will be done from registry.
    */
   boolean expireMetadataCaches(PackageRequest request);
 
