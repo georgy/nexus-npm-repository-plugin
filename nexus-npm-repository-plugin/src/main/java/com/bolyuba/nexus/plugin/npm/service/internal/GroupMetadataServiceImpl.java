@@ -80,10 +80,7 @@ public class GroupMetadataServiceImpl
   @Override
   protected void filterPackageVersionDist(final PackageRequest packageRequest, final PackageVersion packageVersion) {
     // this is a group, and if request is scoped, do nothing with dist URL as it was already set by a member repo
-    if (packageRequest.isScoped()) {
-      return;
-    }
-    else {
+    if (!packageRequest.isScoped()) {
       super.filterPackageVersionDist(packageRequest, packageVersion);
     }
   }

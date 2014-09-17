@@ -5,6 +5,7 @@ import java.io.IOException;
 import javax.annotation.Nullable;
 
 import org.sonatype.nexus.proxy.item.ContentLocator;
+import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.web.BaseUrlHolder;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 import org.sonatype.sisu.goodies.common.SimpleFormat;
@@ -153,9 +154,16 @@ public abstract class GeneratorSupport<R extends NpmRepository>
    * sent for downstream consumption only!
    */
   protected void filterPackageVersionDist(final PackageRequest packageRequest, final PackageVersion packageVersion) {
-    packageVersion.setDistTarball(SimpleFormat
-        .format("%s/content/repositories/%s/%s/-/%s", BaseUrlHolder.get(), npmRepository.getId(),
-            packageVersion.getName(), packageVersion.getDistTarballFilename()));
+    if (npmRepository.adaptToFacet(GroupRepository.class) != null) {
+      packageVersion.setDistTarball(SimpleFormat
+          .format("%s/content/groups/%s/%s/-/%s", BaseUrlHolder.get(), npmRepository.getId(),
+              packageVersion.getName(), packageVersion.getDistTarballFilename()));
+    }
+    else {
+      packageVersion.setDistTarball(SimpleFormat
+          .format("%s/content/repositories/%s/%s/-/%s", BaseUrlHolder.get(), npmRepository.getId(),
+              packageVersion.getName(), packageVersion.getDistTarballFilename()));
+    }
     final String versionTarballShasum = PackageVersion.createShasumVersionKey(packageVersion.getVersion());
     if (packageVersion.getRoot().getProperties().containsKey(versionTarballShasum)) {
       // this publishes proper SHA1 for ALL packages already proxies by NX

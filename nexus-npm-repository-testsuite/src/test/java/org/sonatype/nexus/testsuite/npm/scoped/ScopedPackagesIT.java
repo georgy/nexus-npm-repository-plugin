@@ -101,7 +101,7 @@ public class ScopedPackagesIT
 
     assertThat(
         (String) registryPlainDoc.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist").get("tarball"),
-        endsWith("/nexus/content/repositories/npmgroup/testproject/-/testproject-0.0.1.tgz"));
+        endsWith("/nexus/content/groups/npmgroup/testproject/-/testproject-0.0.1.tgz"));
     assertThat(
         (String) registryScopedDoc.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist")
             .get("tarball"),
