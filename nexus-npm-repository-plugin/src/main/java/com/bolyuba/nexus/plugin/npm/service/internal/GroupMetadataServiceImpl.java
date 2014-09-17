@@ -50,22 +50,12 @@ public class GroupMetadataServiceImpl
   @Nullable
   @Override
   protected PackageRoot doGeneratePackageRoot(final PackageRequest request) throws IOException {
-    if (request.isScoped() && !npmGroupRepository.getId().equals(request.getScope())) {
-      final List<NpmRepository> members = getScopeMembers(request.getScope());
-      for (NpmRepository member : members) {
-        final PackageRoot root = member.getMetadataService().generatePackageRoot(request);
-        if (root != null) {
-          return root;
-        }
-      }
-    }
-    else {
-      final List<NpmRepository> members = getMembers();
-      for (NpmRepository member : members) {
-        final PackageRoot root = member.getMetadataService().generatePackageRoot(request);
-        if (root != null) {
-          return root;
-        }
+    final List<NpmRepository> members = (request.isScoped() &&
+        !npmGroupRepository.getId().equals(request.getScope())) ? getScopeMembers(request.getScope()) : getMembers();
+    for (NpmRepository member : members) {
+      final PackageRoot root = member.getMetadataService().generatePackageRoot(request);
+      if (root != null) {
+        return root;
       }
     }
     return null;
@@ -74,22 +64,12 @@ public class GroupMetadataServiceImpl
   @Nullable
   @Override
   protected PackageVersion doGeneratePackageVersion(final PackageRequest request) throws IOException {
-    if (request.isScoped() && !npmGroupRepository.getId().equals(request.getScope())) {
-      final List<NpmRepository> members = getScopeMembers(request.getScope());
-      for (NpmRepository member : members) {
-        final PackageVersion version = member.getMetadataService().generatePackageVersion(request);
-        if (version != null) {
-          return version;
-        }
-      }
-    }
-    else {
-      final List<NpmRepository> members = getMembers();
-      for (NpmRepository member : members) {
-        final PackageVersion version = member.getMetadataService().generatePackageVersion(request);
-        if (version != null) {
-          return version;
-        }
+    final List<NpmRepository> members = (request.isScoped() &&
+        !npmGroupRepository.getId().equals(request.getScope())) ? getScopeMembers(request.getScope()) : getMembers();
+    for (NpmRepository member : members) {
+      final PackageVersion version = member.getMetadataService().generatePackageVersion(request);
+      if (version != null) {
+        return version;
       }
     }
     return null;
