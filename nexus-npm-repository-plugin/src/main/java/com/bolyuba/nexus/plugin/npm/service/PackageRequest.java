@@ -167,7 +167,7 @@ public class PackageRequest
         if (explodedPath[0].startsWith("@")) {
           coordinates.type = Type.PACKAGE_ROOT;
           coordinates.scope = validate(explodedPath[0].substring(1), "Invalid package scope: ");
-          coordinates.packageName = validate(explodedPath[1], "Invalid package name: ");
+          coordinates.packageName = "@" + coordinates.scope + "/" + validate(explodedPath[1], "Invalid package name: ");
           return coordinates;
         } else {
           coordinates.type = Type.PACKAGE_VERSION;

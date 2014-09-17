@@ -93,8 +93,8 @@ public class ScopedPackagesIT
     final String testProjectPlainString = Files.toString(testprojectPlain, Charsets.UTF_8);
     final String testProjectScopedString = Files.toString(testprojectScoped, Charsets.UTF_8);
 
-    assertThat(testProjectPlainString, containsString("registry1"));
-    assertThat(testProjectScopedString, containsString("registry2"));
+    assertThat(testProjectPlainString, containsString("from registry1"));
+    assertThat(testProjectScopedString, containsString("from registry2"));
 
     JSONObject registryPlainDoc = new JSONObject(testProjectPlainString);
     JSONObject registryScopedDoc = new JSONObject(testProjectScopedString);
@@ -105,7 +105,7 @@ public class ScopedPackagesIT
     assertThat(
         (String) registryScopedDoc.getJSONObject("versions").getJSONObject("0.0.1").getJSONObject("dist")
             .get("tarball"),
-        endsWith("/nexus/content/repositories/registry2/testproject/-/testproject-0.0.1.tgz"));
+        endsWith("/nexus/content/repositories/registry2/@registry2/testproject/-/testproject-0.0.1.tgz"));
 
     // registry1 should been asked for metadata
     final List<String> registry1Paths = mockNpmRegistry1.getPathRecorder().getPathsForVerb("GET");
@@ -115,6 +115,6 @@ public class ScopedPackagesIT
     // registry2 should been asked for metadata
     final List<String> registry2Paths = mockNpmRegistry2.getPathRecorder().getPathsForVerb("GET");
     assertThat(registry2Paths, hasSize(1));
-    assertThat(registry2Paths, containsInAnyOrder("/testproject"));
+    assertThat(registry2Paths, containsInAnyOrder("/@registry2/testproject"));
   }
 }

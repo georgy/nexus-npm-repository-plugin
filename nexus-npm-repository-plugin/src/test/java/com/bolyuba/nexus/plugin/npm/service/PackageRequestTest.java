@@ -96,7 +96,7 @@ public class PackageRequestTest
     assertThat(packageRequest.isPackageVersion(), is(false));
     assertThat(packageRequest.isRegistrySpecial(), is(false));
 
-    assertThat(packageRequest.getName(), equalTo("package"));
+    assertThat(packageRequest.getName(), equalTo("@sonatype/package"));
     assertThat(packageRequest.getScope(), equalTo("sonatype"));
   }
 

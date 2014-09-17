@@ -1,6 +1,6 @@
 {
     "name": "testproject",
-    "description": "Test project - registry2",
+    "description": "Test project from registry2",
     "versions": {
         "0.0.1": {
             "name": "testproject",

@@ -1,9 +1,9 @@
 {
-    "name": "testproject",
-    "description": "Test project from registry1",
+    "name": "@registry2/testproject",
+    "description": "Test project from registry2",
     "versions": {
         "0.0.1": {
-            "name": "testproject",
+            "name": "@registry2/testproject",
             "version": "0.0.1",
             "description": "Test project",
             "dist": {

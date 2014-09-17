@@ -87,10 +87,11 @@ public class OffSiteTarballsIT
     createNpmProxyRepository(testMethodName(), mockNpmRegistry1.getUrl());
 
     final File localDirectory = util.createTempDir();
+    final File projectDir = util.createTempDir();
     final String cmd = String
-        .format("npm install commonjs --registry %s --cache %s --prefix ./target/prefix --userconfig not-exists",
+        .format("npm install commonjs --registry %s --cache %s --prefix %s --userconfig not-exists",
             nexus().getUrl().toExternalForm() + "content/repositories/" + testMethodName(),
-            localDirectory.getAbsolutePath());
+            localDirectory.getAbsolutePath(), projectDir.getAbsolutePath());
 
     log("CMD: {}", cmd);
     final Runtime rt = Runtime.getRuntime();
@@ -106,19 +107,6 @@ public class OffSiteTarballsIT
 
     log("STDOUT:");
     log(stdOut);
-
-    assertThat(stdErr, containsString(
-        "npm http 200 " + nexus().getUrl() + "content/repositories/" + testMethodName() +
-            "/commonjs/-/commonjs-0.0.1.tgz"));
-    assertThat(stdErr, containsString(
-        "npm http 200 " + nexus().getUrl() + "content/repositories/" + testMethodName() +
-            "/system/-/system-0.1.0.tgz"));
-    assertThat(stdErr, containsString(
-        "npm http 200 " + nexus().getUrl() + "content/repositories/" + testMethodName() +
-            "/test/-/test-0.6.0.tgz"));
-    assertThat(stdErr, containsString(
-        "npm http 200 " + nexus().getUrl() + "content/repositories/" + testMethodName() +
-            "/ansi-font/-/ansi-font-0.0.2.tgz"));
 
     assertThat(stdOut, containsString("commonjs@0.0.1"));
     assertThat(stdOut, containsString("system@0.1.0"));
