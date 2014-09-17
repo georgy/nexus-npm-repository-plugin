@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
+import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 
 import com.bolyuba.nexus.plugin.npm.service.internal.PackageRootIterator;
@@ -13,6 +14,11 @@ import com.bolyuba.nexus.plugin.npm.service.internal.PackageRootIterator;
  */
 public interface Generator
 {
+  /**
+   * Returns {@code true} if request or some setting is not disabling the NPM metadata service for given request.
+   */
+  boolean isNpmMetadataServiced(ResourceStoreRequest request);
+
   /**
    * Produces "raw" downstream content of registry root. Meant for downstream consumption, as package JSON document is
    * properly altered (ie. tarball URLs).

@@ -121,6 +121,10 @@ public class DefaultNpmHostedRepository
       throws ItemNotFoundException, LocalStorageException
   {
     try {
+      if (!getMetadataService().isNpmMetadataServiced(storeRequest)) {
+        // shut down NPM MD+tarball service completely
+        return delegateDoRetrieveLocalItem(storeRequest);
+      }
       PackageRequest packageRequest = new PackageRequest(storeRequest);
       if (packageRequest.isMetadata()) {
         ContentLocator contentLocator;

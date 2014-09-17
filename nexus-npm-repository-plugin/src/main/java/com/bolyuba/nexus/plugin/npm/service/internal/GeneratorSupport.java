@@ -4,7 +4,9 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
+import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.ContentLocator;
+import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.web.BaseUrlHolder;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
@@ -39,6 +41,17 @@ public abstract class GeneratorSupport<R extends NpmRepository>
 
   protected R getNpmRepository() {
     return npmRepository;
+  }
+
+  @Override
+  public boolean isNpmMetadataServiced(final ResourceStoreRequest request) {
+    if (RepositoryItemUid.PATH_ROOT.equals(request.getRequestPath()) // root
+        || (request.isExternal() && request.getRequestUrl().contains("/service/local/") && request.getRequestUrl().contains("/content/")) // UI Browse Storage
+        || request.getRequestContext().containsKey(NpmRepository.NPM_METADATA_NO_SERVICE, false)) {
+      // shut down NPM MD+tarball service completely
+      return false;
+    }
+    return true;
   }
 
   @Override

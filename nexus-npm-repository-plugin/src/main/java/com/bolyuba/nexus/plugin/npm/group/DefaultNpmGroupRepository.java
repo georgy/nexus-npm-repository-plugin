@@ -109,8 +109,7 @@ public class DefaultNpmGroupRepository
   protected AbstractStorageItem doRetrieveLocalItem(ResourceStoreRequest storeRequest)
       throws ItemNotFoundException, LocalStorageException
   {
-    if (RepositoryItemUid.PATH_ROOT.equals(storeRequest.getRequestPath())
-        || storeRequest.getRequestContext().containsKey(NpmRepository.NPM_METADATA_NO_SERVICE, false)) {
+    if (!getMetadataService().isNpmMetadataServiced(storeRequest)) {
       // shut down NPM MD+tarball service completely
       return super.doRetrieveLocalItem(storeRequest);
     }
