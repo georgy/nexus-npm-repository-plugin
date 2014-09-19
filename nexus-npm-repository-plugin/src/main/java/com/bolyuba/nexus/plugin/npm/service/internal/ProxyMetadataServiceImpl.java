@@ -16,6 +16,7 @@ import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.service.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballRequest;
 import com.google.common.base.Function;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -144,8 +145,8 @@ public class ProxyMetadataServiceImpl
               log.info("NPM Registry root updated {} packages for {}", count, getNpmRepository().getId());
             }
             catch (Exception e) {
-              // TODO: salvage as much as possible? As store commits per document anyway
               log.warn("NPM Registry root update failed for {}", getNpmRepository().getId(), e);
+              throw Throwables.propagate(e);
             }
             if (registryRoot == null) {
               // create a fluke package root

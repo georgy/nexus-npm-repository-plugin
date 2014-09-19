@@ -20,6 +20,7 @@ import com.bolyuba.nexus.plugin.npm.service.PackageRoot;
 import com.bolyuba.nexus.plugin.npm.service.internal.MetadataStore;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
@@ -215,16 +216,18 @@ public class OrientMetadataStore
       db.declareIntent(new OIntentMassiveInsert());
       try {
         int count = 0;
-        while (packageRootIterator.hasNext()) {
-          final PackageRoot packageRoot = packageRootIterator.next();
-          db.begin();
-          try {
+        db.begin();
+        try {
+          while (packageRootIterator.hasNext()) {
+            final PackageRoot packageRoot = packageRootIterator.next();
             doUpdatePackage(db, entityHandler, repository, packageRoot);
+            count++;
           }
-          finally {
-            db.commit();
-          }
-          count++;
+          db.commit();
+        }
+        catch (Exception e) {
+          db.rollback();
+          throw Throwables.propagate(e);
         }
         return count;
       }
