@@ -145,7 +145,7 @@ public class ProxyMetadataServiceImpl
               log.info("NPM Registry root updated {} packages for {}", count, getNpmRepository().getId());
             }
             catch (Exception e) {
-              log.warn("NPM Registry root update failed for {}", getNpmRepository().getId(), e);
+              log.warn("NPM Registry root update failed for {}", getNpmRepository().getId(), e.toString());
               throw Throwables.propagate(e);
             }
             if (registryRoot == null) {
