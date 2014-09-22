@@ -27,8 +27,6 @@ public class NpmContentClass
 
   public static final String ID = "npm";
 
-  public static final String NAME = "NPM";
-
   @Override
   public String getId() {
     return ID;
@@ -36,6 +34,6 @@ public class NpmContentClass
 
   @Override
   public String getName() {
-    return NAME;
+    return ID;
   }
 }
