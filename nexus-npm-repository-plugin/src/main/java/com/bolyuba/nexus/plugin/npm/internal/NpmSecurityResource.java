@@ -10,19 +10,24 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Apache License Version 2.0 for the specific language governing permissions and limitations there under.
  */
+
 package com.bolyuba.nexus.plugin.npm.internal;
 
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.sonatype.security.realms.tools.AbstractStaticSecurityResource;
+import org.sonatype.nexus.plugin.support.StaticSecurityResourceSupport;
+
+import com.bolyuba.nexus.plugin.npm.NpmPlugin;
 
 @Named
 @Singleton
-public class NpmSecurityResource extends AbstractStaticSecurityResource
+public class NpmSecurityResource
+    extends StaticSecurityResourceSupport
 {
-  @Override
-  protected String getResourcePath() {
-    return "/META-INF/nexus-npm-repository-plugin-security.xml";
+  @Inject
+  public NpmSecurityResource(final NpmPlugin plugin) {
+    super(plugin);
   }
 }
