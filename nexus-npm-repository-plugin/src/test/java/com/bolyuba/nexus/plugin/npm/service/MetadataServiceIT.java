@@ -207,25 +207,19 @@ public class MetadataServiceIT
   @Test
   public void registryRootRoundtrip() throws Exception {
     final ContentLocator input = new PreparedContentLocator(
-        new GZIPInputStream(new FileInputStream(util.resolveFile("src/test/npm/ROOT_all.json.gz"))),
+        new FileInputStream(util.resolveFile("src/test/npm/ROOT_small.json")),
         NpmRepository.JSON_MIME_TYPE, -1);
+
     // this is "illegal" case using internal stuff, but is for testing only
     metadataStore
         .updatePackages(npmProxyRepository, metadataParser.parseRegistryRoot(npmProxyRepository.getId(), input));
 
     log("Splice done");
     // we pushed all into DB, now query
-    log(metadataStore.listPackageNames(npmProxyRepository).size());
+    assertThat(metadataStore.listPackageNames(npmProxyRepository), hasSize(4));
 
     final PackageRoot commonjs = metadataStore.getPackageByName(npmProxyRepository, "commonjs");
-    log(commonjs.getName() + " || " + commonjs.getVersions().keySet() + "unpublished=" + commonjs.isUnpublished() +
-        " incomplete=" + commonjs.isIncomplete());
-
-    final ContentLocator output = npmProxyRepository.getMetadataService().produceRegistryRoot(
-        new PackageRequest(new ResourceStoreRequest("/", true, false)));
-    try (InputStream is = output.getContent()) {
-      java.nio.file.Files.copy(is, new File(tmpDir, "root.json").toPath(), StandardCopyOption.REPLACE_EXISTING);
-    }
+    assertThat(commonjs, notNullValue());
   }
 
   @Test
