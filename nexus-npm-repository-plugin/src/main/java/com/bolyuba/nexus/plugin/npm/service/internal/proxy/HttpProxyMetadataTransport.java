@@ -9,6 +9,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.sonatype.nexus.apachehttpclient.Hc4Provider;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.FileContentLocator;
 import org.sonatype.nexus.proxy.item.PreparedContentLocator;
@@ -25,6 +26,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +73,9 @@ public class HttpProxyMetadataTransport
           buildUri(npmProxyRepository, "-/all")); // TODO: this in NPM specific, might try both root and NPM api
       outboundRequestLog.debug("{} - NPM GET {}", npmProxyRepository.getId(), get.getURI());
       get.addHeader("accept", NpmRepository.JSON_MIME_TYPE);
-      final HttpResponse httpResponse = httpClient.execute(get);
+      final HttpClientContext context = new HttpClientContext();
+      context.setAttribute(Hc4Provider.HTTP_CTX_KEY_REPOSITORY, npmProxyRepository);
+      final HttpResponse httpResponse = httpClient.execute(get, context);
       try {
         // TODO: during devel INFO, should be DEBUG
         outboundRequestLog.info("{} - NPM GET {} - {}", npmProxyRepository.getId(), get.getURI(),
@@ -84,7 +88,9 @@ public class HttpProxyMetadataTransport
             httpResponse.getEntity().writeTo(bos);
             bos.flush();
           }
-          final FileContentLocator cl = new FileContentLocator(tempFile, NpmRepository.JSON_MIME_TYPE, true);
+          // TODO: during devel INFO, should be DEBUG
+          log.info("Registry root written out to file {}, size {} bytes", tempFile.getAbsolutePath(), tempFile.length());
+          final FileContentLocator cl = new FileContentLocator(tempFile, NpmRepository.JSON_MIME_TYPE, false); // TODO: true);
           return metadataParser.parseRegistryRoot(npmProxyRepository.getId(), cl);
         }
         throw new IOException("Unexpected response from registry root " + httpResponse.getStatusLine());
@@ -116,7 +122,9 @@ public class HttpProxyMetadataTransport
       if (expired != null && expired.getProperties().containsKey(PROP_ETAG)) {
         get.addHeader("if-none-match", expired.getProperties().get(PROP_ETAG));
       }
-      final HttpResponse httpResponse = httpClient.execute(get);
+      final HttpClientContext context = new HttpClientContext();
+      context.setAttribute(Hc4Provider.HTTP_CTX_KEY_REPOSITORY, npmProxyRepository);
+      final HttpResponse httpResponse = httpClient.execute(get, context);
       try {
         // TODO: during devel INFO, should be DEBUG
         outboundRequestLog.info("{} - NPM GET {} - {}", npmProxyRepository.getId(), get.getURI(),
