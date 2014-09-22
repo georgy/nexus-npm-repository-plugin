@@ -88,9 +88,8 @@ public class HttpProxyMetadataTransport
             httpResponse.getEntity().writeTo(bos);
             bos.flush();
           }
-          // TODO: during devel INFO, should be DEBUG
-          log.info("Registry root written out to file {}, size {} bytes", tempFile.getAbsolutePath(), tempFile.length());
-          final FileContentLocator cl = new FileContentLocator(tempFile, NpmRepository.JSON_MIME_TYPE, false); // TODO: true);
+          log.debug("Registry root written out to file {}, size {} bytes", tempFile.getAbsolutePath(), tempFile.length());
+          final FileContentLocator cl = new FileContentLocator(tempFile, NpmRepository.JSON_MIME_TYPE, true);
           return metadataParser.parseRegistryRoot(npmProxyRepository.getId(), cl);
         }
         throw new IOException("Unexpected response from registry root " + httpResponse.getStatusLine());
