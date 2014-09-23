@@ -40,7 +40,6 @@ import com.orientechnologies.orient.core.db.document.ODatabaseDocumentPool;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.id.ORecordId;
-import com.orientechnologies.orient.core.intent.OIntentMassiveInsert;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.query.OSQLSynchQuery;
@@ -225,27 +224,21 @@ public class OrientMetadataStore
     checkNotNull(packageRootIterator);
     final EntityHandler<PackageRoot> entityHandler = getHandlerFor(PackageRoot.class);
     try (ODatabaseDocumentTx db = db()) {
-      db.declareIntent(new OIntentMassiveInsert());
+      int count = 0;
       try {
-        int count = 0;
-        db.begin();
-        try {
-          while (packageRootIterator.hasNext()) {
-            final PackageRoot packageRoot = packageRootIterator.next();
-            doUpdatePackage(db, entityHandler, repository, packageRoot);
-            count++;
-          }
+        while (packageRootIterator.hasNext()) {
+          final PackageRoot packageRoot = packageRootIterator.next();
+          db.begin();
+          doUpdatePackage(db, entityHandler, repository, packageRoot);
           db.commit();
+          count++;
         }
-        catch (Exception e) {
-          db.rollback();
-          throw Throwables.propagate(e);
-        }
-        return count;
       }
-      finally {
-        db.declareIntent(null);
+      catch (Exception e) {
+        db.rollback();
+        throw Throwables.propagate(e);
       }
+      return count;
     }
   }
 
