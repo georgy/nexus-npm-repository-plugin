@@ -89,8 +89,7 @@ public class HttpProxyMetadataTransport
       context.setAttribute(Hc4Provider.HTTP_CTX_KEY_REPOSITORY, npmProxyRepository);
       final HttpResponse httpResponse = httpClient.execute(get, context);
       try {
-        // TODO: during devel INFO, should be DEBUG
-        outboundRequestLog.info("{} - NPM GET {} - {}", npmProxyRepository.getId(), get.getURI(),
+        outboundRequestLog.debug("{} - NPM GET {} - {}", npmProxyRepository.getId(), get.getURI(),
             httpResponse.getStatusLine());
         if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
           final File tempFile = File
@@ -137,8 +136,7 @@ public class HttpProxyMetadataTransport
       context.setAttribute(Hc4Provider.HTTP_CTX_KEY_REPOSITORY, npmProxyRepository);
       final HttpResponse httpResponse = httpClient.execute(get, context);
       try {
-        // TODO: during devel INFO, should be DEBUG
-        outboundRequestLog.info("{} - NPM GET {} - {}", npmProxyRepository.getId(), get.getURI(),
+        outboundRequestLog.debug("{} - NPM GET {} - {}", npmProxyRepository.getId(), get.getURI(),
             httpResponse.getStatusLine());
         if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_MODIFIED) {
           return expired;

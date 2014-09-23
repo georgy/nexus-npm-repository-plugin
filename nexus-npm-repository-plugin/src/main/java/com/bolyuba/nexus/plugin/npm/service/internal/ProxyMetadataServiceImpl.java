@@ -146,18 +146,18 @@ public class ProxyMetadataServiceImpl
           if (registryRoot == null || isExpired(registryRoot, now)) {
             // fetch all from remote, this takes some time (currently 40MB JSON)
             if (registryRoot == null) {
-              log.info("Initial NPM Registry root update for {}", getNpmRepository().getId());
+              log.info("Registry root {} initial fetch", getNpmRepository().getId());
             }
             else {
-              log.info("Expired NPM Registry root update for {}", getNpmRepository().getId());
+              log.info("Registry root {} expired", getNpmRepository().getId());
             }
             try (final PackageRootIterator packageRootIterator = proxyMetadataTransport
                 .fetchRegistryRoot(getNpmRepository())) {
               int count = metadataStore.updatePackages(getNpmRepository(), packageRootIterator);
-              log.info("NPM Registry root updated {} packages for {}", count, getNpmRepository().getId());
+              log.info("Registry root {} update successful ({} packages)", getNpmRepository().getId(), count);
             }
             catch (Exception e) {
-              log.warn("NPM Registry root update failed for {}", getNpmRepository().getId(), e.toString());
+              log.warn("Registry root {} update failed: ", getNpmRepository().getId(), e.toString());
               throw Throwables.propagate(e);
             }
             if (registryRoot == null) {
