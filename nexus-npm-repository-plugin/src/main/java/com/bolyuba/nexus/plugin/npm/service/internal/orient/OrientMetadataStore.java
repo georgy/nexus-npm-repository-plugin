@@ -62,12 +62,22 @@ public class OrientMetadataStore
 
   private final Map<Class<?>, EntityHandler<?>> entityHandlers;
 
+  private final int poolMinSize;
+
+  private final int poolMaxSize;
+
   private ODatabaseDocumentPool pool;
 
   @Inject
-  public OrientMetadataStore(final ApplicationDirectories applicationDirectories) {
+  public OrientMetadataStore(final ApplicationDirectories applicationDirectories,
+                             final @Named("${nexus.npm.poolMinSize:-1}") int poolMinSize,
+                             final @Named("${nexus.npm.poolMaxSize:-100}") int poolMaxSize) {
+    checkArgument(poolMinSize >= 1, "Pool min size must be greater or equal to 1");
+    checkArgument(poolMaxSize >= poolMinSize, "Pool max size must be greater or equal to poolMinSize (%s)", poolMinSize);
     this.databaseDirectory = applicationDirectories.getWorkDirectory(DB_LOCATION);
     this.entityHandlers = Maps.newHashMap();
+    this.poolMinSize = poolMinSize;
+    this.poolMaxSize = poolMaxSize;
   }
 
   // Lifecycle
@@ -91,8 +101,8 @@ public class OrientMetadataStore
 
     pool = new ODatabaseDocumentPool(dbUri, "admin", "admin");
     pool.setName("npm-database-pool");
-    pool.setup(1, 10);
-    log.info("Created pool: {}", pool);
+    pool.setup(poolMinSize, poolMaxSize);
+    log.info("Created pool (minSize={}, maxSize={}): {}", poolMinSize, poolMaxSize, pool);
   }
 
   @Override
