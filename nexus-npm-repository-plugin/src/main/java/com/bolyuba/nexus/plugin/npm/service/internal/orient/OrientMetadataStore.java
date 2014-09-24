@@ -71,7 +71,7 @@ public class OrientMetadataStore
   @Inject
   public OrientMetadataStore(final ApplicationDirectories applicationDirectories,
                              final @Named("${nexus.npm.poolMinSize:-1}") int poolMinSize,
-                             final @Named("${nexus.npm.poolMaxSize:-50}") int poolMaxSize) {
+                             final @Named("${nexus.npm.poolMaxSize:-100}") int poolMaxSize) {
     checkArgument(poolMinSize >= 1, "Pool min size must be greater or equal to 1");
     checkArgument(poolMaxSize >= poolMinSize, "Pool max size must be greater or equal to poolMinSize (%s)", poolMinSize);
     this.databaseDirectory = applicationDirectories.getWorkDirectory(DB_LOCATION);
