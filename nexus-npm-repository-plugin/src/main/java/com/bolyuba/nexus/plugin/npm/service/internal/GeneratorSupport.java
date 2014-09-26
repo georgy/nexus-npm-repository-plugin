@@ -122,6 +122,9 @@ public abstract class GeneratorSupport<R extends NpmRepository>
     checkArgument(request.isPackageVersion(), "Package version request expected, but got %s",
         request.getPath());
     final PackageVersion version = doGeneratePackageVersion(request);
+    if (version == null) {
+      return null;
+    }
     filterPackageVersionDist(request, version);
     return version;
   }
