@@ -28,6 +28,7 @@ import org.junit.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 
 /**
  * IT for performing "npm publish".
@@ -50,6 +51,10 @@ public class PublishIT
         new File(targetDir, packageJson.getName()), Charsets.UTF_8);
   }
 
+  /**
+   * Test exercise the "npm publish" operation with respect the "allow redeploy" setting of the hosted
+   * repository.
+   */
   @Test
   public void npmCliPublish() throws Exception {
     // create a NPM hosted repository that accept packages (use defaults)
@@ -66,41 +71,7 @@ public class PublishIT
             npmrc.getAbsolutePath(),
             projectDir.getAbsolutePath());
 
-    log("CMD: {}", cmd);
-    final Runtime rt = Runtime.getRuntime();
-    final Process npm = rt.exec(cmd);
-    final int exitCode = npm.waitFor();
-
-    // Really no clue why npm CLI uses both for non-error output
-    final String stdOut = CharStreams.toString(new InputStreamReader(npm.getInputStream(), Charsets.UTF_8));
-    final String stdErr = CharStreams.toString(new InputStreamReader(npm.getErrorStream(), Charsets.UTF_8));
-
-    log("STDRR:");
-    log(stdErr);
-
-    log("STDOUT:");
-    log(stdOut);
-
-    assertThat(exitCode, equalTo(0));
-    assertThat(stdOut, containsString("+ "+testMethodName()+"@0.0.1"));
-  }
-
-  @Test
-  public void npmCliRePublish() throws Exception {
-    // create a NPM hosted repository that accept packages (use defaults)
-    final NpmHostedRepository privateRegistry = createNpmHostedRepository(testMethodName());
-
-    final File localDirectory = util.createTempDir();
-    final File projectDir = util.createTempDir();
-    copyPackageJson(testMethodName(), "0.0.1", privateRegistry.contentUri(), projectDir);
-    final File npmrc = testData().resolveFile(".npmrc");
-    final String cmd = String
-        .format("npm --registry %s --cache %s --userconfig %s publish %s",
-            privateRegistry.contentUri(),
-            localDirectory.getAbsolutePath(),
-            npmrc.getAbsolutePath(),
-            projectDir.getAbsolutePath());
-
+    // 1st run: simply publish, should be OK
     {
       log("1st run: CMD: {}", cmd);
       final Runtime rt = Runtime.getRuntime();
@@ -120,6 +91,8 @@ public class PublishIT
       assertThat(exitCode, equalTo(0)); // exited OK
       assertThat(stdOut, containsString("+ "+testMethodName()+"@0.0.1")); // published
     }
+
+    // 2nd run: re-publishing same version, should fail (default is not allow redeploy)
     {
       log("2nd run: CMD: {}", cmd);
       final Runtime rt = Runtime.getRuntime();
@@ -136,13 +109,14 @@ public class PublishIT
       log("STDOUT:");
       log(stdOut);
 
-      assertThat(exitCode, equalTo(1)); // exited with error
+      assertThat(exitCode, not(equalTo(0))); // exited with error
       assertThat(stdErr, containsString("does not allow updating artifacts")); // error msg
     }
 
-    // default is NOT allowRedeploy
+    // repo config change, allow redeploy
     privateRegistry.allowRedeploy().save();
 
+    // 3rd run: re-publishing same version, should be OK, we just allowed that
     {
       log("3rd run: CMD: {}", cmd);
       final Runtime rt = Runtime.getRuntime();
