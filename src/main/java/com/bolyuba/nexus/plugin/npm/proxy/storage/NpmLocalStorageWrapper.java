@@ -3,7 +3,6 @@ package com.bolyuba.nexus.plugin.npm.proxy.storage;
 import com.bolyuba.nexus.plugin.npm.proxy.NpmUtility;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.LocalStorageException;
-import org.sonatype.nexus.proxy.ResourceStoreIteratorRequest;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
@@ -116,11 +115,6 @@ public class NpmLocalStorageWrapper
     @Override
     public Collection<StorageItem> listItems(Repository repository, ResourceStoreRequest request) throws ItemNotFoundException, LocalStorageException {
         return realStorage.listItems(repository, request);
-    }
-
-    @Override
-    public Iterator<StorageItem> iterateItems(Repository repository, ResourceStoreIteratorRequest request) throws ItemNotFoundException, LocalStorageException {
-        return realStorage.iterateItems(repository, request);
     }
 
     @Override
