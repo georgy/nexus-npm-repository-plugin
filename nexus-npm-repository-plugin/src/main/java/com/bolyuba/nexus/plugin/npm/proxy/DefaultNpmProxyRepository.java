@@ -247,6 +247,10 @@ public class DefaultNpmProxyRepository
     final DefaultStorageFileItem result = new DefaultStorageFileItem(this, storeRequest, true, true, contentLocator);
     result.setRemoteChecked(Long.MAX_VALUE); // do not handle it as expired at any cost
     result.setExpired(false); // do not handle it as expired at any cost
+    if (proxyCacheInvalidationToken != null) {
+      result.getRepositoryItemAttributes()
+          .put(PROXY_CACHE_INVALIDATION_TOKEN_KEY, proxyCacheInvalidationToken); // always up to date
+    }
     return result;
   }
 
