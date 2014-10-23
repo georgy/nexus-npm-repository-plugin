@@ -209,7 +209,9 @@ public class MetadataParser
         parser.getCurrentToken(), JsonToken.START_OBJECT);
     while (parser.nextToken() == JsonToken.FIELD_NAME) {
       final NpmBlob attachment = parsePackageAttachment(parser);
-      attachments.put(attachment.getName(), attachment);
+      if (attachment != null) {
+        attachments.put(attachment.getName(), attachment);
+      }
     }
   }
 
@@ -237,6 +239,9 @@ public class MetadataParser
         // TODO: can Jackson stream binary? I doubt...
         Files.write(parser.getBinaryValue(), file);
       }
+    }
+    if (file == null) {
+      return null;
     }
     checkArgument(file.length() == length, "Invalid content length!");
     return new NpmBlob(file, contentType, name, sha1hash);
