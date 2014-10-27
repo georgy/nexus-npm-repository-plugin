@@ -215,12 +215,20 @@ public class MetadataParser
     }
   }
 
-  private NpmBlob parsePackageAttachment(final JsonParser parser) throws IOException {
+  /**
+   * Parses CouchDB attachment, if any, and returns it. Returns {@code null} if attachment is
+   * incomplete or "stub". Still, parser will consume whole attachment object and will be located
+   * on next token.
+   *
+   * @see <a href="http://wiki.apache.org/couchdb/HTTP_Document_API#Inline_Attachments">Attachments</a>
+   */
+  private @Nullable NpmBlob parsePackageAttachment(final JsonParser parser) throws IOException {
     String name = parser.getCurrentName();
     String contentType = "application/octet-stream";
     long length = ContentLocator.UNKNOWN_LENGTH;
     String sha1hash = null;
     File file = null;
+    boolean stub = false;
     checkArgument(parser.nextToken() == JsonToken.START_OBJECT, "Unexpected input %s, expected %s",
         parser.getCurrentToken(), JsonToken.START_OBJECT);
     while (parser.nextToken() == JsonToken.FIELD_NAME) {
@@ -228,6 +236,9 @@ public class MetadataParser
       parser.nextValue();
       if ("content_type".equals(fieldName)) {
         contentType = parser.getValueAsString();
+      }
+      else if ("stub".equals(fieldName)) {
+        stub = parser.getValueAsBoolean();
       }
       else if ("length".equals(fieldName)) {
         length = parser.getValueAsLong();
@@ -240,7 +251,8 @@ public class MetadataParser
         Files.write(parser.getBinaryValue(), file);
       }
     }
-    if (file == null) {
+    if (stub || file == null) {
+      // This happens with "stub" attachments, so just return null
       return null;
     }
     checkArgument(file.length() == length, "Invalid content length!");
