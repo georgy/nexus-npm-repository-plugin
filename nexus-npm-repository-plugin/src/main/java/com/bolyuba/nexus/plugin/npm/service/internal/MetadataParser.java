@@ -202,8 +202,9 @@ public class MetadataParser
     return result;
   }
 
-  private void parsePackageAttachments(final JsonParser parser,
-                                       final Map<String, NpmBlob> attachments) throws IOException
+  @VisibleForTesting
+  void parsePackageAttachments(final JsonParser parser,
+                               final Map<String, NpmBlob> attachments) throws IOException
   {
     checkArgument(parser.nextToken() == JsonToken.START_OBJECT, "Unexpected input %s, expected %s",
         parser.getCurrentToken(), JsonToken.START_OBJECT);
@@ -255,7 +256,9 @@ public class MetadataParser
       // This happens with "stub" attachments, so just return null
       return null;
     }
-    checkArgument(file.length() == length, "Invalid content length!");
+    if (length != ContentLocator.UNKNOWN_LENGTH) {
+      checkArgument(file.length() == length, "Invalid content length!");
+    }
     return new NpmBlob(file, contentType, name, sha1hash);
   }
 
