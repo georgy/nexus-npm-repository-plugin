@@ -36,6 +36,7 @@ import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
+import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractProxyRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
@@ -53,6 +54,7 @@ import com.bolyuba.nexus.plugin.npm.service.PackageVersion;
 import com.bolyuba.nexus.plugin.npm.service.ProxyMetadataService;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballRequest;
 import com.bolyuba.nexus.plugin.npm.service.tarball.TarballSource;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.sisu.Description;
@@ -241,12 +243,14 @@ public class DefaultNpmProxyRepository
    * proxy logic of core kick in redoing all the generation again. To core, this file item looks like coming
    * from local store (cache), hence "aging" will be applied.
    */
-  private DefaultStorageFileItem createStorageFileItem(final ResourceStoreRequest storeRequest,
-                                                       final ContentLocator contentLocator)
+  @VisibleForTesting
+  DefaultStorageFileItem createStorageFileItem(final ResourceStoreRequest storeRequest,
+                                               final ContentLocator contentLocator)
   {
     final DefaultStorageFileItem result = new DefaultStorageFileItem(this, storeRequest, true, true, contentLocator);
     result.setRemoteChecked(Long.MAX_VALUE); // do not handle it as expired at any cost
     result.setExpired(false); // do not handle it as expired at any cost
+    result.getItemContext().put(NpmRepository.NPM_METADATA_SERVICED, Boolean.TRUE); // mark item as NPM md serviced
     return result;
   }
 
@@ -364,5 +368,14 @@ public class DefaultNpmProxyRepository
     finally {
       itemUidLock.unlock();
     }
+  }
+
+  @Override
+  protected boolean isOld(int maxAge, StorageItem item, boolean shouldCalculate) {
+    if (item.getItemContext().containsKey(NpmRepository.NPM_METADATA_SERVICED)) {
+      // this item is serviced by NPM metadata service, should NEVER be handled as expired
+      return false;
+    }
+    return super.isOld(maxAge, item, shouldCalculate);
   }
 }
