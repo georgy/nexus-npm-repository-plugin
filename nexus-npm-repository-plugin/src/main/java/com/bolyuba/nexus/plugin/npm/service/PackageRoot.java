@@ -68,7 +68,7 @@ public class PackageRoot
    * <li>scan all versions, and any version not found in time map, add with "now"</li>
    * </ul>
    * Note: this method modifies the document, hence, should be used ONLY when it's okay to do so, as in hosted
-   * repositories. Proxied documents should be stored as-is, hence, shoild NOT be stored once modified with this
+   * repositories. Proxied documents should be stored as-is, hence, should NOT be stored once modified with this
    * method!
    */
   public void maintainTime() {
@@ -76,8 +76,8 @@ public class PackageRoot
       getRaw().put("time", Maps.newHashMap());
     }
     final Map<String, String> time = (Map<String, String>) getRaw().get("time");
-    final String now = new DateTime(DateTimeZone.UTC)
-        .toString(); // TZ must be UTC! Hence, Goodies' ISO8601 does not work
+    final String now =
+        new DateTime(DateTimeZone.UTC).toString(); // TZ must be UTC! Hence, Goodies' ISO8601 does not work
     if (!time.containsKey("created")) {
       time.put("created", now);
     }
@@ -136,8 +136,7 @@ public class PackageRoot
 
   /**
    * Overlays given package root onto this package root, probably changing the mappings, or merging some maps. It also
-   * maintains inner state of this document (wrappedVersions and attachments) also, and finally updates the "time" of
-   * it too.
+   * maintains inner state of this document (wrappedVersions and attachments).
    */
   public void overlay(final PackageRoot packageRoot) {
     checkArgument(getComponentId().equals(packageRoot.getComponentId()), "Cannot overlay different package roots!");

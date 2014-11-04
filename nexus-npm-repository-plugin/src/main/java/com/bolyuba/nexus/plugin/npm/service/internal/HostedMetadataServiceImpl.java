@@ -52,18 +52,22 @@ public class HostedMetadataServiceImpl
     return packageRoot;
   }
 
+  /**
+   * Note: this happens within exclusive lock.
+   */
   @Override
   public PackageRoot consumePackageRoot(final PackageRoot packageRoot)
       throws IOException
   {
-    PackageRoot original = metadataStore.getPackageByName(getNpmRepository(), packageRoot.getName());
-    if (original != null) {
-      original.overlay(packageRoot);
-    } else {
-      original = packageRoot;
+    PackageRoot existing = metadataStore.getPackageByName(getNpmRepository(), packageRoot.getName());
+    if (existing != null) {
+      existing.overlay(packageRoot);
     }
-    original.maintainTime();
-    return metadataStore.updatePackage(getNpmRepository(), original);
+    else {
+      existing = packageRoot;
+    }
+    existing.maintainTime(); // maintain time, as we are hosted repo service
+    return metadataStore.updatePackage(getNpmRepository(), existing);
   }
 
   @Nullable
