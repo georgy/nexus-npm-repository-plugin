@@ -15,10 +15,8 @@ package com.bolyuba.nexus.plugin.npm.service;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
+import java.util.Map;
 
 import org.sonatype.nexus.apachehttpclient.Hc4Provider;
 import org.sonatype.nexus.configuration.application.ApplicationDirectories;
@@ -76,6 +74,8 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -298,6 +298,70 @@ public class MetadataServiceIT
         ByteSource.wrap(contentLocator.getByteArray()).asCharSource(Charsets.UTF_8).read());
 
     JSONAssert.assertEquals(onDisk, onStore, false);
+  }
+
+  /**
+   * Simple smoke test that pushes _real_ NPM registry packages and then queries them, like in a hosted repository.
+   * Checks are made is time object properly maintained or not.
+   */
+  @Test
+  public void hostedPackageTimeMaintenance() throws Exception {
+    // deploy 0.0.1
+    {
+      final File jsonFile = util.resolveFile("src/test/npm/ROOT_commonjs_v1.json");
+      final ContentLocator input = new PreparedContentLocator(
+          new FileInputStream(jsonFile),
+          NpmRepository.JSON_MIME_TYPE, -1);
+      final PackageRequest request = new PackageRequest(new ResourceStoreRequest("/commonjs"));
+
+      npmHostedRepository.getMetadataService()
+          .consumePackageRoot(npmHostedRepository.getMetadataService().parsePackageRoot(
+              request, input));
+    }
+
+    String created; // carries initial deploy
+
+    // grab deployed one and check
+    {
+      final PackageRoot commonjs = metadataStore.getPackageByName(npmHostedRepository, "commonjs");
+      assertThat(commonjs.getRaw(), hasKey("time"));
+      final Map<String, String> time = (Map<String, String>) commonjs.getRaw().get("time");
+      assertThat(time.entrySet(), hasSize(3));
+      created = time.get("created");
+      assertThat(created, notNullValue());
+      assertThat(time, hasEntry("created", created));
+      assertThat(time, hasEntry("modified", created));
+      assertThat(time, hasEntry("0.0.1", created));
+    }
+
+    // deploy 0.0.2
+    {
+      final File jsonFile = util.resolveFile("src/test/npm/ROOT_commonjs_v2.json");
+      final ContentLocator input = new PreparedContentLocator(
+          new FileInputStream(jsonFile),
+          NpmRepository.JSON_MIME_TYPE, -1);
+      final PackageRequest request = new PackageRequest(new ResourceStoreRequest("/commonjs"));
+
+      npmHostedRepository.getMetadataService()
+          .consumePackageRoot(npmHostedRepository.getMetadataService().parsePackageRoot(
+              request, input));
+    }
+
+    String modified; // carries always latest deploy
+
+    // grab deployed one and check
+    {
+      final PackageRoot commonjs = metadataStore.getPackageByName(npmHostedRepository, "commonjs");
+      assertThat(commonjs.getRaw(), hasKey("time"));
+      final Map<String, String> time = (Map<String, String>) commonjs.getRaw().get("time");
+      assertThat(time.entrySet(), hasSize(4));
+      modified = time.get("modified");
+      assertThat(created, notNullValue());
+      assertThat(time, hasEntry("created", created)); // not updated
+      assertThat(time, hasEntry("modified", modified)); // updated
+      assertThat(time, hasEntry("0.0.1", created)); // not updated
+      assertThat(time, hasEntry("0.0.2", modified)); // updated
+    }
   }
 
   /**

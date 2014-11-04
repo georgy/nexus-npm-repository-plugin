@@ -56,7 +56,14 @@ public class HostedMetadataServiceImpl
   public PackageRoot consumePackageRoot(final PackageRoot packageRoot)
       throws IOException
   {
-    return metadataStore.updatePackage(getNpmRepository(), packageRoot);
+    PackageRoot original = metadataStore.getPackageByName(getNpmRepository(), packageRoot.getName());
+    if (original != null) {
+      original.overlay(packageRoot);
+    } else {
+      original = packageRoot;
+    }
+    original.maintainTime();
+    return metadataStore.updatePackage(getNpmRepository(), original);
   }
 
   @Nullable

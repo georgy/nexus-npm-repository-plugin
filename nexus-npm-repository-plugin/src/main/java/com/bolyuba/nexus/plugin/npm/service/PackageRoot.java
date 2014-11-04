@@ -12,13 +12,12 @@
  */
 package com.bolyuba.nexus.plugin.npm.service;
 
-import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.sonatype.sisu.goodies.common.Iso8601Date;
-
 import com.google.common.collect.Maps;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -57,6 +56,38 @@ public class PackageRoot
   }
 
   public Map<String, NpmBlob> getAttachments() { return attachments; }
+
+  /**
+   * Maintains the "time" object of this document. This method depends on {@link #wrappedVersions} variable and
+   * assumes is up to date. Hence, this method should be invoked only AFTER it's ensured that wrapped versions
+   * are updated.
+   * Rules applied:
+   * <ul>
+   * <li>if no "created" key found, add it with "now" value</li>
+   * <li>add "modified" key with "now" value</li>
+   * <li>scan all versions, and any version not found in time map, add with "now"</li>
+   * </ul>
+   * Note: this method modifies the document, hence, should be used ONLY when it's okay to do so, as in hosted
+   * repositories. Proxied documents should be stored as-is, hence, shoild NOT be stored once modified with this
+   * method!
+   */
+  public void maintainTime() {
+    if (!getRaw().containsKey("time")) {
+      getRaw().put("time", Maps.newHashMap());
+    }
+    final Map<String, String> time = (Map<String, String>) getRaw().get("time");
+    final String now = new DateTime(DateTimeZone.UTC)
+        .toString(); // TZ must be UTC! Hence, Goodies' ISO8601 does not work
+    if (!time.containsKey("created")) {
+      time.put("created", now);
+    }
+    time.put("modified", now);
+    for (String version : wrappedVersions.keySet()) {
+      if (!time.containsKey(version)) {
+        time.put(version, now);
+      }
+    }
+  }
 
   /**
    * Reduces the document backing map to a "shrinked" form where versions map contains only version to tag (or version)
@@ -116,7 +147,6 @@ public class PackageRoot
     this.wrappedVersions.putAll(wrapVersions(getRaw()));
     this.attachments.clear(); // TODO: is clear needed?
     this.attachments.putAll(packageRoot.getAttachments());
-    maintainTime();
   }
 
   private Map<String, Object> overlay(Map<String, Object> me, Map<String, Object> him) {
@@ -134,34 +164,6 @@ public class PackageRoot
       }
     }
     return me;
-  }
-
-  /**
-   * Maintains the "time" object of this document. This method depends on {@link #wrappedVersions} variable and
-   * assumes is up to date. Hence, this method should be invoked only AFTER it's ensured that wrapped versions
-   * are updated.
-   * Rules applied:
-   * <ul>
-   *   <li>if no "created" key found, add it with "now" value</li>
-   *   <li>add "modified" key with "now" value</li>
-   *   <li>scan all versions, and any version not found in time map, add with "now"</li>
-   * </ul>
-   */
-  private void maintainTime() {
-    if (!getRaw().containsKey("time")) {
-      getRaw().put("time", Maps.newHashMap());
-    }
-    final Map<String, String> time = (Map<String, String>) getRaw().get("time");
-    final String now = Iso8601Date.format(new Date());
-    if (!time.containsKey("created")) {
-      time.put("created", now);
-    }
-    time.put("modified", now);
-    for (String version : wrappedVersions.keySet()) {
-      if (!time.containsKey(version)) {
-        time.put(version, now);
-      }
-    }
   }
 
   // ==
