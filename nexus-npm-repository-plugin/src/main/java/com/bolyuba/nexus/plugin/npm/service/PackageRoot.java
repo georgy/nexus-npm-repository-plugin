@@ -12,8 +12,11 @@
  */
 package com.bolyuba.nexus.plugin.npm.service;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.sonatype.sisu.goodies.common.Iso8601Date;
 
 import com.google.common.collect.Maps;
 
@@ -101,7 +104,9 @@ public class PackageRoot
   }
 
   /**
-   * Overlays given package root onto this package root, probably changing the mappings, or merging some maps.
+   * Overlays given package root onto this package root, probably changing the mappings, or merging some maps. It also
+   * maintains inner state of this document (wrappedVersions and attachments) also, and finally updates the "time" of
+   * it too.
    */
   public void overlay(final PackageRoot packageRoot) {
     checkArgument(getComponentId().equals(packageRoot.getComponentId()), "Cannot overlay different package roots!");
@@ -111,6 +116,7 @@ public class PackageRoot
     this.wrappedVersions.putAll(wrapVersions(getRaw()));
     this.attachments.clear(); // TODO: is clear needed?
     this.attachments.putAll(packageRoot.getAttachments());
+    maintainTime();
   }
 
   private Map<String, Object> overlay(Map<String, Object> me, Map<String, Object> him) {
@@ -128,6 +134,34 @@ public class PackageRoot
       }
     }
     return me;
+  }
+
+  /**
+   * Maintains the "time" object of this document. This method depends on {@link #wrappedVersions} variable and
+   * assumes is up to date. Hence, this method should be invoked only AFTER it's ensured that wrapped versions
+   * are updated.
+   * Rules applied:
+   * <ul>
+   *   <li>if no "created" key found, add it with "now" value</li>
+   *   <li>add "modified" key with "now" value</li>
+   *   <li>scan all versions, and any version not found in time map, add with "now"</li>
+   * </ul>
+   */
+  private void maintainTime() {
+    if (!getRaw().containsKey("time")) {
+      getRaw().put("time", Maps.newHashMap());
+    }
+    final Map<String, String> time = (Map<String, String>) getRaw().get("time");
+    final String now = Iso8601Date.format(new Date());
+    if (!time.containsKey("created")) {
+      time.put("created", now);
+    }
+    time.put("modified", now);
+    for (String version : wrappedVersions.keySet()) {
+      if (!time.containsKey(version)) {
+        time.put(version, now);
+      }
+    }
   }
 
   // ==
