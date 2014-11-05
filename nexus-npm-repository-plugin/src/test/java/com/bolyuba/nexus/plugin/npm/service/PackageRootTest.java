@@ -30,14 +30,7 @@ import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -57,17 +50,19 @@ public class PackageRootTest
   @Test
   public void overlay() throws Exception {
     final Map<String, Object> commonjs1Map = objectMapper
-        .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_v1.json"), new TypeReference<Map<String, Object>>() {});
+        .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_v1.json"),
+            new TypeReference<Map<String, Object>>() { });
     final PackageRoot commonjs1 = new PackageRoot("repo", commonjs1Map);
 
     final Map<String, Object> commonjs2Map = objectMapper
-        .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_v2.json"), new TypeReference<Map<String, Object>>() {});
+        .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_v2.json"),
+            new TypeReference<Map<String, Object>>() { });
     final PackageRoot commonjs2 = new PackageRoot("repo", commonjs2Map);
     commonjs2.getProperties().put("flag", "2");
 
     final Map<String, Object> commonjs3Map = objectMapper
         .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_vIncomplete.json"),
-            new TypeReference<Map<String, Object>>() {});
+            new TypeReference<Map<String, Object>>() { });
     final PackageRoot commonjs3 = new PackageRoot("repo", commonjs3Map);
     commonjs3.getProperties().put("flag", "3");
 
@@ -124,7 +119,7 @@ public class PackageRootTest
   public void shrinking() throws Exception {
     final Map<String, Object> commonjsRaw = objectMapper
         .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_multiversion.json"),
-            new TypeReference<Map<String, Object>>() {});
+            new TypeReference<Map<String, Object>>() { });
     final PackageRoot commonjs = new PackageRoot("repo", commonjsRaw);
 
     assertThat(commonjs.getVersions().entrySet(), hasSize(3));
@@ -139,5 +134,26 @@ public class PackageRootTest
     assertThat(versions, hasEntry("0.0.1", "0.0.1"));
     assertThat(versions, hasEntry("0.0.2", "stable"));
     assertThat(versions, hasEntry("0.0.3", "latest"));
+  }
+
+  @Test
+  public void maintainTime() throws Exception {
+    final Map<String, Object> commonjsRaw = objectMapper
+        .readValue(util.resolveFile("src/test/npm/ROOT_commonjs_multiversion.json"),
+            new TypeReference<Map<String, Object>>() { });
+    final PackageRoot commonjs = new PackageRoot("repo", commonjsRaw);
+
+    assertThat(commonjs.getRaw().get("time"), nullValue());
+
+    commonjs.maintainTime();
+
+    assertThat(commonjs.getRaw().get("time"), notNullValue());
+
+    final Map<String, String> time = (Map<String, String>) commonjs.getRaw().get("time");
+    assertThat(time, hasKey("created"));
+    assertThat(time, hasKey("modified"));
+    assertThat(time, hasKey("0.0.1"));
+    assertThat(time, hasKey("0.0.2"));
+    assertThat(time, hasKey("0.0.3"));
   }
 }
