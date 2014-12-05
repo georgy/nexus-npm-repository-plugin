@@ -37,6 +37,16 @@
     </license>
   </licenses>
 
+  <contributors>
+    <contributor>
+      <name>Georgy Bolyuba</name>
+      <url>https://github.com/georgy</url>
+      <roles>
+        <role>Initial Plugin Author</role>
+      </roles>
+    </contributor>
+  </contributors>
+
   <repositories>
     <repository>
       <id>rso-public-grid</id>
