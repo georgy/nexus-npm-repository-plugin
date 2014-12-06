@@ -44,6 +44,9 @@
       <roles>
         <role>Initial Plugin Author</role>
       </roles>
+      <properties>
+        <original.repository>https://github.com/georgy/nexus-npm-repository-plugin</original.repository>
+      </properties>
     </contributor>
   </contributors>
 
