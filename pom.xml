@@ -113,4 +113,47 @@
     </dependencies>
   </dependencyManagement>
 
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <configuration>
+            <excludes combine.children="append">
+              <!--
+              Sources which were contributed by 'Georgy Bolyuba' and retain customized legal headers.
+              -->
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/NpmContentClass.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/NpmPlugin.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/NpmRepository.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/group/DefaultNpmGroupRepository.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/group/NpmGroupRepositoryConfigurator.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/group/NpmGroupRepositoryConfiguration.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/group/NpmGroupRepository.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/hosted/DefaultNpmHostedRepository.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/hosted/NpmHostedRepository.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/hosted/NpmHostedRepositoryConfiguration.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/hosted/NpmHostedRepositoryConfigurator.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/internal/NpmUiContributor.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/internal/NpmMimeRulesSource.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/proxy/NpmProxyRepository.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/proxy/DefaultNpmProxyRepository.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/proxy/NpmProxyRepositoryConfiguration.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/proxy/NpmProxyRepositoryConfigurator.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/templates/NpmGroupRepositoryTemplate.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/templates/NpmRepositoryTemplateProvider.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/templates/NpmHostedRepositoryTemplate.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/templates/NpmProxyRepositoryTemplate.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/main/java/com/bolyuba/nexus/plugin/npm/service/PackageRequest.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/test/java/com/bolyuba/nexus/plugin/npm/internal/NpmMimeRulesSourceTest.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/test/java/com/bolyuba/nexus/plugin/npm/service/PackageRequestTest.java</exclude>
+              <exclude>**/nexus-npm-repository-plugin/src/test/java/com/bolyuba/nexus/plugin/npm/service/PackageCoordinatesTest.java</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
 </project>
