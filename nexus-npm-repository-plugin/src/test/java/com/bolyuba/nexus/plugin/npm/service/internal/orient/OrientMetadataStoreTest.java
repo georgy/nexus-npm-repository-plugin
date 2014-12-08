@@ -13,7 +13,7 @@
 package com.bolyuba.nexus.plugin.npm.service.internal.orient;
 
 import com.google.common.io.Files;
-import com.orientechnologies.orient.core.config.OGlobalConfiguration;
+import com.orientechnologies.orient.core.Orient;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -46,8 +46,11 @@ public class OrientMetadataStoreTest {
 
     @BeforeClass
     public static void scene() {
-        // we will be opening and closing db for each test using temporary folders. need to close storage on db.close()
-        OGlobalConfiguration.STORAGE_KEEP_OPEN.setValue(Boolean.FALSE);
+        /*
+            we will be opening and closing db for each test using temporary folders. Probably not useful for production,
+            but for testing whole path should be considered db name rather than just last forder
+        */
+        Orient.setRegisterDatabaseByPath(true);
     }
 
     @Before
