@@ -33,7 +33,6 @@ import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.sisu.goodies.lifecycle.LifecycleSupport;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -53,6 +52,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class OrientMetadataStore
         extends LifecycleSupport
         implements MetadataStore {
+
     private static final String DB_LOCATION = "db/npm";
 
     private final File databaseDirectory;
@@ -102,7 +102,7 @@ public class OrientMetadataStore
     }
 
     @Override
-    public void doStop() throws Exception {
+    protected void doStop() throws Exception {
         log.info("Closing pool: {}", pool);
         pool.close();
         pool = null;
@@ -145,7 +145,7 @@ public class OrientMetadataStore
                 List<ODocument> resultset = db.query(query, last);
                 while (!resultset.isEmpty()) {
                     result.addAll(Lists.transform(resultset, new Function<ODocument, String>() {
-                        public String apply(@Nullable final ODocument input) {
+                        public String apply(final ODocument input) {
                             return input.field("name", OType.STRING);
                         }
                     }));
@@ -285,10 +285,11 @@ public class OrientMetadataStore
         final List<ODocument> entries = db.query(new OSQLSynchQuery<>(
                 "select * from " + entityHandler.getSchemaName() + " where componentId='" + repository.getId() + ":" +
                         packageName + "'"));
-        for (ODocument entry : entries) {
-            return entry; // we expect only one
+        if (entries.isEmpty()) {
+            return null;
+        } else {
+            return entries.get(0); // we expect only one
         }
-        return null;
     }
 
     private PackageRoot doUpdatePackage(final ODatabaseDocumentTx db,

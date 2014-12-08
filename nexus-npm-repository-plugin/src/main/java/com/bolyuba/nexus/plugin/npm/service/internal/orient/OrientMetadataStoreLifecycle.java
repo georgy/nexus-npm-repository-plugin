@@ -28,6 +28,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * {@link EventSubscriber} implementation that drives OrientMetadataStore lifecycle.
  */
+@SuppressWarnings("UnusedDeclaration")
 @Singleton
 @Named
 public class OrientMetadataStoreLifecycle
@@ -42,11 +43,13 @@ public class OrientMetadataStoreLifecycle
         Orient.instance().removeShutdownHook();
     }
 
+    @SuppressWarnings("UnusedParameters")
     @Subscribe
     public void on(final NexusInitializedEvent e) throws Exception {
         orientMetadataStore.start();
     }
 
+    @SuppressWarnings("UnusedParameters")
     @Subscribe
     public void on(final NexusStoppedEvent e) throws Exception {
         orientMetadataStore.stop();
