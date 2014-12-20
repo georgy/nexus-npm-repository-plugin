@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (c) 2007-2014 Sonatype, Inc. All rights reserved.
+    Copyright (c) 2007-2014 Sonatype, Inc. and Georgy Bolyuba. All rights reserved.
 
     This program is licensed to you under the Apache License Version 2.0,
     and you may not use this file except in compliance with the Apache License Version 2.0.
